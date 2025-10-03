@@ -1,38 +1,95 @@
-.App {
+body {
+  background: #222;
+  font-family: 'Yu Gothic', 'Meiryo', sans-serif;
+}
+
+.wrapper {
+  background: #fff;
+  width: 100vw;       /* 画面幅いっぱい */
+  min-height: 100vh;  /* 画面高さいっぱい */
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+  /* お好みでpadding: 0; も追加可 */
+}
+
+
+.header {
+  display: flex;
+  align-items: flex-start;  /* 上揃えに変更 */
+  justify-content: space-between;
+  padding: 20px 40px 0 40px;  /* 上部パディングを少し減らす */
+}
+
+.header-left {
+  display: flex;
+  align-items: flex-start;  /* 上揃えに変更 */
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.header h2 {
+  margin: 0 0 0 10px;
+  font-size: 1.3em;
+  font-weight: bold;
+}
+
+.header .right a {
+  margin-left: 24px;
+}
+
+.logo-img {
+  width: 200px;        
+  height: auto;       
+  object-fit: contain; 
+}
+
+.main-content {
   text-align: center;
+  padding: 40px 32px;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.desc {
+  margin-bottom: 20px;
+  font-size: 1.1em;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.sample-area {
+  background: #CCEEFA;
+  margin: 36px auto 0 auto;
+  padding: 44px 0;
+  border-radius: 6px;
+  width: 82%;
+  font-size: 1.1em;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.footer {
+  background: #CCEEFA;
+  padding: 20px 32px 16px 32px;
+  font-size: 0.93em;
+  color: #222;
+  text-align: center;  /* 中央配置を追加 */
+}
+  .footer nav a {
+  margin: 0 10px;
+}
+
+body, html {
+  height: 100%;
+  margin: 0;
+}
+
+.wrapper {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  min-height: 100vh;   /* 画面高さぴったり */
 }
 
-.App-link {
-  color: #61dafb;
+.main-content {
+  flex: 1;             /* 余った部分をメインが埋める */
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
