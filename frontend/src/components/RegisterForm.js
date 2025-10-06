@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../RegisterForm.css";
 
 export default function RegisterForm() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -31,15 +33,65 @@ export default function RegisterForm() {
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
-    setForm(f => ({
-      ...f,
-      [name]: type === "checkbox" ? checked : type === "file" ? files[0] : value,
-    }));
+    if (type === "file" && files[0]) {
+      // ファイルをBase64に変換
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setForm(f => ({
+          ...f,
+          [name]: event.target.result
+        }));
+      };
+      reader.readAsDataURL(files[0]);
+    } else {
+      setForm(f => ({
+        ...f,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
   };
 
-  const handleSubmit = (e) => {
+  // 登録ボタン押下時
+    const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("登録処理（実装はこれから）！");
+
+    // バリデーション
+    if (form.password !== form.password2) {
+      alert("パスワードが一致しません");
+      return;
+    }
+
+    if (!form.agree) {
+      alert("利用規約・プライバシーポリシーへの同意が必要です");
+      return;
+    }
+
+    try {
+      // サーバ通信
+      const res = await fetch("http://localhost:5000/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          iconUrl: form.icon // Base64エンコードされたアイコン
+        })
+      });
+
+      const data = await res.json();
+      
+      if (data.success) {
+        alert("登録完了しました！ログインページに移動します。");
+        // ログインページに移動
+        navigate('/login');
+      } else {
+        alert(`エラー: ${data.error || "不明なエラーが発生しました"}`);
+      }
+    } catch (error) {
+      console.error("登録エラー:", error);
+      alert("サーバーに接続できません。バックエンドサーバーが起動しているか、ネットワーク接続を確認してください。");
+    }
   };
 
   return (

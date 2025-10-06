@@ -14,22 +14,91 @@ body {
   /* お好みでpadding: 0; も追加可 */
 }
 
-
 .header {
   display: flex;
-  align-items: flex-start;  /* 上揃えに変更 */
+  align-items: center;
   justify-content: space-between;
-  padding: 20px 40px 0 40px;  /* 上部パディングを少し減らす */
+  padding: 20px 40px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* ログインしていない時のheader用のスタイル */
+.header-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .header-left {
   display: flex;
-  align-items: flex-start;  /* 上揃えに変更 */
+  align-items: center;
 }
 
 .header-right {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.header-right a {
+  color: #000;
+  text-decoration: none;
+}
+
+.header-right a:hover {
+  text-decoration: underline;
+}
+
+.header-right span {
+  color: #666;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.header-nav a {
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.header-nav a:hover {
+  color: #2196F3;
+}
+
+.header-user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.user-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.header-nav button {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.header-nav button:hover {
+  background: #d32f2f;
 }
 
 .header h2 {
