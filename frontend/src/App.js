@@ -7,6 +7,7 @@ import LoginForm from "./components/LoginForm";
 import PasswordReset from "./components/PasswordReset";
 import Welcome from "./components/Welcome";
 import Settings from "./components/Settings";
+import FAQ from "./components/FAQ";
 import Footer from "./components/Footer";
 import "./App.css";
 
@@ -80,6 +81,7 @@ function AppContent() {
         <Route path="/password-reset" element={<PasswordReset />} />
         <Route path="/Welcome" element={<Welcome />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/faq" element={<FAQ />} />
       </Routes>
       <Footer />
     </div>

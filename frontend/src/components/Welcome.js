@@ -15,7 +15,7 @@ export default function Welcome() {
 
   const handleHelpClick = () => {
     // FAQ・ヘルプページへの遷移
-    window.location.href = '/Help';
+    window.location.href = '/FAQ';
   };
 
   return (

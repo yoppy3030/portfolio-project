@@ -20,7 +20,7 @@
 }
 
 .user-menu-container:hover .user-menu-dropdown {
-  display: block;
+  display: table;
 }
 
 .user-info-in-dropdown {
@@ -29,6 +29,7 @@
     padding: 8px 16px;
     border-bottom: 1px solid #eee;
     margin-bottom: 8px;
+    flex-shrink: 0;
 }
 
 .user-icon-dropdown {
