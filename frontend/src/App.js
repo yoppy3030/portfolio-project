@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { useTranslation } from 'react-i18next'; // Added
 import Header from "./components/Header";
 import MainContent from "./components/MainContent";
 import RegisterForm from "./components/RegisterForm";
@@ -13,8 +14,8 @@ import "./App.css";
 
 // メインのロジックを<Router>の子コンポーネントに移動
 function AppContent() {
+  const { t } = useTranslation(); // Added
   const navigate = useNavigate(); // ここでフックを使用
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -32,7 +33,6 @@ function AppContent() {
       .then(data => {
         if (data.success) {
           setUser(data.user);
-          setIsLoggedIn(true);
         } else {
           localStorage.removeItem('token');
         }
@@ -49,41 +49,53 @@ function AppContent() {
     }
   }, []);
 
+  useEffect(() => {
+    if (user?.theme === 'dark') {
+      document.body.classList.add('dark-theme');
+      document.body.classList.remove('light-theme');
+    } else {
+      document.body.classList.remove('dark-theme');
+      document.body.classList.add('light-theme');
+    }
+  }, [user?.theme]);
+
   // ログイン状態を更新する関数
   const handleLogin = (userData, token) => {
+    localStorage.setItem('token', token);
     setUser(userData);
-    setIsLoggedIn(true);
-    if (token) {
-      localStorage.setItem('token', token);
-    }
+    navigate('/'); // ホームページにリダイレクト
   };
 
   // ログアウト処理
   const handleLogout = () => {
     setUser(null);
-    setIsLoggedIn(false);
     localStorage.removeItem('token');
     navigate('/'); // ホームページにリダイレクト
   };
 
+  // ユーザー情報更新処理
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser);
+  };
+
   // ローディング中は何も表示しない
   if (isLoading) {
-    return <div>読み込み中...</div>;
+    return <div>{t('loading')}</div>; // Translated
   }
 
   return (
     <div className="wrapper">
-      <Header isLoggedIn={isLoggedIn} user={user} onLogout={handleLogout} />
+      <Header user={user} onLogout={handleLogout} theme={user?.theme} />
       <Routes>
-        <Route path="/" element={<MainContent />} />
-        <Route path="/register" element={<RegisterForm />} />
-        <Route path="/login" element={<LoginForm onLogin={handleLogin} />} />
-        <Route path="/password-reset" element={<PasswordReset />} />
-        <Route path="/Welcome" element={<Welcome />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/" element={<MainContent theme={user?.theme} />} />
+        <Route path="/register" element={<RegisterForm theme={user?.theme} />} />
+        <Route path="/login" element={<LoginForm onLogin={handleLogin} theme={user?.theme} />} />
+        <Route path="/password-reset" element={<PasswordReset theme={user?.theme} />} />
+        <Route path="/Welcome" element={<Welcome theme={user?.theme} />} />
+        <Route path="/settings" element={<Settings user={user} onUserUpdate={handleUserUpdate} onLogout={handleLogout} />} />
         <Route path="/faq" element={<FAQ />} />
       </Routes>
-      <Footer />
+      <Footer theme={user?.theme} />
     </div>
   );
 }

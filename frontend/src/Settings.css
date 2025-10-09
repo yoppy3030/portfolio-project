@@ -1,0 +1,261 @@
+.settings-container {
+  padding: 20px 40px;
+  background-color: #E3F2FD; /* 淡い青の背景 */
+  color: #0D47A1; /* 青い文字 */
+  border-radius: 8px;
+  min-height: 100vh; /* 画面の高さに合わせる */
+}
+
+body.dark-theme .settings-container {
+  background-color: #263238 !important; /* Dark blue-grey background */
+  color: #CFD8DC !important; /* Light grey text */
+}
+
+.settings-container h2 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #0D47A1; /* 青い文字 */
+}
+
+body.dark-theme .settings-container h2 {
+  color: #CFD8DC !important; /* Light grey text */
+}
+
+.settings-layout {
+  display: flex;
+  margin-top: 20px;
+}
+
+.settings-sidebar {
+  width: 200px;
+  border-right: 1px solid #90CAF9; /* 少し濃い青の境界線 */
+  padding-right: 20px;
+}
+
+body.dark-theme .settings-sidebar {
+  border-right-color: #455A64 !important; /* Darker border */
+}
+
+.settings-sidebar button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 1rem;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  color: #0D47A1; /* 青い文字 */
+}
+
+body.dark-theme .settings-sidebar button {
+  color: #CFD8DC !important; /* Light grey text */
+}
+
+.settings-sidebar button:hover {
+  background-color: #BBDEFB; /* 少し濃い青のホバー効果 */
+}
+
+body.dark-theme .settings-sidebar button:hover {
+  background-color: #37474F !important; /* Darker hover effect */
+}
+
+.settings-sidebar button.active {
+  background-color: #0D47A1; /* 濃い青の背景 */
+  color: white; /* 白い文字 */
+}
+
+body.dark-theme .settings-sidebar button.active {
+  background-color: #546E7A !important; /* Darker active background */
+  color: white !important;
+}
+
+.settings-main {
+  flex: 1;
+  padding-left: 20px;
+}
+
+.settings-content h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #0D47A1; /* 青い文字 */
+}
+
+body.dark-theme .settings-content h3 {
+  color: #CFD8DC !important; /* Light grey text */
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: #0D47A1; /* 青い文字 */
+}
+
+body.dark-theme .form-group label {
+  color: #CFD8DC !important; /* Light grey text */
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #90CAF9; /* 少し濃い青の境界線 */
+  border-radius: 4px;
+  background-color: #FFFFFF;
+  color: #333; /* Default text color */
+}
+
+body.dark-theme .form-group input[type="text"],
+body.dark-theme .form-group input[type="email"],
+body.dark-theme .form-group input[type="password"],
+body.dark-theme .form-group textarea,
+body.dark-theme .form-group select {
+  background-color: #37474F !important; /* Darker input background */
+  border-color: #546E7A !important; /* Darker input border */
+  color: #CFD8DC !important; /* Light grey text */
+}
+
+.toggle-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+body.dark-theme .toggle-group {
+  color: #CFD8DC !important; /* Light grey text for toggle group label */
+}
+
+.radio-group label {
+  margin-right: 15px;
+}
+
+body.dark-theme .radio-group label {
+  color: #CFD8DC !important; /* Light grey text for radio group label */
+}
+
+button {
+  padding: 10px 15px;
+  border: none;
+  background-color: #0D47A1; /* 濃い青の背景 */
+  color: white; /* 白い文字 */
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+body.dark-theme button {
+  background-color: #546E7A !important; /* Darker button background */
+}
+
+button:hover {
+  background-color: #1976D2; /* 少し明るい青のホバー効果 */
+}
+
+body.dark-theme button:hover {
+  background-color: #607D8B !important; /* Darker button hover */
+}
+
+button.danger {
+  background-color: #D32F2F;
+}
+
+body.dark-theme button.danger {
+  background-color: #B71C1C !important;
+}
+
+button.danger:hover {
+  background-color: #E57373;
+}
+
+body.dark-theme button.danger:hover {
+  background-color: #D32F2F !important;
+}
+
+hr {
+  margin: 30px 0;
+  border: 0;
+  border-top: 1px solid #90CAF9; /* 少し濃い青の境界線 */
+}
+
+body.dark-theme hr {
+  border-top-color: #455A64 !important; /* Darker hr border */
+}
+
+/* Toggle Switch CSS */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+body.dark-theme .slider {
+  background-color: #546E7A !important; /* Darker slider background */
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #0D47A1; /* 濃い青 */
+}
+
+body.dark-theme input:checked + .slider {
+  background-color: #607D8B !important; /* Darker checked slider background */
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #0D47A1;
+}
+
+body.dark-theme input:focus + .slider {
+  box-shadow: 0 0 1px #607D8B !important;
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+

@@ -10,13 +10,21 @@
   position: absolute;
   right: 0;
   top: 100%;
-  background-color: white;
   border: 1px solid #ddd;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   min-width: 160px;
   z-index: 1000;
   padding: 8px 0;
+}
+
+.header.light-theme .user-menu-dropdown {
+  background-color: white;
+}
+
+.header.dark-theme .user-menu-dropdown {
+  background-color: #555;
+  border-color: #666;
 }
 
 .user-menu-container:hover .user-menu-dropdown {

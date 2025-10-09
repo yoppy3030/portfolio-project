@@ -7,8 +7,8 @@ function FAQ() {
   const navigate = useNavigate();
 
   return (
-    <div className="faq-container">
-      <button onClick={() => navigate(-1)} className="back-button">戻る</button>
+  <div className={`faq-container expanded`}>
+  <button onClick={() => navigate(-1)} className="back-button">戻る</button>
       <h1>FAQ・ヘルプ</h1>
 
       <section>
@@ -92,7 +92,7 @@ function FAQ() {
         <h2>5. サポートの連絡先</h2>
         <details>
           <summary>問い合わせ窓口（メール、フォームなど）</summary>
-          <p>お問い合わせは、<a href="mailto:support@example.com">support@example.com</a> までメールでご連絡ください。</p>
+          <p>お問い合わせは、<a href="mailto:test.example3030@gmail.com">support@example.com</a> までメールでご連絡ください。</p>
         </details>
         <details>
           <summary>営業時間</summary>

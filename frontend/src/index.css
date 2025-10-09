@@ -11,3 +11,137 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+
+/* 全体的なスタイル */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f7f6; /* 明るい背景色 */
+  color: #333; /* 暗いテキスト色 */
+}
+
+body.dark-theme {
+  background-color: #222; /* Dark background for dark theme */
+  color: #eee; /* Light text for dark theme */
+}
+
+/* Global Dark Theme Overrides */
+body.dark-theme h1,
+body.dark-theme h2,
+body.dark-theme h3,
+body.dark-theme h4,
+body.dark-theme h5,
+body.dark-theme h6,
+body.dark-theme p,
+body.dark-theme span,
+body.dark-theme a,
+body.dark-theme label {
+  color: #eee; /* Ensure all text is light in dark theme */
+}
+
+body.dark-theme input[type="text"],
+body.dark-theme input[type="email"],
+body.dark-theme input[type="password"],
+body.dark-theme textarea,
+body.dark-theme select {
+  background-color: #555; /* Darker input background */
+  border-color: #666; /* Darker input border */
+  color: #eee; /* Light text for inputs */
+}
+
+body.dark-theme button {
+  background-color: #0056b3; /* Darker button background */
+  color: #fff; /* Light text for buttons */
+}
+
+/* コンテナのスタイル */
+.container {
+  max-width: 800px;
+  margin: 50px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.container.dark-theme {
+  background-color: #444;
+  color: #eee;
+}
+
+/* フォームのスタイル */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.dark-theme .form-group label { /* Apply dark theme to labels within a dark-theme parent */
+  color: #eee;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box; /* パディングとボーダーを幅に含める */
+  background-color: #fff; /* Default light theme background */
+  color: #333; /* Default light theme text color */
+}
+
+.dark-theme .form-group input[type="text"],
+.dark-theme .form-group input[type="email"],
+.dark-theme .form-group input[type="password"] {
+  background-color: #555;
+  border-color: #666;
+  color: #eee;
+}
+
+.form-group input[type="checkbox"] {
+  margin-right: 5px;
+}
+
+.form-group button {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.form-group button:hover {
+  background-color: #0056b3;
+}
+
+/* エラーメッセージのスタイル */
+.error-message {
+  color: #dc3545;
+  font-size: 0.9em;
+  margin-top: 5px;
+}
+
+/* リンクのスタイル */
+.link {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.dark-theme .link { /* Apply dark theme to links within a dark-theme parent */
+  color: #90caf9; /* Lighter blue for dark theme links */
+}
+
+.link:hover {
+  text-decoration: underline;
+}

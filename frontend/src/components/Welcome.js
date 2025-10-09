@@ -1,8 +1,10 @@
 // Welcome.js
 import React from "react";
+import { useTranslation } from 'react-i18next'; // Added
 import "../Welcome.css";
 
 export default function Welcome() {
+  const { t } = useTranslation(); // Added
   const handleTutorialClick = () => {
     // チュートリアルページへの遷移
     window.location.href = '/Tutorial';
@@ -21,7 +23,7 @@ export default function Welcome() {
   return (
     <div className="welcome-container">
       <div className="welcome-content">
-        <h1 className="welcome-title">ようこそ！</h1>
+        <h1 className="welcome-title">{t('welcome')}</h1>
         <p className="welcome-subtitle">サービスを始める準備が整いました</p>
         
         <div className="welcome-actions">

@@ -1,10 +1,6 @@
-body {
-  background: #222;
-  font-family: 'Yu Gothic', 'Meiryo', sans-serif;
-}
+
 
 .wrapper {
-  background: #fff;
   width: 100vw;       /* 画面幅いっぱい */
   min-height: 100vh;  /* 画面高さいっぱい */
   margin: 0;
@@ -19,8 +15,17 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 20px 40px;
-  background: #fff;
   border-bottom: 1px solid #e0e0e0;
+}
+
+.header.light-theme {
+  background: #fff;
+  color: #333;
+}
+
+.header.dark-theme {
+  background: #444;
+  color: #eee;
 }
 
 /* ログインしていない時のheader用のスタイル */
@@ -43,8 +48,13 @@ body {
 }
 
 .header-right a {
-  color: #000;
   text-decoration: none;
+}
+.header.light-theme .header-right a {
+  color: #000;
+}
+.header.dark-theme .header-right a {
+  color: #fff;
 }
 
 .header-right a:hover {
@@ -52,7 +62,12 @@ body {
 }
 
 .header-right span {
+}
+.header.light-theme .header-right span {
   color: #666;
+}
+.header.dark-theme .header-right span {
+  color: #ccc;
 }
 
 .header-nav {
@@ -62,10 +77,15 @@ body {
 }
 
 .header-nav a {
-  color: #333;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s;
+}
+.header.light-theme .header-nav a {
+  color: #333;
+}
+.header.dark-theme .header-nav a {
+  color: #eee;
 }
 
 .header-nav a:hover {
@@ -162,3 +182,12 @@ body, html {
   flex: 1;             /* 余った部分をメインが埋める */
 }
 
+.light-theme {
+  background-color: #ffffff; /* White background for light theme */
+  color: #333333; /* Dark text for light theme */
+}
+
+.dark-theme {
+  background-color: #333333; /* Dark background for dark theme */
+  color: #ffffff; /* Light text for dark theme */
+}

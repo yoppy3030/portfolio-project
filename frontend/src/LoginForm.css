@@ -8,6 +8,11 @@
   font-family: 'Yu Gothic', 'Meiryo', sans-serif;
 }
 
+body.dark-theme .login-form-wrapper {
+  background: #444;
+  box-shadow: 0px 8px 24px rgba(0,0,0,0.3);
+}
+
 .login-form h2 {
   text-align: center;
   margin-bottom: 40px;
@@ -15,6 +20,10 @@
   font-weight: bold;
   letter-spacing: 0.07em;
   color: #333;
+}
+
+body.dark-theme .login-form h2 {
+  color: #eee;
 }
 
 /* 1行整形 */
@@ -32,6 +41,10 @@
   font-weight: 500;
 }
 
+body.dark-theme .input-row label {
+  color: #eee;
+}
+
 .input-row input[type="text"],
 .input-row input[type="email"],
 .input-row input[type="password"] {
@@ -44,6 +57,14 @@
   background: #fff;
   box-sizing: border-box;
   transition: border-color 0.2s;
+}
+
+body.dark-theme .input-row input[type="text"],
+body.dark-theme .input-row input[type="email"],
+body.dark-theme .input-row input[type="password"] {
+  background: #555;
+  border-color: #666;
+  color: #eee;
 }
 
 .pw-input-wrapper {
@@ -70,6 +91,13 @@
   transition: border-color 0.2s;
 }
 
+body.dark-theme .pw-input-wrapper input[type="password"],
+body.dark-theme .pw-input-wrapper input[type="text"] {
+  background: #555;
+  border-color: #666;
+  color: #eee;
+}
+
 /* アイコン自体のみ、シンプル表示 */
 .pw-toggle {
   position: absolute;
@@ -94,6 +122,9 @@
   height: 22px;
   display: block;
   pointer-events: none;
+}
+body.dark-theme .pw-toggle svg {
+  filter: invert(1) hue-rotate(180deg) brightness(1.5); /* Adjust SVG color for dark theme */
 }
 .pw-toggle:focus {
   outline: none;
@@ -124,6 +155,11 @@
   font-size: 1em;
   padding: 0 8px;
 }
+
+body.dark-theme .checkbox-label {
+  color: #eee;
+}
+
 .checkbox-label input[type="checkbox"] {
   margin-right: 8px;
   transform: scale(1.1);
@@ -151,11 +187,21 @@
   background: #eee;
   color: #222;
 }
+
+body.dark-theme .login-form button[type="button"]:not(.pw-toggle) {
+  background: #666;
+  color: #eee;
+}
+
 .login-form button:not(.pw-toggle):hover {
   background: #176ec5;
 }
 .login-form button[type="button"]:not(.pw-toggle):hover {
   background: #bbb;
+}
+
+body.dark-theme .login-form button[type="button"]:not(.pw-toggle):hover {
+  background: #888;
 }
 
 .login-links {
@@ -169,12 +215,22 @@
   color: #555;
   line-height: 1.4;
 }
+
+body.dark-theme .login-links p {
+  color: #ccc;
+}
+
 .link-text {
   color: #2196F3;
   text-decoration: underline;
   cursor: pointer;
   font-weight: 500;
 }
+
+body.dark-theme .link-text {
+  color: #90caf9;
+}
+
 .link-text:hover {
   color: #176ec5;
 }
@@ -188,6 +244,11 @@
   padding: 0;
   font-weight: 500;
 }
+
+body.dark-theme .text-btn {
+  color: #90caf9;
+}
+
 .text-btn:hover {
   color: #176ec5;
 }
@@ -196,6 +257,11 @@
   text-decoration: underline;
   font-weight: 500;
 }
+
+body.dark-theme .login-links a.text-btn {
+  color: #90caf9;
+}
+
 .login-links a.text-btn:hover {
   color: #176ec5;
 }

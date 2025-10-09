@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../RegisterForm.css";
 
-export default function RegisterForm() {
+export default function RegisterForm({ theme }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
@@ -95,7 +95,7 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="main-content">
+    <div className={`main-content ${theme}-theme`}>
       <div className="register-form-wrapper">
         <form className="register-form" onSubmit={handleSubmit}>
           <h2>新規登録</h2>

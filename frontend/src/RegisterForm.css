@@ -8,12 +8,22 @@
   font-family: 'Yu Gothic', 'Meiryo', sans-serif;
 }
 
+body.dark-theme .register-form-wrapper {
+  background: #444;
+  box-shadow: 0px 8px 24px rgba(0,0,0,0.3);
+}
+
 .register-form h2 {
   text-align: center;
   margin-bottom: 32px;
   font-size: 1.6em;
   font-weight: bold;
   letter-spacing: 0.07em;
+  color: #333;
+}
+
+body.dark-theme .register-form h2 {
+  color: #eee;
 }
 
 /* 1行整形 */
@@ -29,6 +39,10 @@
   color: #222;
 }
 
+body.dark-theme .input-row label {
+  color: #eee;
+}
+
 .input-row input[type="text"],
 .input-row input[type="email"],
 .input-row input[type="password"],
@@ -41,6 +55,15 @@
   margin-left: 12px;
   background: #fff;
   box-sizing: border-box;
+}
+
+body.dark-theme .input-row input[type="text"],
+body.dark-theme .input-row input[type="email"],
+body.dark-theme .input-row input[type="password"],
+body.dark-theme .input-row input[type="file"] {
+  background: #555;
+  border-color: #666;
+  color: #eee;
 }
 
 .pw-input-wrapper {
@@ -64,6 +87,13 @@
   background: #fff;
   position: relative;
   z-index: 1;
+}
+
+body.dark-theme .pw-input-wrapper input[type="password"],
+body.dark-theme .pw-input-wrapper input[type="text"] {
+  background: #555;
+  border-color: #666;
+  color: #eee;
 }
 
 /* アイコン自体のみ、シンプル表示 */
@@ -90,6 +120,9 @@
   height: 22px;
   display: block;
   pointer-events: none;
+}
+body.dark-theme .pw-toggle svg {
+  filter: invert(1) hue-rotate(180deg) brightness(1.5); /* Adjust SVG color for dark theme */
 }
 .pw-toggle:focus {
   outline: none;
@@ -123,6 +156,12 @@
   margin-left: 12px;
 }
 
+body.dark-theme .register-form textarea {
+  background: #555;
+  border-color: #666;
+  color: #eee;
+}
+
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -130,8 +169,14 @@
   font-size: 1em;
   margin-bottom: 8px;
 }
+
+body.dark-theme .checkbox-label {
+  color: #eee;
+}
+
 .checkbox-label input[type="checkbox"] {
   margin-right: 8px;
+  transform: scale(1.1);
 }
 
 .form-actions {
@@ -154,11 +199,21 @@
   background: #eee;
   color: #222;
 }
+
+body.dark-theme .register-form button[type="button"]:not(.pw-toggle) {
+  background: #666;
+  color: #eee;
+}
+
 .register-form button:not(.pw-toggle):hover {
   background: #176ec5;
 }
 .register-form button[type="button"]:not(.pw-toggle):hover {
   background: #bbb;
+}
+
+body.dark-theme .register-form button[type="button"]:not(.pw-toggle):hover {
+  background: #888;
 }
 
 @media (max-width: 700px) {

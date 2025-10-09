@@ -158,9 +158,19 @@ app.post('/api/register', async (req, res) => {
         }
 
         // usersテーブルへINSERT
-                db.query(
-          'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
-          [name, email, hash],
+                let columns = ['name', 'email', 'password_hash'];
+        let placeholders = ['?', '?', '?'];
+        let values = [name, email, hash];
+
+        if (iconUrl) {
+          columns.push('iconUrl');
+          placeholders.push('?');
+          values.push(iconUrl);
+        }
+
+        db.query(
+          `INSERT INTO users (${columns.join(', ')}) VALUES (${placeholders.join(', ')})`,
+          values,
           (err, result) => {
             if (err) {
               console.error('データベースエラー:', err);
@@ -200,7 +210,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
     }
 
         db.query(
-      'SELECT id, name, email, password_hash FROM users WHERE email = ? OR name = ?',
+      'SELECT id, name, email, password_hash, bio, iconUrl, email_notifications, feature_announcements, maintenance_info, language, theme FROM users WHERE email = ? OR name = ?',
       [email, email],
       async (err, results) => {
         if (err) {
@@ -240,16 +250,14 @@ app.post('/api/login', loginLimiter, async (req, res) => {
           { expiresIn: tokenExpiry }
         );
 
+        // パスワードハッシュを削除してからユーザー情報を返す
+        delete user.password_hash;
+
         res.json({ 
           success: true, 
           message: 'ログインしました',
           token: token,
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            iconUrl: '/default-avatar.png'
-          }
+          user: user
         });
       }
     );
@@ -265,7 +273,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
 // トークン検証API
 app.get('/api/verify-token', authenticateToken, (req, res) => {
     db.query(
-    'SELECT id, name, email FROM users WHERE id = ?',
+    'SELECT id, name, email, bio, iconUrl, email_notifications, feature_announcements, maintenance_info, language, theme FROM users WHERE id = ?',
     [req.user.id],
     (err, results) => {
       if (err) {
@@ -286,15 +294,278 @@ app.get('/api/verify-token', authenticateToken, (req, res) => {
       const user = results[0];
       res.json({ 
         success: true, 
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          iconUrl: '/default-avatar.png'
-        }
+        user: user
       });
     }
   );
+});
+
+// プロフィール更新API
+app.put('/api/profile', authenticateToken, (req, res) => {
+  try {
+    const { id } = req.user;
+    const { name, bio, iconUrl } = req.body;
+
+    // 更新するフィールドを動的に構築
+    const fieldsToUpdate = {};
+    if (name) fieldsToUpdate.name = name;
+    if (bio) fieldsToUpdate.bio = bio;
+    if (iconUrl) fieldsToUpdate.iconUrl = iconUrl;
+
+    if (Object.keys(fieldsToUpdate).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: '更新するフィールドがありません。'
+      });
+    }
+
+    db.query(
+      'UPDATE users SET ? WHERE id = ?',
+      [fieldsToUpdate, id],
+      (err, result) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({ 
+            success: false, 
+            error: 'データベースエラーが発生しました' 
+          });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ 
+            success: false, 
+            error: 'ユーザーが見つかりません' 
+          });
+        }
+
+        // 更新後のユーザー情報を取得して返す
+        db.query('SELECT id, name, email, bio, iconUrl, email_notifications, feature_announcements, maintenance_info, language, theme FROM users WHERE id = ?', [id], (err, results) => {
+          if (err) {
+            console.error('データベースエラー:', err);
+            return res.status(500).json({ 
+              success: false, 
+              error: 'データベースエラーが発生しました' 
+            });
+          }
+          if (results.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: '更新後のユーザー情報が見つかりません'
+            });
+          }
+          res.json({ 
+            success: true, 
+            message: 'プロフィールが更新されました',
+            user: results[0]
+          });
+        });
+      }
+    );
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'サーバーエラーが発生しました' 
+    });
+  }
+});
+
+// パスワード変更API
+app.post('/api/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.user;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        error: '現在のパスワードと新しいパスワードを入力してください' 
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: '新しいパスワードは8文字以上で入力してください'
+      });
+    }
+
+    db.query('SELECT password_hash FROM users WHERE id = ?', [id], async (err, results) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ success: false, error: 'ユーザーが見つかりません' });
+      }
+
+      const user = results[0];
+      const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
+
+      if (!isValidPassword) {
+        return res.status(401).json({ success: false, error: '現在のパスワードが正しくありません' });
+      }
+
+      const hash = await bcrypt.hash(newPassword, 12);
+
+      db.query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, id], (err, result) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+        }
+
+        res.json({ success: true, message: 'パスワードが変更されました' });
+      });
+    });
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// 通知設定更新API
+app.put('/api/notifications', authenticateToken, (req, res) => {
+  try {
+    const { id } = req.user;
+    const { email_notifications, feature_announcements, maintenance_info } = req.body;
+
+    const fieldsToUpdate = {
+      email_notifications: email_notifications,
+      feature_announcements: feature_announcements,
+      maintenance_info: maintenance_info
+    };
+
+    db.query(
+      'UPDATE users SET ? WHERE id = ?',
+      [fieldsToUpdate, id],
+      (err, result) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ success: false, error: 'ユーザーが見つかりません' });
+        }
+
+        res.json({ success: true, message: '通知設定が更新されました' });
+      }
+    );
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// アカウント削除API
+app.delete('/api/account', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.user;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ success: false, error: 'パスワードを入力してください' });
+    }
+
+    db.query('SELECT password_hash FROM users WHERE id = ?', [id], async (err, results) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ success: false, error: 'ユーザーが見つかりません' });
+      }
+
+      const user = results[0];
+      const isValidPassword = await bcrypt.compare(password, user.password_hash);
+
+      if (!isValidPassword) {
+        return res.status(401).json({ success: false, error: 'パスワードが正しくありません' });
+      }
+
+      db.query('DELETE FROM users WHERE id = ?', [id], (err, result) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+        }
+
+        res.json({ success: true, message: 'アカウントが削除されました' });
+      });
+    });
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// 一般設定更新API
+app.put('/api/general-settings', authenticateToken, (req, res) => {
+  try {
+    const { id } = req.user;
+    const { language, theme } = req.body;
+
+    const fieldsToUpdate = {};
+    if (language) fieldsToUpdate.language = language;
+    if (theme) fieldsToUpdate.theme = theme;
+
+    if (Object.keys(fieldsToUpdate).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: '更新するフィールドがありません。'
+      });
+    }
+
+    db.query(
+      'UPDATE users SET ? WHERE id = ?',
+      [fieldsToUpdate, id],
+      (err, result) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({
+            success: false,
+            error: 'データベースエラーが発生しました'
+          });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.status(404).json({
+            success: false,
+            error: 'ユーザーが見つかりません'
+          });
+        }
+
+        // 更新後のユーザー情報を取得して返す
+        db.query('SELECT id, name, email, bio, iconUrl, email_notifications, feature_announcements, maintenance_info, language, theme FROM users WHERE id = ?', [id], (err, results) => {
+          if (err) {
+            console.error('データベースエラー:', err);
+            return res.status(500).json({
+              success: false,
+              error: 'データベースエラーが発生しました'
+            });
+          }
+          if (results.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: '更新後のユーザー情報が見つかりません'
+            });
+          }
+          res.json({
+            success: true,
+            message: '一般設定が更新されました',
+            user: results[0]
+          });
+        });
+      }
+    );
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({
+      success: false,
+      error: 'サーバーエラーが発生しました'
+    });
+  }
 });
 
 // 認証コード送信API

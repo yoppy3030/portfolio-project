@@ -1,6 +1,5 @@
 .faq-container {
-  max-width: 100% !important;
-  /* max-width: 1600px; */
+  max-width: 2000px;
   margin: 2rem auto;
   padding: 2rem;
   background-color: #fff;
@@ -8,10 +7,34 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+body.dark-theme .faq-container {
+  background-color: #444 !important; /* Dark background for dark theme */
+  color: #eee !important; /* Light text for dark theme */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+}
+
+.faq-container.expanded {
+  max-width: 2000px;
+  width: 50%; 
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+body.dark-theme .faq-container.expanded {
+  background-color: #444 !important; /* Dark background for expanded in dark theme */
+}
+
 .faq-container h1 {
   text-align: center;
   margin-bottom: 2rem;
   color: #333;
+}
+
+body.dark-theme .faq-container h1 {
+  color: #eee !important; /* Light text for h1 in dark theme */
 }
 
 .faq-container h2 {
@@ -21,10 +44,19 @@
   color: #555;
 }
 
+body.dark-theme .faq-container h2 {
+  border-bottom: 2px solid #666 !important; /* Darker border for h2 in dark theme */
+  color: #ccc !important; /* Lighter text for h2 in dark theme */
+}
+
 .faq-container details {
   margin-bottom: 1rem;
   border: 1px solid #ddd;
   border-radius: 4px;
+}
+
+body.dark-theme .faq-container details {
+  border: 1px solid #666 !important; /* Darker border for details in dark theme */
 }
 
 .faq-container summary {
@@ -33,6 +65,11 @@
   font-weight: bold;
   outline: none;
   font-size: 1.2rem;
+  color: #333; /* Default color for summary */
+}
+
+body.dark-theme .faq-container summary {
+  color: #eee !important; /* Light text for summary in dark theme */
 }
 
 .faq-container p {
@@ -41,9 +78,17 @@
   color: #666;
 }
 
+body.dark-theme .faq-container p {
+  color: #ccc !important; /* Lighter text for p in dark theme */
+}
+
 .faq-container a {
   color: #007bff;
   text-decoration: none;
+}
+
+body.dark-theme .faq-container a {
+  color: #90caf9 !important; /* Lighter blue for links in dark theme */
 }
 
 .faq-container a:hover {
@@ -61,6 +106,15 @@
   margin-bottom: 1rem;
 }
 
+body.dark-theme .back-button {
+  background-color: #555 !important; /* Darker background for back button in dark theme */
+  color: #eee !important; /* Light text for back button in dark theme */
+}
+
 .back-button:hover {
   background-color: #5a6268;
+}
+
+body.dark-theme .back-button:hover {
+  background-color: #666 !important; /* Even darker background on hover in dark theme */
 }
