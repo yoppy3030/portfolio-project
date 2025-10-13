@@ -1,122 +1,123 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import '../FAQ.css';
 
 function FAQ() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
-  <div className={`faq-container expanded`}>
-  <button onClick={() => navigate(-1)} className="back-button">戻る</button>
-      <h1>FAQ・ヘルプ</h1>
+    <div className={`faq-container expanded`}>
+      <button onClick={() => navigate(-1)} className="back-button">{t('faq_back_button')}</button>
+      <h1>{t('faq_main_title')}</h1>
 
       <section>
-        <h2>1. サービス全般や仕組みについて</h2>
+        <h2>{t('faq_section1_title')}</h2>
         <details>
-          <summary>サービスやアプリの概要</summary>
-          <p>このサービスは、あなたのポートフォリオを簡単に作成、管理、公開できるアプリケーションです。</p>
+          <summary>{t('faq_section1_q1_summary')}</summary>
+          <p>{t('faq_section1_q1_details')}</p>
         </details>
         <details>
-          <summary>登録・ログイン・退会・パスワード再発行の方法</summary>
+          <summary>{t('faq_section1_q2_summary')}</summary>
           <p>
-            <strong>登録:</strong> トップページの「新規登録」からアカウントを作成できます。<br />
-            <strong>ログイン:</strong> トップページの「ログイン」から登録した情報でログインできます。<br />
-            <strong>退会:</strong> 設定ページの「アカウント削除」から退会手続きが可能です。<br />
-            <strong>パスワード再発行:</strong> ログインページの「パスワードをお忘れですか？」から再発行手続きを行ってください。
+            <strong>{t('faq_register')}:</strong> {t('faq_section1_q2_p1')}<br />
+            <strong>{t('faq_login')}:</strong> {t('faq_section1_q2_p2')}<br />
+            <strong>{t('faq_unsubscribe')}:</strong> {t('faq_section1_q2_p3')}<br />
+            <strong>{t('faq_password_reset')}:</strong> {t('faq_section1_q2_p4')}
           </p>
         </details>
         <details>
-          <summary>利用環境（推奨デバイス・対応ブラウザなど）</summary>
-          <p>PCでの利用を推奨しています。最新版のGoogle ChromeまたはFirefoxブラウザで最適に動作します。</p>
+          <summary>{t('faq_section1_q3_summary')}</summary>
+          <p>{t('faq_section1_q3_details')}</p>
         </details>
       </section>
 
       <section>
-        <h2>2. 基本機能の使い方</h2>
+        <h2>{t('faq_section2_title')}</h2>
         <details>
-          <summary>作品の追加・編集・削除</summary>
-          <p>ダッシュボードから作品の追加、編集、削除が可能です。</p>
+          <summary>{t('faq_section2_q1_summary')}</summary>
+          <p>{t('faq_section2_q1_details')}</p>
         </details>
         <details>
-          <summary>画像/ファイルのアップロードや変更</summary>
-          <p>作品の編集ページから、画像や関連ファイルをアップロード・変更できます。</p>
+          <summary>{t('faq_section2_q2_summary')}</summary>
+          <p>{t('faq_section2_q2_details')}</p>
         </details>
         <details>
-          <summary>公開/非公開の切り替え</summary>
-          <p>各作品の編集ページで、公開・非公開を切り替えることができます。</p>
+          <summary>{t('faq_section2_q3_summary')}</summary>
+          <p>{t('faq_section2_q3_details')}</p>
         </details>
         <details>
-          <summary>作品一覧・検索・絞り込みの方法</summary>
-          <p>ダッシュボードの検索バーやフィルタ機能をご利用ください。</p>
-        </details>
-      </section>
-
-      <section>
-        <h2>3. トラブル時の対処法</h2>
-        <details>
-          <summary>ログインできない</summary>
-          <p>メールアドレスとパスワードが正しいかご確認ください。パスワードを忘れた場合は、パスワードの再発行をお試しください。</p>
-        </details>
-        <details>
-          <summary>画像アップロードできない</summary>
-          <p>ファイルのサイズや形式が要件を満たしているかご確認ください。問題が解決しない場合は、サポートまでご連絡ください。</p>
-        </details>
-        <details>
-          <summary>作品が消えた/見つからない</summary>
-          <p>誤って削除していないか、また検索フィルタが有効になっていないかご確認ください。</p>
-        </details>
-        <details>
-          <summary>動作がおかしい時（キャッシュクリアなど）</summary>
-          <p>ブラウザのキャッシュをクリアしてから、再度お試しください。それでも改善しない場合は、サポートにご連絡ください。</p>
+          <summary>{t('faq_section2_q4_summary')}</summary>
+          <p>{t('faq_section2_q4_details')}</p>
         </details>
       </section>
 
       <section>
-        <h2>4. セキュリティや個人情報</h2>
+        <h2>{t('faq_section3_title')}</h2>
         <details>
-          <summary>データの安全性</summary>
-          <p>お客様のデータは暗号化され、安全に保管されています。</p>
+          <summary>{t('faq_section3_q1_summary')}</summary>
+          <p>{t('faq_section3_q1_details')}</p>
         </details>
         <details>
-          <summary>プライバシーポリシー</summary>
-          <p>プライバシーポリシーのページで詳細をご確認いただけます。</p>
+          <summary>{t('faq_section3_q2_summary')}</summary>
+          <p>{t('faq_section3_q2_details')}</p>
         </details>
         <details>
-          <summary>情報削除・退会手順</summary>
-          <p>設定ページからアカウントの削除を行うことで、関連する全ての情報が削除されます。</p>
-        </details>
-      </section>
-
-      <section>
-        <h2>5. サポートの連絡先</h2>
-        <details>
-          <summary>問い合わせ窓口（メール、フォームなど）</summary>
-          <p>お問い合わせは、<a href="mailto:test.example3030@gmail.com">support@example.com</a> までメールでご連絡ください。</p>
+          <summary>{t('faq_section3_q3_summary')}</summary>
+          <p>{t('faq_section3_q3_details')}</p>
         </details>
         <details>
-          <summary>営業時間</summary>
-          <p>平日10:00〜18:00 (土日祝日を除く)</p>
-        </details>
-        <details>
-          <summary>連絡時に必要な情報（ユーザーIDなど）</summary>
-          <p>お問い合わせの際は、ご登録のメールアドレスとユーザーIDをお知らせください。</p>
+          <summary>{t('faq_section3_q4_summary')}</summary>
+          <p>{t('faq_section3_q4_details')}</p>
         </details>
       </section>
 
       <section>
-        <h2>6. その他 よくある質問</h2>
+        <h2>{t('faq_section4_title')}</h2>
         <details>
-          <summary>よく受ける質問まとめ</summary>
-          <p>随時更新予定です。</p>
+          <summary>{t('faq_section4_q1_summary')}</summary>
+          <p>{t('faq_section4_q1_details')}</p>
         </details>
         <details>
-          <summary>便利な使い方やTIPS</summary>
-          <p>ブログやTipsページで紹介しています。</p>
+          <summary>{t('faq_section4_q2_summary')}</summary>
+          <p>{t('faq_section4_q2_details')}</p>
         </details>
         <details>
-          <summary>アップデートや新機能について</summary>
-          <p>お知らせページやメールマガジンでご案内します。</p>
+          <summary>{t('faq_section4_q3_summary')}</summary>
+          <p>{t('faq_section4_q3_details')}</p>
+        </details>
+      </section>
+
+      <section>
+        <h2>{t('faq_section5_title')}</h2>
+        <details>
+          <summary>{t('faq_section5_q1_summary')}</summary>
+          <p>{t('faq_section5_q1_details', { email: 'support@example.com' })}</p>
+        </details>
+        <details>
+          <summary>{t('faq_section5_q2_summary')}</summary>
+          <p>{t('faq_section5_q2_details')}</p>
+        </details>
+        <details>
+          <summary>{t('faq_section5_q3_summary')}</summary>
+          <p>{t('faq_section5_q3_details')}</p>
+        </details>
+      </section>
+
+      <section>
+        <h2>{t('faq_section6_title')}</h2>
+        <details>
+          <summary>{t('faq_section6_q1_summary')}</summary>
+          <p>{t('faq_section6_q1_details')}</p>
+        </details>
+        <details>
+          <summary>{t('faq_section6_q2_summary')}</summary>
+          <p>{t('faq_section6_q2_details')}</p>
+        </details>
+        <details>
+          <summary>{t('faq_section6_q3_summary')}</summary>
+          <p>{t('faq_section6_q3_details')}</p>
         </details>
       </section>
     </div>

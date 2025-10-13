@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { withTranslation } from 'react-i18next';
 import '../Settings.css';
 
-function Settings({ user, onUserUpdate, onLogout, t, i18n }) {
+function Settings({ user, onUserUpdate, onLogout, t, i18n, onLanguageChange, language }) {
   const [activeTab, setActiveTab] = useState('profile');
   
   // Profile state
@@ -20,7 +20,6 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n }) {
   const [maintenanceInfo, setMaintenanceInfo] = useState(true);
 
   // General state
-  const [language, setLanguage] = useState('ja');
   const [theme, setTheme] = useState('light');
   const [deletePassword, setDeletePassword] = useState('');
 
@@ -34,12 +33,9 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n }) {
       setEmailNotifications(user.email_notifications === 1 ? true : false);
       setFeatureAnnouncements(user.feature_announcements === 1 ? true : false);
       setMaintenanceInfo(user.maintenance_info === 1 ? true : false);
-      const userLang = user.language || 'ja';
-      setLanguage(userLang);
-      i18n.changeLanguage(userLang);
       setTheme(user.theme || 'light');
     }
-  }, [user, i18n]);
+  }, [user]);
 
   const handleFileChange = (e) => {
     setProfilePicFile(e.target.files[0]);
@@ -158,9 +154,7 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n }) {
       if (data.success) {
         setMessage(t('settings_message_notifications_updated'));
         const verifyResponse = await fetch('http://localhost:5000/api/verify-token', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          headers: { 'Authorization': `Bearer ${token}` }
         });
         const verifyData = await verifyResponse.json();
         if (verifyData.success) {
@@ -261,12 +255,7 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n }) {
               {message && <p>{message}</p>}
               <div className="form-group">
                 <label htmlFor="username">{t('settings_username_label')}</label>
-                <input 
-                  type="text" 
-                  id="username" 
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)} 
-                />
+                <input type="text" id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
               </div>
               <div className="form-group">
                 <label htmlFor="profile-pic">{t('settings_profile_pic_label')}</label>
@@ -274,12 +263,7 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n }) {
               </div>
               <div className="form-group">
                 <label htmlFor="bio">{t('settings_bio_label')}</label>
-                <textarea 
-                  id="bio" 
-                  rows="4" 
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                ></textarea>
+                <textarea id="bio" rows="4" value={bio} onChange={(e) => setBio(e.target.value)}></textarea>
               </div>
               <button onClick={handleProfileSave}>{t('settings_save_button')}</button>
             </div>
@@ -296,21 +280,11 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n }) {
               <h4>{t('settings_change_password_title')}</h4>
               <div className="form-group">
                 <label htmlFor="current-password">{t('settings_current_password_label')}</label>
-                <input 
-                  type="password" 
-                  id="current-password" 
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                />
+                <input type="password" id="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
               </div>
               <div className="form-group">
                 <label htmlFor="new-password">{t('settings_new_password_label')}</label>
-                <input 
-                  type="password" 
-                  id="new-password" 
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
+                <input type="password" id="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
               </div>
               <button onClick={handleChangePassword}>{t('settings_change_password_button')}</button>
             </div>
@@ -321,24 +295,15 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n }) {
               {message && <p>{message}</p>}
               <div className="toggle-group">
                 <label>{t('settings_email_notifications_label')}</label>
-                <label className="switch">
-                  <input type="checkbox" checked={emailNotifications} onChange={() => setEmailNotifications(!emailNotifications)} />
-                  <span className="slider round"></span>
-                </label>
+                <label className="switch"><input type="checkbox" checked={emailNotifications} onChange={() => setEmailNotifications(!emailNotifications)} /><span className="slider round"></span></label>
               </div>
               <div className="toggle-group">
                 <label>{t('settings_feature_announcements_label')}</label>
-                <label className="switch">
-                  <input type="checkbox" checked={featureAnnouncements} onChange={() => setFeatureAnnouncements(!featureAnnouncements)} />
-                  <span className="slider round"></span>
-                </label>
+                <label className="switch"><input type="checkbox" checked={featureAnnouncements} onChange={() => setFeatureAnnouncements(!featureAnnouncements)} /><span className="slider round"></span></label>
               </div>
               <div className="toggle-group">
                 <label>{t('settings_maintenance_info_label')}</label>
-                <label className="switch">
-                  <input type="checkbox" checked={maintenanceInfo} onChange={() => setMaintenanceInfo(!maintenanceInfo)} />
-                  <span className="slider round"></span>
-                </label>
+                <label className="switch"><input type="checkbox" checked={maintenanceInfo} onChange={() => setMaintenanceInfo(!maintenanceInfo)} /><span className="slider round"></span></label>
               </div>
               <button onClick={handleNotificationSave}>{t('settings_save_button')}</button>
             </div>
@@ -349,11 +314,7 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n }) {
               {message && <p>{message}</p>}
               <div className="form-group">
                 <label htmlFor="language">{t('settings_language_label')}</label>
-                <select id="language" value={language} onChange={(e) => {
-                  const newLang = e.target.value;
-                  setLanguage(newLang);
-                  i18n.changeLanguage(newLang);
-                }}>
+                <select id="language" value={language} onChange={(e) => onLanguageChange(e.target.value)}>
                   <option value="ja">日本語</option>
                   <option value="en">English</option>
                 </select>
@@ -371,12 +332,7 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n }) {
               <p>{t('settings_delete_account_warning')}</p>
               <div className="form-group">
                 <label htmlFor="delete-password">{t('settings_delete_password_label')}</label>
-                <input 
-                  type="password" 
-                  id="delete-password" 
-                  value={deletePassword}
-                  onChange={(e) => setDeletePassword(e.target.value)}
-                />
+                <input type="password" id="delete-password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} />
               </div>
               <button className="danger" onClick={handleDeleteAccount}>{t('settings_delete_account_button')}</button>
             </div>

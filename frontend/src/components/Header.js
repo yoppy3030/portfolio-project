@@ -1,28 +1,29 @@
-// Header.js
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next'; // Import useTranslation
+import logoImg from '../assets/logo.png';
+import '../Header.css';
 
-import React from "react";
-import { Link } from "react-router-dom";
-import logoImg from "../assets/logo.png"; // ロゴ画像パスを必要に応じて調整
-import "../Header.css"; // 新しいCSSファイルをインポート
+// Removed withTranslation HOC, using useTranslation hook instead
+function Header({ user, onLogout, theme, language }) { 
+  const { t } = useTranslation(); // Use the hook to get the t function
 
-function Header({ user, onLogout, theme }) {
-  // デフォルトアイコン
   const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNFNUU3RUIiLz4KPHBhdGggZD0iTTE2IDhDMTguMjA5MSA4IDIwIDkuNzkwODYgMjAgMTJDMjAgMTQuMjA5MSAxOC4yMDkxIDE2IDE2IDE2QzEzLjc5MDkgMTYgMTIgMTQuMjA5MSAxMiAxMkMxMiA5Ljc5MDg2IDEzLjc5MDkgOCAxNiA4WiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNOCAyNEM4IDIwLjY4NjMgMTAuNjg2MyAxOCAxNCAxOEgxOEMyMS4zMTM3IDE4IDI0IDIwLjY4NjMgMjQgMjRWMjZIOFYyNFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+Cg==";
 
   return (
     <header className={`header ${theme}-theme`}>
       <div className="header-main">
         <div className="header-left">
-          <img src={logoImg} alt="My Portfolio Builder" className="logo-img" />
+          <img src={logoImg} alt={t('logo_alt')} className="logo-img" />
         </div>
         {user ? (
           <nav className="header-nav">
-            <Link to="/dashboard">ダッシュボード</Link>
-            <Link to="/study">学習</Link>
-            <Link to="/hobby">趣味</Link>
-            <Link to="/school">学校</Link>
-            <Link to="/other">その他</Link>
-            <Link to="/search"><span role="img" aria-label="検索">🔍</span>検索</Link>
+            <Link to="/">{t('header_dashboard')}</Link>
+            <Link to="/study">{t('header_study')}</Link>
+            <Link to="/hobby">{t('header_hobby')}</Link>
+            <Link to="/school">{t('header_school')}</Link>
+            <Link to="/other">{t('header_other')}</Link>
+            <Link to="/search"><span role="img" aria-label={t('search_alt')}>🔍</span>{t('header_search')}</Link>
             
             <div className="user-menu-container">
               <img 
@@ -41,16 +42,16 @@ function Header({ user, onLogout, theme }) {
                   />
                   <span>{user?.name}</span>
                 </div>
-                <Link to="/settings" className="user-menu-item">設定</Link>
-                <button onClick={onLogout} className="user-menu-item">ログアウト</button>
+                <Link to="/settings" className="user-menu-item">{t('header_settings')}</Link>
+                <button onClick={onLogout} className="user-menu-item">{t('header_logout')}</button>
               </div>
             </div>
           </nav>
         ) : (
           <div className="header-right">
-            <Link to="/login">ログイン</Link>
-            <span>または</span>
-            <Link to="/register">新規登録</Link>
+            <Link to="/login">{t('header_login')}</Link>
+            <span>{t('header_or')}</span>
+            <Link to="/register">{t('header_register')}</Link>
           </div>
         )}
       </div>

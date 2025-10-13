@@ -1,18 +1,20 @@
 import React from 'react';
-import '../MainContent.css'; // Import the CSS file
+import { useTranslation } from 'react-i18next';
+import '../MainContent.css';
 
 function MainContent({ theme }) {
+    const { t } = useTranslation();
     return (
       <div className={`main-content ${theme}-theme`}>
-        <h1>あなたの活動を記録できるポートフォリオ管理サービス</h1>
+        <h1>{t('main_new_title')}</h1>
         <div className="main-description">
-          あなたの趣味・学習・学校活動などを記録できます
+          {t('main_new_subtitle')}
         </div>
         <div className="main-features">
-          <span>・成果物をガントチャートや一覧で可視化</span>
-          <span>・活動をシェアして交流も</span>
+          <span>{t('main_new_feature1')}</span>
+          <span>{t('main_new_feature2')}</span>
         </div>
-        <div className="sample-area">サンプル作品/キャプチャ</div>
+        <div className="sample-area">{t('main_new_sample')}</div>
         </div>
     );
   }

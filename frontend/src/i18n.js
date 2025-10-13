@@ -8,7 +8,7 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    lng: 'en', // Temporarily set initial language to English
+    lng: 'ja',
     fallbackLng: 'ja',
     debug: true,
     
