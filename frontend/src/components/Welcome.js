@@ -1,23 +1,28 @@
 // Welcome.js
 import React from "react";
 import { useTranslation } from 'react-i18next'; // Added
+import { useNavigate } from 'react-router-dom';
 import "../Welcome.css";
 
-export default function Welcome() {
+export default function Welcome({ user }) {
   const { t } = useTranslation(); // Added
+  const navigate = useNavigate();
   const handleTutorialClick = () => {
     // チュートリアルページへの遷移
-    window.location.href = '/Tutorial';
+    navigate('/Tutorial');
   };
 
   const handleStartClick = () => {
-    // topページへ遷移
-    window.location.href = '/top';
+    if (user && user.portfolioId) {
+      navigate(`/portfolio/${user.portfolioId}`);
+    } else {
+      navigate('/portfolio-builder');
+    }
   };
 
   const handleHelpClick = () => {
     // FAQ・ヘルプページへの遷移
-    window.location.href = '/FAQ';
+    navigate('/FAQ');
   };
 
   return (

@@ -10,6 +10,8 @@ import Welcome from "./Welcome";
 import Settings from "./Settings";
 import FAQ from "./FAQ";
 import Footer from "./Footer";
+import PortfolioBuilder from "./PortfolioBuilder";
+import Portfolio from "./Portfolio";
 import "../App.css";
 
 // Main logic moved to a child component of <Router>
@@ -36,14 +38,6 @@ function AppContent() {
           const userLang = userData.language || 'ja';
           i18n.changeLanguage(userLang);
           setLanguage(userLang);
-          
-          if (userData.theme === 'dark') {
-            document.body.classList.add('dark-theme');
-            document.body.classList.remove('light-theme');
-          } else {
-            document.body.classList.remove('dark-theme');
-            document.body.classList.add('light-theme');
-          }
         } else {
           localStorage.removeItem('token');
         }
@@ -59,6 +53,23 @@ function AppContent() {
       setIsLoading(false);
     }
   }, [i18n]); // Add i18n to dependency array
+
+  // Apply theme when user object changes
+  useEffect(() => {
+    if (user && user.theme) {
+      if (user.theme === 'dark') {
+        document.body.classList.add('dark-theme');
+        document.body.classList.remove('light-theme');
+      } else {
+        document.body.classList.add('light-theme');
+        document.body.classList.remove('dark-theme');
+      }
+    } else {
+      // Default theme if user or user.theme is not set
+      document.body.classList.add('light-theme');
+      document.body.classList.remove('dark-theme');
+    }
+  }, [user]);
 
   // Function to update login state
   const handleLogin = (userData, token) => {
@@ -106,6 +117,8 @@ function AppContent() {
         <Route path="/Welcome" element={<Welcome theme={user?.theme} />} />
         <Route path="/settings" element={<Settings user={user} onUserUpdate={handleUserUpdate} onLogout={handleLogout} onLanguageChange={handleLanguageChange} language={language} />} />
         <Route path="/faq" element={<FAQ />} />
+        <Route path="/portfolio-builder" element={<PortfolioBuilder theme={user?.theme} />} />
+        <Route path="/portfolio/:portfolioId" element={<Portfolio theme={user?.theme} />} />
       </Routes>
       <Footer theme={user?.theme} />
     </div>

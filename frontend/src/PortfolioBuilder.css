@@ -1,0 +1,104 @@
+/* frontend/src/PortfolioBuilder.css */
+.portfolio-builder-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  background-color: #f4f7f6;
+}
+
+.portfolio-builder-content {
+  width: 100%;
+  max-width: 800px;
+  text-align: center;
+}
+
+.portfolio-builder-title {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+
+.portfolio-builder-subtitle {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 40px;
+}
+
+.portfolio-form {
+  background: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  text-align: left;
+}
+
+.form-group {
+  margin-bottom: 25px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.form-group input[type="text"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.template-options {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.template-card {
+  flex: 1;
+  padding: 20px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.template-card:hover {
+  border-color: #007bff;
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.1);
+}
+
+.template-card.selected {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5);
+  background-color: #e7f3ff;
+}
+
+.template-card h3 {
+  margin-top: 0;
+  font-size: 1.2rem;
+}
+
+.template-card p {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.create-portfolio-btn {
+  width: 100%;
+  padding: 15px;
+  font-size: 1.1rem;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.create-portfolio-btn:hover {
+  background-color: #0056b3;
+}

@@ -124,5 +124,20 @@
   "settings_message_general_update_failed": "一般設定の更新に失敗しました",
   "settings_message_account_deleted": "アカウントが正常に削除されました。",
   "settings_message_account_delete_failed": "アカウントの削除に失敗しました",
-  "settings_confirm_delete_account": "本当にアカウントを削除しますか？この操作は元に戻せません。"
+  "settings_confirm_delete_account": "本当にアカウントを削除しますか？この操作は元に戻せません。",
+  "portfolio_builder_title": "新規ポートフォリオ作成",
+  "portfolio_builder_subtitle": "ポートフォリオの作成を始めましょう。",
+  "portfolio_title_label": "ポートフォリオのタイトル",
+  "portfolio_title_placeholder": "例：私の素敵な作品集",
+  "template_selection_label": "テンプレートを選択",
+  "template_modern_title": "モダン",
+  "template_modern_desc": "洗練されたスタイリッシュなデザイン。",
+  "template_classic_title": "クラシック",
+  "template_classic_desc": "時代を超越したエレガントなレイアウト。",
+  "template_minimalist_title": "ミニマリスト",
+  "template_minimalist_desc": "クリーンでシンプルなデザイン。",
+  "create_portfolio_btn": "ポートフォリオを作成",
+  "portfolio_title_required": "ポートフォリオのタイトルは必須です。",
+  "template_selection_required": "テンプレートを選択してください。",
+  "portfolio_creation_success": "{{title}} ({{template}}テンプレート) のポートフォリオが作成されました！"
 }

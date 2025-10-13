@@ -14,11 +14,13 @@ function Header({ user, onLogout, theme, language }) {
     <header className={`header ${theme}-theme`}>
       <div className="header-main">
         <div className="header-left">
-          <img src={logoImg} alt={t('logo_alt')} className="logo-img" />
+          <Link to="/">
+            <img src={logoImg} alt={t('logo_alt')} className="logo-img" />
+          </Link>
         </div>
         {user ? (
           <nav className="header-nav">
-            <Link to="/">{t('header_dashboard')}</Link>
+            <Link to={user && user.portfolioId ? `/portfolio/${user.portfolioId}` : '/portfolio-builder'}>{t('header_dashboard')}</Link>
             <Link to="/study">{t('header_study')}</Link>
             <Link to="/hobby">{t('header_hobby')}</Link>
             <Link to="/school">{t('header_school')}</Link>

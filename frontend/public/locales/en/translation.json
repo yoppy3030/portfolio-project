@@ -124,5 +124,20 @@
   "settings_message_general_update_failed": "Failed to update general settings.",
   "settings_message_account_deleted": "Account deleted successfully.",
   "settings_message_account_delete_failed": "Failed to delete account.",
-  "settings_confirm_delete_account": "Are you sure you want to delete your account? This action cannot be undone."
+  "settings_confirm_delete_account": "Are you sure you want to delete your account? This action cannot be undone.",
+  "portfolio_builder_title": "Create New Portfolio",
+  "portfolio_builder_subtitle": "Let's start building your portfolio.",
+  "portfolio_title_label": "Portfolio Title",
+  "portfolio_title_placeholder": "e.g., My Awesome Creations",
+  "template_selection_label": "Select a Template",
+  "template_modern_title": "Modern",
+  "template_modern_desc": "A sleek and stylish design.",
+  "template_classic_title": "Classic",
+  "template_classic_desc": "A timeless and elegant layout.",
+  "template_minimalist_title": "Minimalist",
+  "template_minimalist_desc": "A clean and simple design.",
+  "create_portfolio_btn": "Create Portfolio",
+  "portfolio_title_required": "Portfolio title is required.",
+  "template_selection_required": "Please select a template.",
+  "portfolio_creation_success": "Portfolio \"{{title}}\" ({{template}} template) created successfully!"
 }

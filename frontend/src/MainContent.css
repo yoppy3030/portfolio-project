@@ -59,3 +59,19 @@ body.dark-theme .sample-area {
   background: #555 !important;
   color: #eee !important;
 }
+
+.create-portfolio-main-btn {
+  display: inline-block;
+  margin-top: 30px;
+  padding: 12px 25px;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 1.1em;
+  transition: background-color 0.3s ease;
+}
+
+.create-portfolio-main-btn:hover {
+  background-color: #0056b3;
+}
