@@ -1,8 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import '../MainContent.css';
 
-function MainContent({ theme }) {
+function MainContent({ user, theme }) {
     const { t } = useTranslation();
     return (
       <div className={`main-content ${theme}-theme`}>
@@ -14,6 +15,13 @@ function MainContent({ theme }) {
           <span>{t('main_new_feature1')}</span>
           <span>{t('main_new_feature2')}</span>
         </div>
+        {user && (
+          <div className="main-actions">
+            <Link to="/portfolio-builder" className="create-portfolio-button">
+              {t('create_new_portfolio')}
+            </Link>
+          </div>
+        )}
         <div className="sample-area">{t('main_new_sample')}</div>
         </div>
     );

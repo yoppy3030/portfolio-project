@@ -568,6 +568,260 @@ app.put('/api/general-settings', authenticateToken, (req, res) => {
   }
 });
 
+// 新規ポートフォリオ作成API
+// Required table schema for 'portfolios' table:
+// CREATE TABLE portfolios (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   user_id INT NOT NULL,
+//   title VARCHAR(255) NOT NULL,
+//   template VARCHAR(255) NOT NULL,
+//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+// );
+app.post('/api/portfolios', authenticateToken, (req, res) => {
+  try {
+    const { id: userId } = req.user;
+    const { title, template } = req.body;
+
+    if (!title || !template) {
+      return res.status(400).json({
+        success: false,
+        error: 'タイトルとテンプレートは必須です。'
+      });
+    }
+
+    db.query(
+      'INSERT INTO portfolios (user_id, title, template) VALUES (?, ?, ?)',
+      [userId, title, template],
+      (err, result) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({
+            success: false,
+            error: 'ポートフォリオの作成中にデータベースエラーが発生しました。'
+          });
+        }
+
+        const newPortfolioId = result.insertId;
+        res.status(201).json({
+          success: true,
+          message: 'ポートフォリオが正常に作成されました。',
+          portfolio: {
+            id: newPortfolioId,
+            user_id: userId,
+            title: title,
+            template: template
+          }
+        });
+      }
+    );
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({
+      success: false,
+      error: 'サーバーエラーが発生しました'
+    });
+  }
+});
+
+// ポートフォリオ詳細取得API
+app.get('/api/portfolios/:portfolioId', authenticateToken, (req, res) => {
+  try {
+    const { portfolioId } = req.params;
+    const { id: userId } = req.user;
+
+    // First, get portfolio details and verify ownership
+    db.query('SELECT * FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId], (err, portfolioResults) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+      }
+
+      if (portfolioResults.length === 0) {
+        return res.status(404).json({ success: false, error: 'ポートフォリオが見つからないか、アクセス権がありません。' });
+      }
+
+      const portfolio = portfolioResults[0];
+
+      // Next, get projects for this portfolio
+      db.query('SELECT * FROM projects WHERE portfolio_id = ? ORDER BY created_at DESC', [portfolioId], (err, projectResults) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({ success: false, error: 'プロジェクトの取得中にデータベースエラーが発生しました。' });
+        }
+
+        portfolio.projects = projectResults;
+        res.json({ success: true, portfolio: portfolio });
+      });
+    });
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// 新規プロジェクト追加API
+// Required table schema for 'projects' table:
+// CREATE TABLE projects (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   portfolio_id INT NOT NULL,
+//   title VARCHAR(255) NOT NULL,
+//   description TEXT,
+//   image_data LONGTEXT,
+//   background_color VARCHAR(7),
+//   project_url VARCHAR(2083),
+//   github_url VARCHAR(2083),
+//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//   FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE
+// );
+app.post('/api/portfolios/:portfolioId/projects', authenticateToken, (req, res) => {
+  try {
+    const { portfolioId } = req.params;
+    const { id: userId } = req.user;
+    const { title, description, imageData, backgroundColor } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ success: false, error: 'プロジェクトタイトルは必須です。' });
+    }
+
+    // Verify the user owns the portfolio they are adding a project to
+    db.query('SELECT id FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId], (err, results) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+      }
+      if (results.length === 0) {
+        return res.status(403).json({ success: false, error: 'このポートフォリオにプロジェクトを追加する権限がありません。' });
+      }
+
+      const newProject = {
+        portfolio_id: portfolioId,
+        title: title,
+        description: description || null,
+        image_data: imageData || null,
+        background_color: backgroundColor || null
+      };
+
+      db.query('INSERT INTO projects SET ?', newProject, (err, result) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({ success: false, error: 'プロジェクトの作成中にデータベースエラーが発生しました。' });
+        }
+        res.status(201).json({ success: true, message: 'プロジェクトが追加されました', projectId: result.insertId });
+      });
+    });
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// Get a single project
+app.get('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (req, res) => {
+  try {
+    const { portfolioId, projectId } = req.params;
+    const { id: userId } = req.user;
+
+    // First, verify the user owns the portfolio
+    db.query('SELECT id FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId], (err, results) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+      }
+      if (results.length === 0) {
+        return res.status(403).json({ success: false, error: 'このポートフォリオにアクセスする権限がありません。' });
+      }
+
+      // Now, get the project
+      db.query('SELECT * FROM projects WHERE id = ? AND portfolio_id = ?', [projectId, portfolioId], (err, projectResults) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({ success: false, error: 'プロジェクトの取得中にデータベースエラーが発生しました。' });
+        }
+
+        if (projectResults.length === 0) {
+          return res.status(404).json({ success: false, error: 'プロジェクトが見つかりません。' });
+        }
+
+        res.json({ success: true, project: projectResults[0] });
+      });
+    });
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// Update a project
+app.put('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (req, res) => {
+  try {
+    const { portfolioId, projectId } = req.params;
+    const { id: userId } = req.user;
+    const { title, description, imageData, backgroundColor } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ success: false, error: 'プロジェクトタイトルは必須です。' });
+    }
+
+    // First, verify the user owns the portfolio
+    db.query('SELECT id FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId], (err, results) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+      }
+      if (results.length === 0) {
+        return res.status(403).json({ success: false, error: 'このポートフォリオにアクセスする権限がありません。' });
+      }
+
+      const updatedProject = {
+        title: title,
+        description: description || null,
+        image_data: imageData || null,
+        background_color: backgroundColor || null
+      };
+
+      db.query('UPDATE projects SET ? WHERE id = ? AND portfolio_id = ?', [updatedProject, projectId, portfolioId], (err, result) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({ success: false, error: 'プロジェクトの更新中にデータベースエラーが発生しました。' });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ success: false, error: 'プロジェクトが見つかりません。' });
+        }
+
+        res.json({ success: true, message: 'プロジェクトが更新されました' });
+      });
+    });
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// ユーザーの既存ポートフォリオ確認API
+app.get('/api/user/portfolio', authenticateToken, (req, res) => {
+  try {
+    const { id: userId } = req.user;
+
+    db.query('SELECT id FROM portfolios WHERE user_id = ? LIMIT 1', [userId], (err, results) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+      }
+
+      if (results.length > 0) {
+        res.json({ success: true, portfolioId: results[0].id });
+      } else {
+        res.status(404).json({ success: false, message: 'ポートフォリオが見つかりません。' });
+      }
+    });
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
 // 認証コード送信API
 app.post('/api/send-verification-code', async (req, res) => {
   try {

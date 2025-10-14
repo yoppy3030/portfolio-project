@@ -12,6 +12,7 @@ import FAQ from "./FAQ";
 import Footer from "./Footer";
 import PortfolioBuilder from "./PortfolioBuilder";
 import Portfolio from "./Portfolio";
+import ProjectPage from "./ProjectPage";
 import "../App.css";
 
 // Main logic moved to a child component of <Router>
@@ -110,7 +111,7 @@ function AppContent() {
     <div className="wrapper">
       <Header user={user} onLogout={handleLogout} theme={user?.theme} language={language} />
       <Routes>
-        <Route path="/" element={<MainContent theme={user?.theme} />} />
+        <Route path="/" element={<MainContent user={user} theme={user?.theme} />} />
         <Route path="/register" element={<RegisterForm theme={user?.theme} />} />
         <Route path="/login" element={<LoginForm onLogin={handleLogin} theme={user?.theme} />} />
         <Route path="/password-reset" element={<PasswordReset theme={user?.theme} />} />
@@ -119,6 +120,7 @@ function AppContent() {
         <Route path="/faq" element={<FAQ />} />
         <Route path="/portfolio-builder" element={<PortfolioBuilder theme={user?.theme} />} />
         <Route path="/portfolio/:portfolioId" element={<Portfolio theme={user?.theme} />} />
+        <Route path="/portfolio/:portfolioId/project/:projectId" element={<ProjectPage theme={user?.theme} />} />
       </Routes>
       <Footer theme={user?.theme} />
     </div>

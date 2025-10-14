@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next'; // Import useTranslation
 import logoImg from '../assets/logo.png';
 import '../Header.css';
@@ -7,8 +7,12 @@ import '../Header.css';
 // Removed withTranslation HOC, using useTranslation hook instead
 function Header({ user, onLogout, theme, language }) { 
   const { t } = useTranslation(); // Use the hook to get the t function
+  const navigate = useNavigate(); // Initialize useNavigate
+  const location = useLocation(); // Get current location
 
   const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNFNUU3RUIiLz4KPHBhdGggZD0iTTE2IDhDMTguMjA5MSA4IDIwIDkuNzkwODYgMjAgMTJDMjAgMTQuMjA5MSAxOC4yMDkxIDE2IDE2IDE2QzEzLjc5MDkgMTYgMTIgMTQuMjA5MSAxMiAxMkMxMiA5Ljc5MDg2IDEzLjc5MDkgOCAxNiA4WiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNOCAyNEM4IDIwLjY4NjMgMTAuNjg2MyAxOCAxNCAxOEgxOEMyMS4zMTM3IDE4IDI0IDIwLjY4NjMgMjQgMjRWMjZIOFYyNFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+Cg==";
+
+  const showBackButton = location.pathname !== '/' && location.pathname !== '/login' && location.pathname !== '/register';
 
   return (
     <header className={`header ${theme}-theme`}>
@@ -26,6 +30,11 @@ function Header({ user, onLogout, theme, language }) {
             <Link to="/school">{t('header_school')}</Link>
             <Link to="/other">{t('header_other')}</Link>
             <Link to="/search"><span role="img" aria-label={t('search_alt')}>🔍</span>{t('header_search')}</Link>
+            {showBackButton && (
+              <button onClick={() => navigate(-1)} className="back-button">
+                <i className="material-icons">arrow_back</i>
+              </button>
+            )}
             
             <div className="user-menu-container">
               <img 

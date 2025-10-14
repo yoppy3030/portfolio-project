@@ -71,3 +71,67 @@
 .header.dark-theme .user-menu-item:hover {
   background-color: #686868;
 }
+
+.back-button {
+  background-color: #6c757d; /* Gray background */
+  border: none;
+  cursor: pointer;
+  font-size: 1.8em; /* Icon size */
+  display: flex;
+  align-items: center;
+  padding: 5px 10px; /* Adjust padding for button look */
+  border-radius: 5px; /* Rounded corners */
+  margin-top: 5px; /* Move down slightly */
+}
+
+.back-button i {
+  color: white; /* White arrow icon */
+}
+
+.back-button:hover {
+  opacity: 0.8;
+}
+
+/* Remove theme-specific color for back-button as icon color is now white */
+.header.light-theme .back-button {
+  /* background-color: #6c757d; */
+}
+
+.header.dark-theme .back-button {
+  /* background-color: #6c757d; */
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Add some spacing between nav items */
+}
+
+.header-left .logo-img {
+  /* No specific margin-left needed here anymore as back button is moved */
+}
+
+.header.light-theme {
+  background-color: #CCEEFA;
+  color: #000; /* Adjust text color for light theme header */
+}
+
+.header.dark-theme {
+  background-color: #222;
+  color: #eee; /* Adjust text color for dark theme header */
+}
+
+.header.light-theme .header-nav a,
+.header.light-theme .header-right a {
+  color: #000;
+}
+
+.header.dark-theme .header-nav a,
+.header.dark-theme .header-right a {
+  color: #eee;
+}

@@ -1,13 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import '../PortfolioBuilder.css';
+import modernTemplate from '../assets/modern-template.svg';
+import classicTemplate from '../assets/classic-template.svg';
+import minimalistTemplate from '../assets/minimalist-template.svg';
 
 export default function PortfolioBuilder({ theme }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [portfolioTitle, setPortfolioTitle] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState(null);
 
-  const handleCreatePortfolio = () => {
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return; // Stop execution if not logged in
+    }
+
+    const checkForExistingPortfolio = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/user/portfolio', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            // Portfolio exists, redirect to it
+            navigate(`/portfolio/${data.portfolioId}`);
+          }
+          // If !data.success or response is 404, do nothing and show the builder.
+        }
+      } catch (error) {
+        console.error('Error checking for existing portfolio:', error);
+        // If there's an error, just proceed to show the builder page.
+      }
+    };
+
+    checkForExistingPortfolio();
+  }, [navigate]);
+
+  const handleCreatePortfolio = async () => {
     if (!portfolioTitle) {
       alert(t('portfolio_title_required'));
       return;
@@ -16,12 +51,31 @@ export default function PortfolioBuilder({ theme }) {
       alert(t('template_selection_required'));
       return;
     }
-    console.log('Creating portfolio with:');
-    console.log('Title:', portfolioTitle);
-    console.log('Template:', selectedTemplate);
-    // Here you would typically send this data to a backend API
-    alert(t('portfolio_creation_success', { title: portfolioTitle, template: selectedTemplate }));
-    // Redirect to the new portfolio page or dashboard
+
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await fetch('http://localhost:5000/api/portfolios', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title: portfolioTitle, template: selectedTemplate }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(t('portfolio_creation_success', { title: portfolioTitle, template: selectedTemplate }));
+        navigate(`/portfolio/${data.portfolio.id}`);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to create portfolio:', error);
+      alert('Failed to create portfolio. Please try again later.');
+    }
   };
 
   return (
@@ -49,6 +103,7 @@ export default function PortfolioBuilder({ theme }) {
                 className={`template-card ${selectedTemplate === 'modern' ? 'selected' : ''}`}
                 onClick={() => setSelectedTemplate('modern')}
               >
+                <img src={modernTemplate} alt={t('template_modern_title')} className="template-preview" />
                 <h3>{t('template_modern_title')}</h3>
                 <p>{t('template_modern_desc')}</p>
               </div>
@@ -56,6 +111,7 @@ export default function PortfolioBuilder({ theme }) {
                 className={`template-card ${selectedTemplate === 'classic' ? 'selected' : ''}`}
                 onClick={() => setSelectedTemplate('classic')}
               >
+                <img src={classicTemplate} alt={t('template_classic_title')} className="template-preview" />
                 <h3>{t('template_classic_title')}</h3>
                 <p>{t('template_classic_desc')}</p>
               </div>
@@ -63,6 +119,7 @@ export default function PortfolioBuilder({ theme }) {
                 className={`template-card ${selectedTemplate === 'minimalist' ? 'selected' : ''}`}
                 onClick={() => setSelectedTemplate('minimalist')}
               >
+                <img src={minimalistTemplate} alt={t('template_minimalist_title')} className="template-preview" />
                 <h3>{t('template_minimalist_title')}</h3>
                 <p>{t('template_minimalist_desc')}</p>
               </div>

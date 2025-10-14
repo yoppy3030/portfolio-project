@@ -1,0 +1,32 @@
+.project-detail-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.project-header {
+  margin-bottom: 40px;
+}
+
+.project-header h1 {
+  font-size: 3em;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.project-header p {
+  font-size: 1.2em;
+  color: #666;
+  line-height: 1.6;
+}
+
+.project-content {
+  width: 100%;
+  /* This can be further styled for flexible arrangement, e.g., using grid or flexbox */
+  /* For now, it will take full width and content inside can be styled */
+  text-align: left; /* Align content within this section to left by default */
+}

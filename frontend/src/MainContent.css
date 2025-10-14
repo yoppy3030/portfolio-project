@@ -1,77 +1,39 @@
 .main-content {
-  text-align: center;
-  padding: 40px 32px;
-}
+    padding: 2rem;
+    text-align: center;
+  }
+  
+  .main-description {
+    margin-bottom: 1rem;
+  }
+  
+  .main-features {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .sample-area {
+    background-color: #f0f0f0;
+    padding: 2rem;
+    border-radius: 8px;
+  }
 
-.main-content.light-theme {
-  color: #333;
-}
+  .main-actions {
+    margin-bottom: 2rem;
+  }
+  
+  .create-portfolio-button {
+    background-color: #1976D2;
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 1.2rem;
+    transition: background-color 0.3s;
+  }
 
-body.dark-theme .main-content {
-  color: #eee !important;
-}
-
-.main-content h1 {
-  /* Default light theme color */
-  color: #333;
-}
-
-body.dark-theme .main-content h1 {
-  color: #eee !important;
-}
-
-.main-description {
-  margin-top: 28px;
-  margin-bottom: 18px;
-  font-size: 1.1em;
-  /* Default light theme color */
-  color: #333;
-}
-
-body.dark-theme .main-description {
-  color: #ccc !important;
-}
-
-.main-features {
-  display: flex;
-  justify-content: center;
-  gap: 32px;
-  font-size: 1.07em;
-  /* Default light theme color */
-  color: #333;
-}
-
-body.dark-theme .main-features {
-  color: #ccc !important;
-}
-
-.sample-area {
-  background: #CCEEFA;
-  margin: 36px auto 0 auto;
-  padding: 44px 0;
-  border-radius: 6px;
-  width: 82%;
-  font-size: 1.1em;
-  color: #222;
-}
-
-body.dark-theme .sample-area {
-  background: #555 !important;
-  color: #eee !important;
-}
-
-.create-portfolio-main-btn {
-  display: inline-block;
-  margin-top: 30px;
-  padding: 12px 25px;
-  background-color: #007bff;
-  color: white;
-  text-decoration: none;
-  border-radius: 5px;
-  font-size: 1.1em;
-  transition: background-color 0.3s ease;
-}
-
-.create-portfolio-main-btn:hover {
-  background-color: #0056b3;
-}
+  .create-portfolio-button:hover {
+    background-color: #1565C0;
+  }
