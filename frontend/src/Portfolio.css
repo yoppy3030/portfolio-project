@@ -50,20 +50,45 @@
   background-color: #5a6268;
 }
 
-/* Projects Grid */
-.projects-grid {
+/* Project Grid Styles */
+.project-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  grid-auto-rows: 200px;
+  gap: 1rem;
 }
 
+/* Style your items */
 .project-card {
+  position: relative;
   background: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  overflow: hidden;
   box-shadow: 0 2px 5px rgba(0,0,0,0.05);
   transition: transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem;
+  background-size: cover;
+  background-position: center;
+}
+
+.project-card-overlay {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.05); /* Even lighter overlay */
+  z-index: 1;
+  transition: background-color 0.3s;
+}
+
+.project-card:hover .project-card-overlay {
+  background-color: rgba(0, 0, 0, 0.1); /* Even lighter hover overlay */
 }
 
 .project-card:hover {
@@ -71,21 +96,56 @@
   box-shadow: 0 8px 15px rgba(0,0,0,0.1);
 }
 
-.project-card img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
+.project-card h3, .project-card p {
+    position: relative;
+    z-index: 2;
+    color: white; /* Default color */
 }
 
 .project-card h3 {
   font-size: 1.25rem;
-  margin: 1rem 1rem 0.5rem 1rem;
+  margin: 0;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
 .project-card p {
-  font-size: 1rem;
-  color: #555;
-  margin: 0 1rem 1rem 1rem;
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+/* Individual Card Sizes */
+.project-card.small {
+  grid-column: span 1;
+  grid-row: span 1;
+}
+
+.project-card.medium {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.project-card.large {
+  grid-column: span 6;
+  grid-row: span 2;
+}
+
+
+
+
+
+.color-picker-wrapper {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px;
+  display: inline-block;
+}
+
+.color-picker-wrapper input[type="color"] {
+  width: 100%;
+  height: 30px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 /* Add Project Modal */
@@ -128,7 +188,8 @@
 }
 
 .modal-content .form-group input,
-.modal-content .form-group textarea {
+.modal-content .form-group textarea,
+.modal-content .form-group select {
   width: 100%;
   padding: 0.8rem;
   border: 1px solid #ccc;
@@ -148,28 +209,82 @@
   margin-top: 2rem;
 }
 
-.project-card-wrapper {
-  position: relative;
-  /* Add other styling for the wrapper if needed */
-}
-
-.edit-project-icon {
+.project-card-actions {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  background: none;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 5px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.project-card:hover .project-card-actions {
+  opacity: 1;
+}
+
+.project-action-icon {
+  background: rgba(0,0,0,0.5);
+  color: white;
   border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  display: none; /* Hidden by default */
-  z-index: 10; /* Ensure it's above the card content */
+  transition: background-color 0.2s;
 }
 
-.project-card-wrapper:hover .edit-project-icon {
-  display: block; /* Show on hover */
+.project-action-icon.delete-button {
+  background-color: red;
 }
 
-.edit-project-icon img {
-  width: 24px;
-  height: 24px;
-  /* Adjust icon size as needed */
+.project-action-icon:hover {
+    background: rgba(0,0,0,0.7);
+}
+
+.project-action-icon i {
+    font-size: 20px;
+}
+
+/* Responsive font sizes */
+.project-card.small h3 {
+  font-size: 16px;
+}
+
+.project-card.small p {
+  font-size: 12px;
+}
+
+.project-card.medium h3 {
+  font-size: 24px;
+}
+
+.project-card.medium p {
+  font-size: 16px;
+}
+
+.project-card.large h3 {
+  font-size: 36px;
+}
+
+.project-card.large p {
+  font-size: 24px;
+}
+
+.no-projects-message {
+  text-align: center;
+  padding: 4rem 2rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin-top: 2rem;
+}
+
+.no-projects-message p {
+  font-size: 1.2rem;
+  color: #555;
+  margin: 0;
 }

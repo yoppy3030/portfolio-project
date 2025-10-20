@@ -75,7 +75,8 @@ export default function RegisterForm({ theme }) {
           name: form.name,
           email: form.email,
           password: form.password,
-          iconUrl: form.icon // Base64エンコードされたアイコン
+          iconUrl: form.icon, // Base64エンコードされたアイコン
+          bio: form.profile
         })
       });
 
@@ -178,7 +179,7 @@ export default function RegisterForm({ theme }) {
             />
           </div>
           <div className="input-row">
-            <label htmlFor="profile">プロフィール</label>
+            <label htmlFor="profile">自己紹介</label>
             <input
               id="profile"
               name="profile"
