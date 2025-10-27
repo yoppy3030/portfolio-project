@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import Header from "./Header";
 import MainContent from "./MainContent";
@@ -19,9 +19,21 @@ import "../App.css";
 function AppContent() {
   const { t, i18n } = useTranslation(); // Get i18n instance
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [language, setLanguage] = useState(i18n.language);
+  const [activeTemplate, setActiveTemplate] = useState(null);
+
+  const handleTemplateChange = useCallback((templateName) => {
+    setActiveTemplate(templateName);
+  }, []);
+
+  useEffect(() => {
+    if (!location.pathname.startsWith('/portfolio/')) {
+      setActiveTemplate(null);
+    }
+  }, [location]);
 
   // Restore login state from JWT token on page load
   useEffect(() => {
@@ -108,8 +120,8 @@ function AppContent() {
   }
 
   return (
-    <div className="wrapper">
-      <Header user={user} onLogout={handleLogout} theme={user?.theme} language={language} />
+    <div className={`wrapper ${activeTemplate ? activeTemplate + '-template' : ''}`}>
+      <Header user={user} onLogout={handleLogout} theme={user?.theme} language={language} activeTemplate={activeTemplate} />
       <Routes>
         <Route path="/" element={<MainContent user={user} theme={user?.theme} />} />
         <Route path="/register" element={<RegisterForm theme={user?.theme} />} />
@@ -119,10 +131,10 @@ function AppContent() {
         <Route path="/settings" element={<Settings user={user} onUserUpdate={handleUserUpdate} onLogout={handleLogout} onLanguageChange={handleLanguageChange} language={language} />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/portfolio-builder" element={<PortfolioBuilder theme={user?.theme} />} />
-        <Route path="/portfolio/:portfolioId" element={<Portfolio theme={user?.theme} />} />
+        <Route path="/portfolio/:portfolioId" element={<Portfolio theme={user?.theme} onTemplateChange={handleTemplateChange} />} />
         <Route path="/portfolio/:portfolioId/project/:projectId" element={<ProjectPage theme={user?.theme} />} />
       </Routes>
-      <Footer theme={user?.theme} />
+      <Footer theme={user?.theme} activeTemplate={activeTemplate} />
     </div>
   );
 }

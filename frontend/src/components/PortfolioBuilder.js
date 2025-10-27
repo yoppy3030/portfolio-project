@@ -79,7 +79,7 @@ export default function PortfolioBuilder({ theme }) {
   };
 
   return (
-    <div className={`portfolio-builder-container ${theme}-theme`}>
+    <div className={`portfolio-builder-container ${theme}-theme ${selectedTemplate ? `template-${selectedTemplate}` : ''}`}>
       <div className="portfolio-builder-content">
         <h1 className="portfolio-builder-title">{t('portfolio_builder_title')}</h1>
         <p className="portfolio-builder-subtitle">{t('portfolio_builder_subtitle')}</p>

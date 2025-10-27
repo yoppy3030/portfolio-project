@@ -111,3 +111,96 @@
 .create-portfolio-btn:hover {
   background-color: #0056b3;
 }
+
+/* Template-specific styles (v2) */
+.portfolio-builder-container.template-modern {
+  background-color: #111827; /* Deep dark blue */
+  color: #E5E7EB; /* Light grey text */
+}
+
+.portfolio-builder-container.template-modern .portfolio-builder-title {
+  color: #FFFFFF;
+  font-weight: 700;
+  letter-spacing: 0.05em; /* Wider spacing for a modern feel */
+}
+
+.portfolio-builder-container.template-modern .portfolio-builder-subtitle {
+  color: #9CA3AF; /* Softer grey for subtitle */
+}
+
+.portfolio-builder-container.template-modern .portfolio-form {
+  background: #1F2937; /* Slightly lighter dark blue for the form */
+  border: 1px solid #374151;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.portfolio-builder-container.template-modern .form-group label {
+  color: #D1D5DB; /* Lighter text for labels */
+}
+
+.portfolio-builder-container.template-modern .form-group input[type="text"] {
+  background-color: #111827;
+  color: #E5E7EB;
+  border: 1px solid #4B5563;
+  border-radius: 6px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.portfolio-builder-container.template-modern .form-group input[type="text"]:focus {
+  border-color: #3B82F6; /* Bright blue on focus */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+  outline: none;
+}
+
+.portfolio-builder-container.template-modern .template-card {
+  background-color: #374151; /* A medium dark grey */
+  border: 1px solid #4B5563;
+  transition: all 0.3s ease;
+}
+
+.portfolio-builder-container.template-modern .template-card:hover {
+  background-color: #4B5563;
+  border-color: #6B7280;
+}
+
+.portfolio-builder-container.template-modern .template-card.selected {
+  border-color: #3B82F6; /* Bright blue border for selected */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+  background-color: rgba(59, 130, 246, 0.1); /* Translucent blue background */
+}
+
+.portfolio-builder-container.template-modern .template-card h3 {
+  color: #F9FAFB; /* Almost white for card titles */
+}
+
+.portfolio-builder-container.template-modern .template-card p {
+  color: #9CA3AF; /* Softer grey for card descriptions */
+}
+
+.portfolio-builder-container.template-modern .create-portfolio-btn {
+    background-color: #3B82F6; /* Bright blue for the primary action */
+    font-weight: 600;
+}
+
+.portfolio-builder-container.template-modern .create-portfolio-btn:hover {
+    background-color: #2563EB; /* Slightly darker blue on hover */
+}
+
+.portfolio-builder-container.template-classic {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.portfolio-builder-container.template-classic .portfolio-form {
+  background: #fdfdfd;
+}
+
+.portfolio-builder-container.template-minimalist {
+  background-color: #ffffff;
+  color: #222;
+}
+
+.portfolio-builder-container.template-minimalist .portfolio-form {
+  box-shadow: none;
+  border: 1px solid #eee;
+}

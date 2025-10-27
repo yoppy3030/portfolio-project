@@ -660,8 +660,101 @@ app.get('/api/portfolios/:portfolioId', authenticateToken, (req, res) => {
           return res.status(500).json({ success: false, error: 'プロジェクトの取得中にデータベースエラーが発生しました。' });
         }
 
-        portfolio.projects = projectResults;
+        // Add a fallback for layout properties if they don't exist
+        const projectsWithLayout = projectResults.map(p => ({
+          ...p,
+          layout_x: p.layout_x,
+          layout_y: p.layout_y,
+          layout_w: p.layout_w,
+          layout_h: p.layout_h,
+        }));
+
+        portfolio.projects = projectsWithLayout;
         res.json({ success: true, portfolio: portfolio });
+      });
+    });
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// ポートフォリオ削除API
+app.delete('/api/portfolios/:portfolioId', authenticateToken, (req, res) => {
+  try {
+    const { portfolioId } = req.params;
+    const { id: userId } = req.user;
+
+    db.getConnection((err, connection) => {
+      if (err) {
+        console.error('データベース接続エラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+      }
+
+      connection.beginTransaction(err => {
+        if (err) {
+          connection.release();
+          console.error('トランザクション開始エラー:', err);
+          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+        }
+
+        // 1. Verify ownership
+        connection.query('SELECT id FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId], (err, results) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              console.error('データベースエラー:', err);
+              res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+            });
+          }
+          if (results.length === 0) {
+            return connection.rollback(() => {
+              connection.release();
+              res.status(403).json({ success: false, error: 'このポートフォリオを削除する権限がありません。' });
+            });
+          }
+
+          // 2. Delete associated projects
+          connection.query('DELETE FROM projects WHERE portfolio_id = ?', [portfolioId], (err, result) => {
+            if (err) {
+              return connection.rollback(() => {
+                connection.release();
+                console.error('データベースエラー:', err);
+                res.status(500).json({ success: false, error: 'プロジェクトの削除中にエラーが発生しました。' });
+              });
+            }
+
+            // 3. Delete the portfolio
+            connection.query('DELETE FROM portfolios WHERE id = ?', [portfolioId], (err, result) => {
+              if (err) {
+                return connection.rollback(() => {
+                  connection.release();
+                  console.error('データベースエラー:', err);
+                  res.status(500).json({ success: false, error: 'ポートフォリオの削除中にエラーが発生しました。' });
+                });
+              }
+
+              if (result.affectedRows === 0) {
+                return connection.rollback(() => {
+                  connection.release();
+                  res.status(404).json({ success: false, error: 'ポートフォリオが見つかりません。' });
+                });
+              }
+
+              connection.commit(err => {
+                if (err) {
+                  return connection.rollback(() => {
+                    connection.release();
+                    console.error('トランザクションコミットエラー:', err);
+                    res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+                  });
+                }
+                connection.release();
+                res.json({ success: true, message: 'ポートフォリオが正常に削除されました。' });
+              });
+            });
+          });
+        });
       });
     });
   } catch (error) {
@@ -693,7 +786,7 @@ app.post('/api/portfolios/:portfolioId/projects', authenticateToken, (req, res) 
   try {
     const { portfolioId } = req.params;
     const { id: userId } = req.user;
-    const { title, description, imageData, backgroundColor, size } = req.body;
+    const { title, description, imageData, backgroundColor } = req.body;
 
     if (!title) {
       return res.status(400).json({ success: false, error: 'プロジェクトタイトルは必須です。' });
@@ -724,8 +817,7 @@ app.post('/api/portfolios/:portfolioId/projects', authenticateToken, (req, res) 
           description: description || null,
           image_data: imageData || null,
           background_color: backgroundColor || null,
-          project_order: newOrder,
-          size: size || 'medium'
+          project_order: newOrder
         };
 
         db.query('INSERT INTO projects SET ?', newProject, (err, result) => {
@@ -786,7 +878,7 @@ app.put('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (
   try {
     const { portfolioId, projectId } = req.params;
     const { id: userId } = req.user;
-    const { title, description, imageData, backgroundColor, textColor, size } = req.body;
+    const { title, description, imageData, backgroundColor, textColor } = req.body;
 
     if (!title) {
       return res.status(400).json({ success: false, error: 'プロジェクトタイトルは必須です。' });
@@ -938,6 +1030,91 @@ app.put('/api/portfolios/:portfolioId/reorder-projects', authenticateToken, (req
               connection.release();
               console.error('プロジェクト順序更新エラー:', updateError);
               res.status(500).json({ success: false, error: 'プロジェクトの順序の更新中にデータベースエラーが発生しました。' });
+            });
+          }
+        });
+      });
+    });
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// NOTE FOR DATABASE MIGRATION:
+// The 'projects' table needs new columns for layout.
+// Run the following SQL commands on your database:
+// ALTER TABLE projects ADD COLUMN layout_x INT DEFAULT 0;
+// ALTER TABLE projects ADD COLUMN layout_y INT DEFAULT 0;
+// ALTER TABLE projects ADD COLUMN layout_w INT DEFAULT 1;
+// ALTER TABLE projects ADD COLUMN layout_h INT DEFAULT 1;
+
+// Update project layouts API
+app.put('/api/portfolios/:portfolioId/layout', authenticateToken, (req, res) => {
+  try {
+    const { portfolioId } = req.params;
+    const { id: userId } = req.user;
+    const { layout } = req.body; // Expect an array of layout objects
+
+    if (!layout || !Array.isArray(layout)) {
+      return res.status(400).json({ success: false, error: '有効なレイアウト配列が必要です。' });
+    }
+
+    // Verify the user owns the portfolio
+    db.query('SELECT id FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId], (err, results) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+      }
+      if (results.length === 0) {
+        return res.status(403).json({ success: false, error: 'このポートフォリオにアクセスする権限がありません。' });
+      }
+
+      db.getConnection((err, connection) => {
+        if (err) {
+          console.error('データベース接続エラー:', err);
+          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+        }
+
+        connection.beginTransaction(async (err) => {
+          if (err) {
+            connection.release();
+            console.error('トランザクション開始エラー:', err);
+            return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+          }
+
+          try {
+            for (const item of layout) {
+              const { i, x, y, w, h } = item;
+              const projectId = i;
+              await new Promise((resolve, reject) => {
+                connection.query(
+                  'UPDATE projects SET layout_x = ?, layout_y = ?, layout_w = ?, layout_h = ? WHERE id = ? AND portfolio_id = ?',
+                  [x, y, w, h, projectId, portfolioId],
+                  (err, result) => {
+                    if (err) return reject(err);
+                    resolve(result);
+                  }
+                );
+              });
+            }
+
+            connection.commit((err) => {
+              if (err) {
+                return connection.rollback(() => {
+                  connection.release();
+                  console.error('トランザクションコミットエラー:', err);
+                  res.status(500).json({ success: false, error: 'レイアウトの更新中にデータベースエラーが発生しました。' });
+                });
+              }
+              connection.release();
+              res.json({ success: true, message: 'レイアウトが更新されました' });
+            });
+          } catch (updateError) {
+            connection.rollback(() => {
+              connection.release();
+              console.error('レイアウト更新エラー:', updateError);
+              res.status(500).json({ success: false, error: 'レイアウトの更新中にデータベースエラーが発生しました。' });
             });
           }
         });

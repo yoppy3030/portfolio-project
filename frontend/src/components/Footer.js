@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import '../Footer.css';
 
-function Footer({ theme }) {
+function Footer({ theme, activeTemplate }) {
     const { t } = useTranslation();
     const currentTheme = theme || 'light';
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer className={`footer ${currentTheme}-theme`}>
+        <footer className={`footer ${currentTheme}-theme ${activeTemplate ? activeTemplate + '-template' : ''}`}>
       <div className="footer-container">
         <div className="footer-section">
           <h4>My Portfolio Builder</h4>
@@ -29,7 +29,7 @@ function Footer({ theme }) {
           <h4>{t('footer_social_title')}</h4>
           <div className="social-links">
             <a href="https://x.com/" target="_blank" rel="noopener noreferrer">X</a>
-            <a href="https://github.com/" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a href="https://github.com/yoppy3030/portfolio-project.git" target="_blank" rel="noopener noreferrer">GitHub</a>
           </div>
         </div>
       </div>

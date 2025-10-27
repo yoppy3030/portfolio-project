@@ -5,7 +5,7 @@ import logoImg from '../assets/logo.png';
 import '../Header.css';
 
 // Removed withTranslation HOC, using useTranslation hook instead
-function Header({ user, onLogout, theme, language }) { 
+function Header({ user, onLogout, theme, language, activeTemplate }) { 
   const { t } = useTranslation(); // Use the hook to get the t function
   const navigate = useNavigate(); // Initialize useNavigate
   const location = useLocation(); // Get current location
@@ -15,56 +15,63 @@ function Header({ user, onLogout, theme, language }) {
   const showBackButton = location.pathname !== '/' && location.pathname !== '/login' && location.pathname !== '/register';
 
   return (
-    <header className={`header ${theme}-theme`}>
+    <header className={`header ${theme}-theme ${activeTemplate ? activeTemplate + '-template' : ''}`}>
       <div className="header-main">
         <div className="header-left">
           <Link to="/">
             <img src={logoImg} alt={t('logo_alt')} className="logo-img" />
           </Link>
+          {showBackButton && (
+            <button onClick={() => navigate(-1)} className="back-button">
+              <i className="material-icons">arrow_back</i>
+            </button>
+          )}
         </div>
-        {user ? (
-          <nav className="header-nav">
-            <Link to={user && user.portfolioId ? `/portfolio/${user.portfolioId}` : '/portfolio-builder'}>{t('header_dashboard')}</Link>
-            <Link to="/study">{t('header_study')}</Link>
-            <Link to="/hobby">{t('header_hobby')}</Link>
-            <Link to="/school">{t('header_school')}</Link>
-            <Link to="/other">{t('header_other')}</Link>
-            <Link to="/search"><span role="img" aria-label={t('search_alt')}>🔍</span>{t('header_search')}</Link>
-            {showBackButton && (
-              <button onClick={() => navigate(-1)} className="back-button">
-                <i className="material-icons">arrow_back</i>
-              </button>
-            )}
-            
-            <div className="user-menu-container">
-              <img 
-                src={user?.iconUrl || defaultAvatar} 
-                alt="icon" 
-                className="user-icon"
-                onError={(e) => { e.target.src = defaultAvatar; }}
-              />
-              <div className="user-menu-dropdown">
-                <div className="user-info-in-dropdown">
-                  <img 
-                    src={user?.iconUrl || defaultAvatar} 
-                    alt="icon" 
-                    className="user-icon-dropdown"
-                    onError={(e) => { e.target.src = defaultAvatar; }}
-                  />
-                  <span>{user?.name}</span>
-                </div>
-                <Link to="/settings" className="user-menu-item">{t('header_settings')}</Link>
-                <button onClick={onLogout} className="user-menu-item">{t('header_logout')}</button>
-              </div>
-            </div>
-          </nav>
-        ) : (
+
+        <div className="header-right-content">
+          {user && (
+            <nav className="header-nav">
+              <Link to={user && user.portfolioId ? `/portfolio/${user.portfolioId}` : '/portfolio-builder'}>{t('header_dashboard')}</Link>
+              <Link to="/study">{t('header_study')}</Link>
+              <Link to="/hobby">{t('header_hobby')}</Link>
+              <Link to="/school">{t('header_school')}</Link>
+              <Link to="/other">{t('header_other')}</Link>
+              <Link to="/search"><span role="img" aria-label={t('search_alt')}></span>{t('header_search')}</Link>
+            </nav>
+          )}
+
           <div className="header-right">
-            <Link to="/login">{t('header_login')}</Link>
-            <span>{t('header_or')}</span>
-            <Link to="/register">{t('header_register')}</Link>
+            {user ? (
+              <div className="user-menu-container">
+                <img
+                  src={user?.iconUrl || defaultAvatar}
+                  alt="icon"
+                  className="user-icon"
+                  onError={(e) => { e.target.src = defaultAvatar; }}
+                />
+                <div className="user-menu-dropdown">
+                  <div className="user-info-in-dropdown">
+                    <img
+                      src={user?.iconUrl || defaultAvatar}
+                      alt="icon"
+                      className="user-icon-dropdown"
+                      onError={(e) => { e.target.src = defaultAvatar; }}
+                    />
+                    <span>{user?.name}</span>
+                  </div>
+                  <Link to="/settings" className="user-menu-item">{t('header_settings')}</Link>
+                  <button onClick={onLogout} className="user-menu-item">{t('header_logout')}</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Link to="/login">{t('header_login')}</Link>
+                <span>{t('header_or')}</span>
+                <Link to="/register">{t('header_register')}</Link>
+              </>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </header>
   );
