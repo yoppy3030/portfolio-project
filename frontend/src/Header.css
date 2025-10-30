@@ -280,3 +280,91 @@
 .header.minimalist-template a {
   color: #1A202C;
 }
+
+/* Category Dropdown Menu */
+.header-nav-item-container {
+  position: relative;
+}
+
+.header .header-nav .header-nav-item {
+  background-color: white;
+  border: 1px solid #ddd;
+  color: #333;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-decoration: none; /* for the 'Portfolio' link */
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.header .header-nav .header-nav-item:hover {
+    background-color: #f5f5f5;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.category-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  min-width: 200px;
+  z-index: 1000;
+  padding: 8px 0;
+  margin-top: 8px;
+}
+
+.category-menu-item {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  text-decoration: none;
+  color: #333;
+}
+
+.category-menu-item:hover {
+  background-color: #f5f5f5;
+}
+
+/* Dark theme adjustments */
+.header.dark-theme .category-dropdown {
+  background-color: #555;
+  border-color: #666;
+}
+
+.header.dark-theme .category-menu-item {
+  color: #f1f1f1;
+}
+
+.header.dark-theme .category-menu-item:hover {
+  background-color: #686868;
+}
+
+/* Modern template adjustments */
+.wrapper.modern-template .header .category-dropdown {
+  background-color: #1F2937;
+  border-color: #374151;
+}
+
+.wrapper.modern-template .header .category-menu-item {
+  color: #D1D5DB;
+}
+
+.wrapper.modern-template .header .category-menu-item:hover {
+  background-color: #374151;
+  color: #FFFFFF;
+}
+

@@ -458,3 +458,112 @@
 .wrapper.minimalist-template .btn-primary:hover {
     background-color: #1A202C;
 }
+
+/* Tag Input Styles */
+.tag-input-container {
+  display: flex;
+  gap: 8px;
+}
+
+.tag-input-container input {
+  flex-grow: 1;
+}
+
+.btn-add-tag {
+  flex-shrink: 0;
+  padding: 0 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-add-tag:hover {
+  background-color: #0056b3;
+}
+
+.tags-display-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tag-item {
+  display: flex;
+  align-items: center;
+  background-color: #e0e0e0;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 14px;
+}
+
+.tag-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  border: none;
+  background-color: #a0a0a0;
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.tag-remove-btn:hover {
+  background-color: #808080;
+}
+
+/* Tag Navigation */
+.tag-navigation {
+  margin-bottom: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tag-nav-button {
+  background-color: #f1f1f1;
+  border: 1px solid #ddd;
+  color: #333;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tag-nav-button:hover {
+  background-color: #e0e0e0;
+  border-color: #ccc;
+}
+
+/* Project Card Tags */
+.project-card-content {
+  flex-grow: 1;
+}
+
+.project-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  z-index: 2;
+  position: relative;
+}
+
+.project-tag {
+  background-color: rgba(255, 255, 255, 0.8);
+  color: #333;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.text-block:hover .project-card-actions {
+  opacity: 1;
+}

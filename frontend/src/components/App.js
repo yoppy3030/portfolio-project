@@ -121,7 +121,7 @@ function AppContent() {
 
   return (
     <div className={`wrapper ${activeTemplate ? activeTemplate + '-template' : ''}`}>
-      <Header user={user} onLogout={handleLogout} theme={user?.theme} language={language} activeTemplate={activeTemplate} />
+      <Header user={user} onLogout={handleLogout} theme={user?.theme || 'light'} language={language} activeTemplate={activeTemplate} />
       <Routes>
         <Route path="/" element={<MainContent user={user} theme={user?.theme} />} />
         <Route path="/register" element={<RegisterForm theme={user?.theme} />} />

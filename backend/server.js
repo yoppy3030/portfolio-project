@@ -654,22 +654,41 @@ app.get('/api/portfolios/:portfolioId', authenticateToken, (req, res) => {
       const portfolio = portfolioResults[0];
 
       // Next, get projects for this portfolio
-      db.query('SELECT * FROM projects WHERE portfolio_id = ? ORDER BY project_order ASC', [portfolioId], (err, projectResults) => {
+      const projectsQuery = `
+        SELECT
+          p.*,
+          GROUP_CONCAT(t.name ORDER BY t.name SEPARATOR ',') AS tags
+        FROM
+          projects p
+        LEFT JOIN
+          project_tags pt ON p.id = pt.project_id
+        LEFT JOIN
+          tags t ON pt.tag_id = t.id
+        WHERE
+          p.portfolio_id = ?
+        GROUP BY
+          p.id
+        ORDER BY
+          p.project_order ASC
+      `;
+
+      db.query(projectsQuery, [portfolioId], (err, projectResults) => {
         if (err) {
           console.error('データベースエラー:', err);
           return res.status(500).json({ success: false, error: 'プロジェクトの取得中にデータベースエラーが発生しました。' });
         }
 
-        // Add a fallback for layout properties if they don't exist
-        const projectsWithLayout = projectResults.map(p => ({
+        // Add a fallback for layout properties and convert tags string to array
+        const projectsWithData = projectResults.map(p => ({
           ...p,
+          tags: p.tags ? p.tags.split(',') : [],
           layout_x: p.layout_x,
           layout_y: p.layout_y,
           layout_w: p.layout_w,
           layout_h: p.layout_h,
         }));
 
-        portfolio.projects = projectsWithLayout;
+        portfolio.projects = projectsWithData;
         res.json({ success: true, portfolio: portfolio });
       });
     });
@@ -783,56 +802,131 @@ app.delete('/api/portfolios/:portfolioId', authenticateToken, (req, res) => {
 // ALTER TABLE projects ADD COLUMN size VARCHAR(20) NOT NULL DEFAULT 'medium';
 // ALTER TABLE projects ADD COLUMN text_color VARCHAR(7) DEFAULT '#000000';
 app.post('/api/portfolios/:portfolioId/projects', authenticateToken, (req, res) => {
-  try {
-    const { portfolioId } = req.params;
-    const { id: userId } = req.user;
-    const { title, description, imageData, backgroundColor } = req.body;
+  const { portfolioId } = req.params;
+  const { id: userId } = req.user;
+  const { title, description, imageData, backgroundColor, textColor, type, content, tags, size, layout_w, layout_h } = req.body;
 
-    if (!title) {
-      return res.status(400).json({ success: false, error: 'プロジェクトタイトルは必須です。' });
+  if (type !== 'text' && !title) {
+    return res.status(400).json({ success: false, error: 'プロジェクトタイトルは必須です。' });
+  }
+
+  db.getConnection((err, connection) => {
+    if (err) {
+      console.error('データベース接続エラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
     }
 
-    // Verify the user owns the portfolio they are adding a project to
-    db.query('SELECT id FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId], (err, results) => {
+    connection.beginTransaction(async (err) => {
       if (err) {
-        console.error('データベースエラー:', err);
+        connection.release();
+        console.error('トランザクション開始エラー:', err);
         return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
       }
-      if (results.length === 0) {
-        return res.status(403).json({ success: false, error: 'このポートフォリオにプロジェクトを追加する権限がありません。' });
-      }
 
-      // Get the current max project_order for this portfolio
-      db.query('SELECT MAX(project_order) as max_order FROM projects WHERE portfolio_id = ?', [portfolioId], (err, orderResults) => {
-        if (err) {
-          console.error('データベースエラー:', err);
-          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+      try {
+        // 1. Verify ownership
+        const portfolios = await new Promise((resolve, reject) => {
+          connection.query('SELECT id FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId], (err, results) => {
+            if (err) return reject(err);
+            resolve(results);
+          });
+        });
+
+        if (portfolios.length === 0) {
+          throw { status: 403, message: 'このポートフォリオにプロジェクトを追加する権限がありません。' };
         }
 
+        // 2. Get project order
+        const orderResults = await new Promise((resolve, reject) => {
+          connection.query('SELECT MAX(project_order) as max_order FROM projects WHERE portfolio_id = ?', [portfolioId], (err, results) => {
+            if (err) return reject(err);
+            resolve(results);
+          });
+        });
         const newOrder = (orderResults[0].max_order || 0) + 1;
 
+        // 3. Insert new project
         const newProject = {
           portfolio_id: portfolioId,
-          title: title,
+          title: title || '',
           description: description || null,
           image_data: imageData || null,
           background_color: backgroundColor || null,
-          project_order: newOrder
+          text_color: textColor || null,
+          project_order: newOrder,
+          type: type || 'project',
+          content: content || null,
+          size: size || 'medium',
+          layout_w: layout_w || 4,
+          layout_h: layout_h || 4,
         };
 
-        db.query('INSERT INTO projects SET ?', newProject, (err, result) => {
-          if (err) {
-            console.error('データベースエラー:', err);
-            return res.status(500).json({ success: false, error: 'プロジェクトの作成中にデータベースエラーが発生しました。' });
-          }
-          res.status(201).json({ success: true, message: 'プロジェクトが追加されました', projectId: result.insertId });
+        const projectInsertResult = await new Promise((resolve, reject) => {
+          connection.query('INSERT INTO projects SET ?', newProject, (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
+          });
         });
-      });
+        const newProjectId = projectInsertResult.insertId;
+
+        // 4. Handle tags
+        if (tags && tags.length > 0) {
+          for (const tagName of tags) {
+            // Find or create tag
+            let tagId;
+            const tagResults = await new Promise((resolve, reject) => {
+              connection.query('SELECT id FROM tags WHERE name = ?', [tagName], (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
+              });
+            });
+
+            if (tagResults.length > 0) {
+              tagId = tagResults[0].id;
+            } else {
+              const newTagResult = await new Promise((resolve, reject) => {
+                connection.query('INSERT INTO tags SET ?', { name: tagName }, (err, result) => {
+                  if (err) return reject(err);
+                  resolve(result);
+                });
+              });
+              tagId = newTagResult.insertId;
+            }
+
+            // Associate tag with project
+            await new Promise((resolve, reject) => {
+              connection.query('INSERT INTO project_tags (project_id, tag_id) VALUES (?, ?)', [newProjectId, tagId], (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+              });
+            });
+          }
+        }
+
+        // 5. Commit transaction
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              throw err;
+            });
+          }
+          connection.release();
+          res.status(201).json({ success: true, message: 'プロジェクトが追加されました', projectId: newProjectId });
+        });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          if (error.status) {
+            return res.status(error.status).json({ success: false, error: error.message });
+          }
+          console.error('トランザクションエラー:', error);
+          res.status(500).json({ success: false, error: 'プロジェクトの作成中にデータベースエラーが発生しました。' });
+        });
+      }
     });
-  } catch (error) {
-    console.error('サーバーエラー:', error);
-    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
-  }
+  });
 });
 
 // Get a single project
@@ -873,59 +967,133 @@ app.get('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (
 
 // Update a project
 app.put('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (req, res) => {
-  console.log(`[UPDATE] Received request for portfolio ${req.params.portfolioId}, project ${req.params.projectId}`);
-  console.log('[UPDATE] Request body:', req.body);
-  try {
-    const { portfolioId, projectId } = req.params;
-    const { id: userId } = req.user;
-    const { title, description, imageData, backgroundColor, textColor } = req.body;
+  const { portfolioId, projectId } = req.params;
+  const { id: userId } = req.user;
+  const { title, description, imageData, backgroundColor, textColor, content, size, type, tags, layout_w, layout_h } = req.body;
 
-    if (!title) {
-      return res.status(400).json({ success: false, error: 'プロジェクトタイトルは必須です。' });
+  if (type !== 'text' && !title) {
+    return res.status(400).json({ success: false, error: 'プロジェクトタイトルは必須です。' });
+  }
+
+  db.getConnection((err, connection) => {
+    if (err) {
+      console.error('データベース接続エラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
     }
 
-    // First, verify the user owns the portfolio
-    db.query('SELECT id FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId], (err, results) => {
+    connection.beginTransaction(async (err) => {
       if (err) {
-        console.error('[UPDATE] Owner verification DB error:', err);
+        connection.release();
+        console.error('トランザクション開始エラー:', err);
         return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
       }
-      if (results.length === 0) {
-        console.log('[UPDATE] Owner verification failed.');
-        return res.status(403).json({ success: false, error: 'このポートフォリオにアクセスする権限がありません。' });
+
+      try {
+        // 1. Verify ownership
+        const portfolios = await new Promise((resolve, reject) => {
+          connection.query('SELECT id FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId], (err, results) => {
+            if (err) return reject(err);
+            resolve(results);
+          });
+        });
+
+        if (portfolios.length === 0) {
+          throw { status: 403, message: 'このポートフォリオを更新する権限がありません。' };
+        }
+
+        // 2. Update the project itself
+        const updatedProject = {
+          title: title,
+          description: description,
+          image_data: imageData,
+          background_color: backgroundColor,
+          text_color: textColor,
+          size: size,
+          content: content,
+          layout_w: layout_w,
+          layout_h: layout_h,
+        };
+        // Remove undefined properties so they don't null out existing values
+        Object.keys(updatedProject).forEach(key => updatedProject[key] === undefined && delete updatedProject[key]);
+
+        if (Object.keys(updatedProject).length > 0) {
+            await new Promise((resolve, reject) => {
+                connection.query('UPDATE projects SET ? WHERE id = ? AND portfolio_id = ?', [updatedProject, projectId, portfolioId], (err, result) => {
+                    if (err) return reject(err);
+                    // Note: affectedRows can be 0 if the data is the same. We only error if the project is not found.
+                    // A more robust check might be needed if no-op updates are a concern.
+                    resolve(result);
+                });
+            });
+        }
+
+        // 3. Handle tags if they are provided
+        if (tags !== undefined) {
+          // First, delete existing tags for the project
+          await new Promise((resolve, reject) => {
+            connection.query('DELETE FROM project_tags WHERE project_id = ?', [projectId], (err, result) => {
+              if (err) return reject(err);
+              resolve(result);
+            });
+          });
+
+          // Then, add new tags if any
+          if (tags.length > 0) {
+            for (const tagName of tags) {
+              let tagId;
+              const tagResults = await new Promise((resolve, reject) => {
+                connection.query('SELECT id FROM tags WHERE name = ?', [tagName], (err, results) => {
+                  if (err) return reject(err);
+                  resolve(results);
+                });
+              });
+
+              if (tagResults.length > 0) {
+                tagId = tagResults[0].id;
+              } else {
+                const newTagResult = await new Promise((resolve, reject) => {
+                  connection.query('INSERT INTO tags SET ?', { name: tagName }, (err, result) => {
+                    if (err) return reject(err);
+                    resolve(result);
+                  });
+                });
+                tagId = newTagResult.insertId;
+              }
+
+              await new Promise((resolve, reject) => {
+                connection.query('INSERT INTO project_tags (project_id, tag_id) VALUES (?, ?)', [projectId, tagId], (err, result) => {
+                  if (err) return reject(err);
+                  resolve(result);
+                });
+              });
+            }
+          }
+        }
+
+        // 4. Commit transaction
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              throw err;
+            });
+          }
+          connection.release();
+          res.json({ success: true, message: 'プロジェクトが更新されました' });
+        });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          if (error.status) {
+            return res.status(error.status).json({ success: false, error: error.message });
+          }
+          console.error('トランザクションエラー:', error);
+          res.status(500).json({ success: false, error: 'プロジェクトの更新中にデータベースエラーが発生しました。' });
+        });
       }
-
-      const updatedProject = {
-        title: title,
-        description: description || null,
-        image_data: imageData || null,
-        background_color: backgroundColor || null,
-        text_color: textColor || null,
-        size: size || 'medium'
-      };
-      console.log('[UPDATE] Object to be updated:', updatedProject);
-
-      db.query('UPDATE projects SET ? WHERE id = ? AND portfolio_id = ?', [updatedProject, projectId, portfolioId], (err, result) => {
-        if (err) {
-          console.error('[UPDATE] Database query error:', err);
-          return res.status(500).json({ success: false, error: 'プロジェクトの更新中にデータベースエラーが発生しました。' });
-        }
-
-        console.log('[UPDATE] Query result:', result);
-
-        if (result.affectedRows === 0) {
-          console.log('[UPDATE] No rows were affected.');
-          return res.status(404).json({ success: false, error: 'プロジェクトが見つかりません。' });
-        }
-
-        console.log('[UPDATE] Successfully updated.');
-        res.json({ success: true, message: 'プロジェクトが更新されました' });
-      });
     });
-  } catch (error) {
-    console.error('[UPDATE] Server error:', error);
-    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
-  }
+  });
 });
 
 // Delete a project

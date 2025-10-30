@@ -1,18 +1,103 @@
-import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next'; // Import useTranslation
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useLocation, useMatch } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import logoImg from '../assets/logo.png';
 import '../Header.css';
 
-// Removed withTranslation HOC, using useTranslation hook instead
-function Header({ user, onLogout, theme, language, activeTemplate }) { 
-  const { t } = useTranslation(); // Use the hook to get the t function
-  const navigate = useNavigate(); // Initialize useNavigate
-  const location = useLocation(); // Get current location
+const CATEGORIES = ["ダッシュボード", "学習", "趣味", "学校", "その他"];
+
+function Header({ user, onLogout, theme, language, activeTemplate }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [openMenu, setOpenMenu] = useState(null);
+  const [portfolio, setPortfolio] = useState(null);
+  const menuRef = useRef(null);
+  const portfolioMatch = useMatch('/portfolio/:portfolioId');
+  const portfolioIdFromUrl = portfolioMatch?.params?.portfolioId;
+
+  useEffect(() => {
+    const fetchHeaderPortfolio = async () => {
+      const portfolioId = portfolioIdFromUrl || user?.portfolioId;
+      if (user && portfolioId) {
+        const token = localStorage.getItem('token');
+        try {
+          const response = await fetch(`http://localhost:5000/api/portfolios/${portfolioId}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+          const data = await response.json();
+          if (data.success) {
+            setPortfolio(data.portfolio);
+          } else {
+            setPortfolio(null);
+          }
+        } catch (error) {
+          setPortfolio(null);
+        }
+      } else {
+        setPortfolio(null);
+      }
+    };
+    fetchHeaderPortfolio();
+  }, [user, portfolioIdFromUrl]);
+
+  const handleCategoryClick = (category) => {
+    if (openMenu === category) {
+      setOpenMenu(null);
+    } else {
+      setOpenMenu(category);
+    }
+  };
+
+  const handleClickOutside = (event) => {
+    if (menuRef.current && !menuRef.current.contains(event.target)) {
+      setOpenMenu(null);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNFNUU3RUIiLz4KPHBhdGggZD0iTTE2IDhDMTguMjA5MSA4IDIwIDkuNzkwODYgMjAgMTJDMjAgMTQuMjA5MSAxOC4yMDkxIDE2IDE2IDE2QzEzLjc5MDkgMTYgMTIgMTQuMjA5MSAxMiAxMkMxMiA5Ljc5MDg2IDEzLjc5MDkgOCAxNiA4WiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNOCAyNEM4IDIwLjY4NjMgMTAuNjg2MyAxOCAxNCAxOEgxOEMyMS4zMTM3IDE4IDI0IDIwLjY4NjMgMjQgMjRWMjZIOFYyNFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+Cg==";
 
   const showBackButton = location.pathname !== '/' && location.pathname !== '/login' && location.pathname !== '/register';
+
+  const renderCategoryMenu = (category) => {
+    if (!portfolio) {
+      return (
+        <div className="category-dropdown">
+          <div className="category-menu-item">Loading...</div>
+        </div>
+      );
+    }
+    const projects = portfolio.projects?.filter(p => p.category === category) || [];
+    if (projects.length === 0) {
+      return (
+        <div className="category-dropdown">
+          <div className="category-menu-item">プロジェクトがありません</div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="category-dropdown">
+        {projects.map(project => (
+          <Link
+            key={project.id}
+            to={`/portfolio/${portfolio.id}/project/${project.id}`}
+            className="category-menu-item"
+            onClick={() => setOpenMenu(null)}
+          >
+            {project.title}
+          </Link>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <header className={`header ${theme}-theme ${activeTemplate ? activeTemplate + '-template' : ''}`}>
@@ -30,13 +115,17 @@ function Header({ user, onLogout, theme, language, activeTemplate }) {
 
         <div className="header-right-content">
           {user && (
-            <nav className="header-nav">
-              <Link to={user && user.portfolioId ? `/portfolio/${user.portfolioId}` : '/portfolio-builder'}>{t('header_dashboard')}</Link>
-              <Link to="/study">{t('header_study')}</Link>
-              <Link to="/hobby">{t('header_hobby')}</Link>
-              <Link to="/school">{t('header_school')}</Link>
-              <Link to="/other">{t('header_other')}</Link>
-              <Link to="/search"><span role="img" aria-label={t('search_alt')}></span>{t('header_search')}</Link>
+            <nav className="header-nav" ref={menuRef}>
+              <Link to={user.portfolioId ? `/portfolio/${user.portfolioId}` : '/portfolio-builder'} className="header-nav-item">ポートフォリオ</Link>
+              {CATEGORIES.map(category => (
+                <div key={category} className="header-nav-item-container">
+                  <button className="header-nav-item" onClick={() => handleCategoryClick(category)}>
+                    {category}
+                    <i className="material-icons">arrow_drop_down</i>
+                  </button>
+                  {openMenu === category && renderCategoryMenu(category)}
+                </div>
+              ))}
             </nav>
           )}
 

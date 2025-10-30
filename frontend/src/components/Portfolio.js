@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import RGL, { WidthProvider } from 'react-grid-layout';
 
 import '../Portfolio.css';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+
+const GridLayout = WidthProvider(RGL); // ここに移動
+
+const CATEGORIES = ["ダッシュボード", "学習", "趣味", "学校", "その他"];
 
 // A simple modal component for the form
 function AddProjectModal({ on_close, on_submit }) {
@@ -12,16 +16,16 @@ function AddProjectModal({ on_close, on_submit }) {
   const [description, setDescription] = useState('');
   const [imageData, setImageData] = useState(null);
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
-  const [textColor, setTextColor] = useState('#000000'); // Add textColor state
+  const [textColor, setTextColor] = useState('#000000');
+  const [size, setSize] = useState('medium');
+  const [category, setCategory] = useState(CATEGORIES[0]);
 
   useEffect(() => {
-    // Disable body scroll when the modal is open
     document.body.style.overflow = 'hidden';
-    // Re-enable body scroll when the modal is closed
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, []); // Empty dependency array ensures this effect runs only once when the modal mounts
+  }, []);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -34,20 +38,20 @@ function AddProjectModal({ on_close, on_submit }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleProjectSubmit = (e) => {
     e.preventDefault();
     if (!title) {
       alert('プロジェクトのタイトルは必須です。');
       return;
     }
-    on_submit({ title, description, imageData, backgroundColor, textColor }); // Include textColor and size in submit
+    on_submit({ title, description, imageData, backgroundColor, textColor, size, category });
   };
 
   return (
     <div className="modal-backdrop">
       <div className="modal-content">
         <h2>新しいプロジェクトを追加</h2>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleProjectSubmit}>
           <div className="form-group">
             <label htmlFor="project-title">タイトル</label>
             <input id="project-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -59,6 +63,14 @@ function AddProjectModal({ on_close, on_submit }) {
           <div className="form-group">
             <label htmlFor="project-image">画像</label>
             <input id="project-image" type="file" accept="image/*" onChange={handleFileChange} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="project-category">カテゴリー</label>
+            <select id="project-category" value={category} onChange={(e) => setCategory(e.target.value)}>
+              {CATEGORIES.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label htmlFor="project-color">背景色</label>
@@ -89,6 +101,8 @@ function EditProjectModal({ project, on_close, on_submit }) {
   const [imageData, setImageData] = useState(project.image_data);
   const [backgroundColor, setBackgroundColor] = useState(project.background_color || '#ffffff');
   const [textColor, setTextColor] = useState(project.text_color || '#000000'); // Add textColor state
+  const [size, setSize] = useState(project.size || 'medium'); // Add size state
+  const [category, setCategory] = useState(project.category || CATEGORIES[0]);
 
   useEffect(() => {
     // Disable body scroll when the modal is open
@@ -112,11 +126,11 @@ function EditProjectModal({ project, on_close, on_submit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!title) {
+    if (!project.type === 'text' && !title) {
       alert('Project title is required.');
       return;
     }
-    on_submit({ title, description, imageData, backgroundColor, textColor }); // Include textColor and size in submit
+    on_submit({ ...project, title, description, imageData, backgroundColor, textColor, size, category });
   };
 
   return (
@@ -135,6 +149,14 @@ function EditProjectModal({ project, on_close, on_submit }) {
           <div className="form-group">
             <label htmlFor="project-image">画像</label>
             <input id="project-image" type="file" accept="image/*" onChange={handleFileChange} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="project-category">カテゴリー</label>
+            <select id="project-category" value={category} onChange={(e) => setCategory(e.target.value)}>
+              {CATEGORIES.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label htmlFor="project-color">背景色</label>
@@ -158,7 +180,112 @@ function EditProjectModal({ project, on_close, on_submit }) {
   );
 }
 
-const GridLayout = WidthProvider(RGL);
+// A simple modal component for adding text blocks
+function AddTextModal({ on_close, on_submit }) {
+  const [content, setContent] = useState('');
+  const [backgroundColor, setBackgroundColor] = useState('#ffffff');
+  const [textColor, setTextColor] = useState('#000000');
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
+  const handleTextSubmit = (e) => {
+    e.preventDefault();
+    if (!content.trim()) {
+      alert('テキスト内容は必須です。');
+      return;
+    }
+    on_submit({ content, backgroundColor, textColor, type: 'text' });
+  };
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal-content">
+        <h2>新しいテキストブロックを追加</h2>
+        <form onSubmit={handleTextSubmit}>
+          <div className="form-group">
+            <label htmlFor="text-content">テキスト内容</label>
+            <textarea id="text-content" value={content} onChange={(e) => setContent(e.target.value)} rows="5" />
+          </div>
+          <div className="form-group">
+            <label htmlFor="text-bg-color">背景色</label>
+            <div className="color-picker-wrapper" style={{ backgroundColor: backgroundColor }}>
+              <input id="text-bg-color" type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="text-color">文字色</label>
+            <div className="color-picker-wrapper" style={{ backgroundColor: textColor }}>
+              <input id="text-color" type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
+            </div>
+          </div>
+          <div className="form-actions">
+            <button type="submit" className="btn-primary">テキストを追加</button>
+            <button type="button" className="btn-secondary" onClick={on_close}>キャンセル</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// A modal component for editing text blocks
+function EditTextModal({ project, on_close, on_submit }) {
+  const [content, setContent] = useState(project.content);
+  const [backgroundColor, setBackgroundColor] = useState(project.background_color || '#ffffff');
+  const [textColor, setTextColor] = useState(project.text_color || '#000000');
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
+  const handleTextSubmit = (e) => {
+    e.preventDefault();
+    if (!content.trim()) {
+      alert('テキスト内容は必須です。');
+      return;
+    }
+    on_submit({ ...project, content, backgroundColor, textColor });
+  };
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal-content">
+        <h2>テキストブロックを編集</h2>
+        <form onSubmit={handleTextSubmit}>
+          <div className="form-group">
+            <label htmlFor="text-content">テキスト内容</label>
+            <textarea id="text-content" value={content} onChange={(e) => setContent(e.target.value)} rows="5" />
+          </div>
+          <div className="form-group">
+            <label htmlFor="text-bg-color">背景色</label>
+            <div className="color-picker-wrapper" style={{ backgroundColor: backgroundColor }}>
+              <input id="text-bg-color" type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="text-color">文字色</label>
+            <div className="color-picker-wrapper" style={{ backgroundColor: textColor }}>
+              <input id="text-color" type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
+            </div>
+          </div>
+          <div className="form-actions">
+            <button type="submit" className="btn-primary">更新</button>
+            <button type="button" className="btn-secondary" onClick={on_close}>キャンセル</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 
 // Helper function to convert project size to grid dimensions
 const sizeToDimensions = (size) => {
@@ -174,14 +301,88 @@ const sizeToDimensions = (size) => {
   }
 };
 
+// TextEditBlock component for inline editing
+function TextEditBlock({ project, onContentUpdate, onDelete, onEdit }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentContent, setCurrentContent] = useState(project.content || '');
+
+  const handleDoubleClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (currentContent !== project.content) {
+      onContentUpdate({ ...project, content: currentContent });
+    }
+  };
+
+  const handleChange = (e) => {
+    setCurrentContent(e.target.value);
+  };
+
+  return (
+    <div
+      className="text-block"
+      style={{
+        backgroundColor: project.background_color,
+        color: project.text_color,
+        padding: '10px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        wordBreak: 'break-word',
+        position: 'relative',
+        height: '100%', // 追加
+      }}
+      onDoubleClick={handleDoubleClick}
+    >
+      {isEditing ? (
+        <textarea
+          value={currentContent}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          autoFocus
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            background: 'transparent',
+            color: project.text_color,
+            resize: 'none',
+            outline: 'none',
+            fontSize: `${Math.min(Math.sqrt(project.layout_w * project.layout_h) * 8, 48)}px`, // 幅と高さの両方を考慮してフォントサイズを調整
+            fontFamily: 'inherit',
+            textAlign: 'center',
+          }}
+        />
+      ) : (
+        <p style={{ margin: 0, color: project.text_color, fontSize: `${Math.min(Math.sqrt(project.layout_w * project.layout_h) * 8, 48)}px` }}>{currentContent}</p> // 幅と高さの両方を考慮してフォントサイズを調整
+      )}
+      <div className="project-card-actions" style={{ top: '5px', right: '5px' }}>
+        <button className="project-action-icon" onClick={(e) => { e.stopPropagation(); onEdit(project); }}>
+          <i className="material-icons">more_vert</i>
+        </button>
+        <button className="project-action-icon delete-button" onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}>
+          <i className="material-icons">delete</i>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Portfolio({ onTemplateChange }) {
   const { portfolioId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddTextModal, setShowAddTextModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  const [editingTextBlock, setEditingTextBlock] = useState(null);
 
   const fetchPortfolio = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -228,6 +429,9 @@ export default function Portfolio({ onTemplateChange }) {
 
   const handleAddNewProject = async (projectData) => {
     const token = localStorage.getItem('token');
+    const { w, h } = sizeToDimensions(projectData.size);
+    const projectDataWithLayout = { ...projectData, layout_w: w, layout_h: h };
+
     try {
       const response = await fetch(`http://localhost:5000/api/portfolios/${portfolioId}/projects`, {
         method: 'POST',
@@ -235,18 +439,22 @@ export default function Portfolio({ onTemplateChange }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(projectData),
+        body: JSON.stringify(projectDataWithLayout),
       });
 
       const data = await response.json();
       if (data.success) {
-        setShowAddModal(false);
+        if (projectData.type === 'text') {
+          setShowAddTextModal(false);
+        } else {
+          setShowAddModal(false);
+        }
         fetchPortfolio(); // Refresh the portfolio data
       } else {
         alert(`Error: ${data.error}`);
       }
     } catch (err) {
-      alert('Failed to add project.');
+      alert('Failed to add item.');
       console.error(err);
     }
   };
@@ -257,27 +465,42 @@ export default function Portfolio({ onTemplateChange }) {
 
   const handleUpdateProject = async (updatedData) => {
     const token = localStorage.getItem('token');
+    const projectId = updatedData.id;
+    if (!projectId) {
+      alert('更新対象のIDが見つかりません。');
+      console.error("Project ID is missing in updatedData.");
+      return;
+    }
+
+    let dataToSend;
+    if (updatedData.type === 'text') {
+      dataToSend = updatedData;
+    } else {
+      const { size, ...restOfData } = updatedData;
+      dataToSend = { ...restOfData, size };
+    }
+
     try {
-      const response = await fetch(`http://localhost:5000/api/portfolios/${portfolioId}/projects/${editingProject.id}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify(updatedData),
-        }
-      );
+      const response = await fetch(`http://localhost:5000/api/portfolios/${portfolioId}/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(dataToSend),
+      });
 
       const data = await response.json();
       if (data.success) {
-        setEditingProject(null); // Close modal
+        if (updatedData.type !== 'text') {
+          setEditingProject(null);
+        }
         fetchPortfolio(); // Refresh the portfolio data
       } else {
         alert(`Error: ${data.error}`);
       }
     } catch (err) {
-      alert('Failed to update project.');
+      alert('プロジェクトの更新に失敗しました。');
       console.error(err);
     }
   };
@@ -308,10 +531,10 @@ export default function Portfolio({ onTemplateChange }) {
     }
   };
 
-  const handleLayoutChange = async (layout) => {
-    console.log("Layout change detected:", layout); // この行を追加
-    // Update local state optimistically to avoid visual lag
-    const updatedProjects = portfolio.projects.map(p => {
+  const handleLayoutChange = useCallback(async (layout) => {
+    // This needs to be adapted to use the state from this component
+    const currentProjects = portfolio.projects;
+    const updatedProjects = currentProjects.map(p => {
         const layoutItem = layout.find(l => l.i === p.id.toString());
         if (layoutItem) {
             return {
@@ -338,11 +561,10 @@ export default function Portfolio({ onTemplateChange }) {
       });
     } catch (err) {
       console.error('Failed to save layout:', err);
-      // Optionally revert state or show error to the user
       alert('レイアウトの保存に失敗しました。ページをリロードしてください。');
       fetchPortfolio(); // Re-fetch to ensure consistency
     }
-  };
+  }, [portfolio, portfolioId, fetchPortfolio]);
 
   const handleDeletePortfolio = async () => {
     if (!window.confirm('このポートフォリオを本当に削除しますか？この操作は元に戻せません。')) {
@@ -366,7 +588,7 @@ export default function Portfolio({ onTemplateChange }) {
         alert(`Error: ${data.error}`);
       }
     } catch (err) {
-      alert('ポートフォlioの削除に失敗しました。');
+      alert('ポートフォリオの削除に失敗しました。');
       console.error(err);
     }
   };
@@ -375,11 +597,16 @@ export default function Portfolio({ onTemplateChange }) {
   if (error) return <div>Error: {error}</div>;
   if (!portfolio) return <div>Portfolio not found.</div>;
 
-  // Generate layout for the grid
+  const searchParams = new URLSearchParams(location.search);
+  const categoryFilter = searchParams.get('category');
+
+  const filteredProjects = categoryFilter
+    ? portfolio.projects.filter(p => p.category === categoryFilter)
+    : portfolio.projects;
+
   const generateLayout = () => {
-    return portfolio.projects.map((p, index) => {
+    return filteredProjects.map((p, index) => {
       const { w, h } = sizeToDimensions(p.size);
-      // Ensure layout properties exist, providing defaults if not
       const layout_x = p.layout_x !== null && p.layout_x !== undefined ? p.layout_x : (index * 4) % 12;
       const layout_y = p.layout_y !== null && p.layout_y !== undefined ? p.layout_y : Math.floor(index / 3) * 4;
       const layout_w = p.layout_w > 1 ? p.layout_w : w;
@@ -401,14 +628,17 @@ export default function Portfolio({ onTemplateChange }) {
         <h1>{portfolio.title}</h1>
         <div className="portfolio-header-actions">
           <button className="btn-primary" onClick={() => setShowAddModal(true)}>新しいプロジェクトを追加</button>
+          <button className="btn-primary" onClick={() => setShowAddTextModal(true)}>テキストを追加</button> {/* 追加 */}
           <button className="btn-danger" onClick={handleDeletePortfolio}>ポートフォリオを削除</button>
         </div>
       </div>
 
       {showAddModal && <AddProjectModal on_close={() => setShowAddModal(false)} on_submit={handleAddNewProject} />}
+      {showAddTextModal && <AddTextModal on_close={() => setShowAddTextModal(false)} on_submit={handleAddNewProject} />} {/* 追加 */}
       {editingProject && <EditProjectModal project={editingProject} on_close={() => setEditingProject(null)} on_submit={handleUpdateProject} />}
+      {editingTextBlock && <EditTextModal project={editingTextBlock} on_close={() => setEditingTextBlock(null)} on_submit={(updated) => { handleUpdateProject(updated); setEditingTextBlock(null); }} />}
 
-      {portfolio.projects && portfolio.projects.length > 0 ? (
+      {filteredProjects && filteredProjects.length > 0 ? (
         <GridLayout
           className="layout"
           layout={generateLayout()}
@@ -417,33 +647,58 @@ export default function Portfolio({ onTemplateChange }) {
           onLayoutChange={handleLayoutChange}
           isDraggable={true}
           isResizable={true}
+          compactType={null}
           draggableCancel=".project-card-actions"
         >
-          {portfolio.projects.map(project => (
+          {filteredProjects.map(project => (
             <div
               key={project.id.toString()}
-              className={`project-card`}
-              style={{
-                backgroundColor: project.background_color,
-                backgroundImage: project.image_data ? `url(${project.image_data})` : 'none',
-              }}
-              // onClick={() => navigate(`/portfolio/${portfolioId}/project/${project.id}`)} // Navigation can interfere with drag/resize
+              data-grid={{ x: project.layout_x, y: project.layout_y, w: project.layout_w, h: project.layout_h }}
+              data-category={project.category || ''}
+              style={{ height: '100%' }} // ここに height: '100%' を追加
             >
-              <div className="project-card-overlay"></div>
-              <h3 style={{ color: project.text_color || '#000000' }}>{project.title}</h3>
-              <p style={{ color: project.text_color || '#000000' }}>{project.description}</p>
-              
-              <div className="project-card-actions">
-                  <button className="project-action-icon view-button" onClick={(e) => { e.stopPropagation(); navigate(`/portfolio/${portfolioId}/project/${project.id}`); }}>
-                      <i className="material-icons">open_in_new</i>
-                  </button>
-                  <button className="project-action-icon" onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}>
-                      <i className="material-icons">more_vert</i>
-                  </button>
-                  <button className="project-action-icon delete-button" onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}>
-                      <i className="material-icons">delete</i>
-                  </button>
-              </div>
+              {project.type === 'text' ? (
+                <TextEditBlock
+                  project={project}
+                  onContentUpdate={(updatedProject) => handleUpdateProject(updatedProject)}
+                  onDelete={handleDeleteProject}
+                  onEdit={(proj) => setEditingTextBlock(proj)}
+                />
+              ) : (
+                <div
+                  className={`project-card`}
+                  style={{
+                    backgroundColor: project.background_color,
+                    backgroundImage: project.image_data ? `url(${project.image_data})` : 'none',
+                    height: '100%', // project-card にも height: '100%' を追加
+                  }}
+                  // onClick={() => navigate(`/portfolio/${portfolioId}/project/${project.id}`)} // Navigation can interfere with drag/resize
+                >
+                  <div className="project-card-overlay"></div>
+                  <div className="project-card-content">
+                    <h3 style={{ color: project.text_color, fontSize: `${Math.min(Math.sqrt((project.layout_w || 4) * (project.layout_h || 4)) * 8, 48)}px` }}>{project.title}</h3>
+                    <p style={{ color: project.text_color, fontSize: `${Math.min(Math.sqrt((project.layout_w || 4) * (project.layout_h || 4)) * 4, 24)}px` }}>{project.description}</p>
+                  </div>
+                  
+                  {project.category && (
+                    <div className="project-card-tags">
+                      <span className="project-tag">{project.category}</span>
+                    </div>
+                  )}
+
+                  <div className="project-card-actions">
+                      <button className="project-action-icon view-button" onClick={(e) => { e.stopPropagation(); navigate(`/portfolio/${portfolioId}/project/${project.id}`); }}>
+                          <i className="material-icons">open_in_new</i>
+                      </button>
+                      <button className="project-action-icon" onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}>
+                          <i className="material-icons">more_vert</i>
+                      </button>
+                      <button className="project-action-icon delete-button" onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}>
+                          <i className="material-icons">delete</i>
+                      </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </GridLayout>
