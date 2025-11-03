@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './GameLibraryModal.css';
 import debounce from 'lodash.debounce';
 
-const RAWG_API_KEY = 'd19abf4992e646adb2504d8307aa81e0';
-
 function GameResult({ game, onAdd, isAdded }) {
   return (
     <div className="game-result-item">
