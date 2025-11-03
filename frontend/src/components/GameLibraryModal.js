@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './GameLibraryModal.css';
 import debounce from 'lodash.debounce';
 
-function GameResult({ game, onAdd, isAdded }) {
+function GameResult({ game, onAdd, isAdded, translateToJapanese }) {
   // プラットフォーム名を取得（Nintendo Switch, PlayStation, Xbox, PC など）
   const getPlatformNames = (platforms) => {
     if (!platforms || !Array.isArray(platforms) || platforms.length === 0) {
@@ -18,12 +18,20 @@ function GameResult({ game, onAdd, isAdded }) {
   };
 
   const platformNames = getPlatformNames(game.platforms);
+  // 日本語名があれば日本語名を、なければ英語名を表示
+  const displayName = translateToJapanese ? translateToJapanese(game.name) : game.name;
+  const showEnglishName = displayName !== game.name; // 日本語名に変換できた場合
 
   return (
     <div className="game-result-item">
-      <img src={game.background_image} alt={game.name} className="game-image" />
+      <img src={game.background_image} alt={displayName} className="game-image" />
       <div className="game-info">
-        <p>{game.name}</p>
+        <p>{displayName}</p>
+        {showEnglishName && (
+          <small style={{ display: 'block', color: '#999', fontSize: '0.75rem', marginTop: '2px' }}>
+            {game.name}
+          </small>
+        )}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
           {game.released && (
             <small style={{ color: '#666' }}>{game.released}</small>
@@ -244,7 +252,7 @@ function GameLibraryModal({ onClose }) {
 
   console.log('GameLibraryModal - RAWG_API_KEY:', RAWG_API_KEY ? '設定済み' : '未設定');
 
-  // 日本語ゲーム名から英語名へのマッピング
+  // 日本語ゲーム名から英語名へのマッピング（検索用）
   const japaneseToEnglishMapping = {
     'ゼルダ': 'Zelda',
     'ゼルダの伝説': 'The Legend of Zelda',
@@ -297,6 +305,112 @@ function GameLibraryModal({ onClose }) {
     'コールオブデューティ': 'Call of Duty',
     'COD': 'Call of Duty'
   };
+
+  // 英語名から日本語名へのマッピング（表示用）
+  const englishToJapaneseMapping = {
+    // Nintendo
+    'The Legend of Zelda': 'ゼルダの伝説',
+    'Zelda': 'ゼルダ',
+    'Breath of the Wild': 'ブレス オブ ザ ワイルド',
+    'Tears of the Kingdom': 'ティアーズ オブ ザ キングダム',
+    'Super Mario': 'スーパーマリオ',
+    'Mario': 'マリオ',
+    'Super Mario Bros': 'スーパーマリオブラザーズ',
+    'Super Mario Odyssey': 'スーパーマリオ オデッセイ',
+    'Super Mario Galaxy': 'スーパーマリオギャラクシー',
+    'Pokemon': 'ポケモン',
+    'Pokémon': 'ポケモン',
+    'Pokemon Sword': 'ポケットモンスター ソード',
+    'Pokemon Shield': 'ポケットモンスター シールド',
+    'Splatoon': 'スプラトゥーン',
+    'Splatoon 2': 'スプラトゥーン2',
+    'Splatoon 3': 'スプラトゥーン3',
+    'Monster Hunter': 'モンスターハンター',
+    'Monster Hunter Rise': 'モンスターハンターライズ',
+    'Monster Hunter World': 'モンスターハンターワールド',
+    'Dragon Quest': 'ドラゴンクエスト',
+    'Final Fantasy': 'ファイナルファンタジー',
+    'Animal Crossing': 'あつまれどうぶつの森',
+    'Super Smash Bros': 'スーパースマッシュブラザーズ',
+    'Fire Emblem': 'ファイアーエムブレム',
+    'Xenoblade': 'ゼノブレイド',
+    'Ring Fit Adventure': 'リングフィット アドベンチャー',
+    'Kirby': 'カービー',
+    'Metroid': 'メトロイド',
+    'Donkey Kong': 'ドンキーコング',
+    'Pikmin': 'ピクミン',
+    'Bayonetta': 'ベヨネッタ',
+    'Yo-kai Watch': '妖怪ウォッチ',
+    'Dynasty Warriors': '真・三國無双',
+    'Persona': 'ペルソナ',
+    'Persona 5': 'ペルソナ5',
+    'Sonic': 'ソニック',
+    'Street Fighter': 'ストリートファイター',
+    'Tekken': '鉄拳',
+    // アクション・RPG
+    'Dark Souls': 'ダークソウル',
+    'Elden Ring': 'エルデンリング',
+    'Fortnite': 'フォートナイト',
+    'Genshin Impact': '原神',
+    'Overwatch': 'オーバーウォッチ',
+    'Minecraft': 'マインクラフト',
+    'Red Dead Redemption': 'レッドデッドリデンプション',
+    'Grand Theft Auto': 'グランド・セフト・オート',
+    'The Witcher': 'ウィッチャー',
+    'The Witcher 3': 'ウィッチャー3',
+    'Cyberpunk': 'サイバーパンク',
+    'Cyberpunk 2077': 'サイバーパンク2077',
+    'Horizon': 'ホライゾン',
+    'Horizon Zero Dawn': 'ホライゾン ゼロ ドーン',
+    'God of War': 'ゴッド・オブ・ウォー',
+    'Spider-Man': 'スパイダーマン',
+    'Assassin\'s Creed': 'アサシンクリード',
+    'Battlefield': 'バトルフィールド',
+    'Call of Duty': 'コールオブデューティ',
+    // その他の人気タイトル
+    'Apex Legends': 'Apex Legends',
+    'League of Legends': 'リーグ・オブ・レジェンド',
+    'VALORANT': 'VALORANT',
+    'Counter-Strike': 'カウンターストライク',
+    'The Last of Us': 'ラスト・オブ・アス',
+    'Uncharted': 'アンチャーテッド',
+    'Bloodborne': 'ブラッドボーン',
+    'Ghost of Tsushima': 'ゴースト・オブ・ツシマ',
+    'Resident Evil': 'バイオハザード',
+    'Metal Gear Solid': 'メタルギアソリッド',
+    'Kingdom Hearts': 'キングダムハーツ',
+    'Tales of': 'テイルズ オブ',
+    'Dragon Ball': 'ドラゴンボール',
+    'One Piece': 'ワンピース',
+    'Naruto': 'ナルト',
+    'FIFA': 'FIFA',
+    'Pro Evolution Soccer': 'ウイニングイレブン',
+    'PES': 'ウイニングイレブン'
+  };
+
+  // 英語名を日本語名に変換（表示用）
+  const translateToJapanese = useCallback((englishName) => {
+    if (!englishName) return '';
+    
+    // 完全一致をチェック
+    if (englishToJapaneseMapping[englishName]) {
+      return englishToJapaneseMapping[englishName];
+    }
+    
+    // 部分一致をチェック（より長いマッチを優先）
+    const sortedEntries = Object.entries(englishToJapaneseMapping).sort((a, b) => b[0].length - a[0].length);
+    for (const [en, jp] of sortedEntries) {
+      const enLower = en.toLowerCase();
+      const nameLower = englishName.toLowerCase();
+      if (nameLower.includes(enLower)) {
+        // 元の名前に含まれるシリーズ名を日本語に置換
+        return englishName.replace(new RegExp(en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), jp);
+      }
+    }
+    
+    // 翻訳できない場合は元の英語名を返す
+    return englishName;
+  }, []);
 
   // 日本語キーワードを英語に変換（部分マッチ）
   const translateJapaneseKeyword = (keyword) => {
@@ -390,10 +504,13 @@ function GameLibraryModal({ onClose }) {
             console.log('Number of results:', data.results ? data.results.length : 0);
             
             if (data.results && data.results.length > 0) {
-              // 重複を避けて結果を追加
-              const newGames = data.results.filter(game => 
-                !allResults.some(existing => existing.id === game.id)
-              );
+              // 重複を避けて結果を追加し、日本語名を追加
+              const newGames = data.results
+                .filter(game => !allResults.some(existing => existing.id === game.id))
+                .map(game => ({
+                  ...game,
+                  japaneseName: translateToJapanese(game.name)
+                }));
               allResults = [...allResults, ...newGames];
               
               // 次のページがあるかチェック
@@ -477,7 +594,7 @@ function GameLibraryModal({ onClose }) {
         console.log('Search completed');
       }
     }, 500),
-    [RAWG_API_KEY]
+    [RAWG_API_KEY, translateToJapanese]
   );
 
   // スクロールイベントハンドラー
@@ -666,6 +783,7 @@ function GameLibraryModal({ onClose }) {
                     game={game} 
                     onAdd={handleAddGame}
                     isAdded={myGameApiIds.has(String(game.id))}
+                    translateToJapanese={translateToJapanese}
                   />
                 ))}
                 {loadingMore && (
