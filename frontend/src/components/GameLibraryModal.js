@@ -208,8 +208,12 @@ function GameLibraryModal({ onClose }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState(''); // プラットフォーム選択の状態
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreResults, setHasMoreResults] = useState(false);
+  const [searchResultsRef, setSearchResultsRef] = useState(null);
 
   const getToken = () => localStorage.getItem('token');
 
@@ -315,13 +319,15 @@ function GameLibraryModal({ onClose }) {
   };
 
   const debouncedSearch = useCallback(
-    debounce(async (query, platformId) => {
-      console.log('debouncedSearch called with:', { query, platformId, queryLength: query.length });
+    debounce(async (query, platformId, page = 1, append = false) => {
+      console.log('debouncedSearch called with:', { query, platformId, queryLength: query.length, page, append });
       
       if (query.length < 2) {
         console.log('Query too short, clearing results');
         setSearchResults([]);
         setSearchLoading(false);
+        setCurrentPage(1);
+        setHasMoreResults(false);
         return;
       }
       
@@ -329,11 +335,16 @@ function GameLibraryModal({ onClose }) {
         console.warn('RAWG_API_KEY is not set');
         setError('RAWG APIキーが設定されていません。ゲーム検索機能を使用するには、環境変数REACT_APP_RAWG_API_KEYを設定してください。フロントエンドのルートディレクトリに.envファイルを作成し、REACT_APP_RAWG_API_KEY=あなたのAPIキー を追加してください。');
         setSearchLoading(false);
+        setLoadingMore(false);
         return;
       }
       
-      console.log('Starting search...');
-      setSearchLoading(true);
+      if (page === 1) {
+        console.log('Starting search...');
+        setSearchLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError('');
       
       try {
@@ -354,7 +365,7 @@ function GameLibraryModal({ onClose }) {
           try {
             // ページサイズを増やして、より多くの結果を取得
             // ordering=-rating で評価順（人気順）にソート
-            let url = `https://api.rawg.io/api/games?key=${RAWG_API_KEY}&search=${encodeURIComponent(searchQuery)}&page_size=20&ordering=-rating`;
+            let url = `https://api.rawg.io/api/games?key=${RAWG_API_KEY}&search=${encodeURIComponent(searchQuery)}&page_size=20&page=${page}&ordering=-rating`;
             
             // プラットフォームフィルターが選択されている場合のみ追加
             if (platformId && platformId !== '') {
@@ -384,6 +395,15 @@ function GameLibraryModal({ onClose }) {
                 !allResults.some(existing => existing.id === game.id)
               );
               allResults = [...allResults, ...newGames];
+              
+              // 次のページがあるかチェック
+              if (data.next && data.results.length === 20) {
+                setHasMoreResults(true);
+              } else {
+                setHasMoreResults(false);
+              }
+            } else {
+              setHasMoreResults(false);
             }
           } catch (err) {
             console.error('Search error for query:', searchQuery, err);
@@ -419,11 +439,25 @@ function GameLibraryModal({ onClose }) {
             });
           });
           
-          // 最大20件まで表示
-          const displayResults = allResults.slice(0, 20);
-          setSearchResults(displayResults);
+          // 結果を表示（append=trueの場合は追加、falseの場合は置き換え）
+          if (append) {
+            setSearchResults(prev => {
+              // 重複を避けて結合
+              const combined = [...prev];
+              allResults.forEach(game => {
+                if (!combined.some(existing => existing.id === game.id)) {
+                  combined.push(game);
+                }
+              });
+              return combined;
+            });
+          } else {
+            setSearchResults(allResults);
+          }
+          
+          setCurrentPage(page);
           setError('');
-          console.log('Search results set:', displayResults.length, 'games (from', allResults.length, 'total results)');
+          console.log('Search results set:', allResults.length, 'games');
         } else {
           setSearchResults([]);
           if (platformId && platformId !== '') {
@@ -439,19 +473,38 @@ function GameLibraryModal({ onClose }) {
         setError(`ゲームの検索に失敗しました: ${err.message}`);
       } finally {
         setSearchLoading(false);
+        setLoadingMore(false);
         console.log('Search completed');
       }
     }, 500),
     [RAWG_API_KEY]
   );
 
+  // スクロールイベントハンドラー
+  const handleScroll = useCallback((e) => {
+    const element = e.target;
+    const scrollBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
+    
+    // 一番下から100px以内に来たら次のページを読み込む
+    if (scrollBottom < 100 && hasMoreResults && !loadingMore && !searchLoading && searchTerm.length >= 2) {
+      console.log('Loading more results, current page:', currentPage);
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      debouncedSearch(searchTerm, selectedPlatform, nextPage, true);
+    }
+  }, [hasMoreResults, loadingMore, searchLoading, searchTerm, currentPage, selectedPlatform, debouncedSearch]);
+
   useEffect(() => {
     console.log('useEffect triggered - searchTerm:', searchTerm, 'selectedPlatform:', selectedPlatform);
     if (searchTerm) {
-      debouncedSearch(searchTerm, selectedPlatform);
+      setCurrentPage(1);
+      setHasMoreResults(false);
+      debouncedSearch(searchTerm, selectedPlatform, 1, false);
     } else {
       setSearchResults([]);
       setSearchLoading(false);
+      setCurrentPage(1);
+      setHasMoreResults(false);
     }
   }, [searchTerm, selectedPlatform, debouncedSearch]);
 
@@ -564,6 +617,7 @@ function GameLibraryModal({ onClose }) {
                 <optgroup label="Nintendo">
                   <option value="7">Nintendo Switch</option>
                   <option value="83">Nintendo 3DS</option>
+                  <option value="20">Nintendo DS</option>
                   <option value="10">Wii U</option>
                   <option value="11">Wii</option>
                   <option value="105">Game Boy Advance</option>
@@ -573,6 +627,8 @@ function GameLibraryModal({ onClose }) {
                   <option value="187">PlayStation 4</option>
                   <option value="16">PlayStation 3</option>
                   <option value="15">PlayStation 2</option>
+                  <option value="19">PlayStation Vita</option>
+                  <option value="17">PlayStation Portable (PSP)</option>
                 </optgroup>
                 <optgroup label="Xbox">
                   <option value="186">Xbox Series X/S</option>
@@ -598,7 +654,12 @@ function GameLibraryModal({ onClose }) {
               </p>
             )}
             {!searchLoading && searchResults.length > 0 && (
-              <div className="search-results">
+              <div 
+                className="search-results"
+                onScroll={handleScroll}
+                ref={setSearchResultsRef}
+                style={{ maxHeight: '400px', overflowY: 'auto' }}
+              >
                 {searchResults.map(game => (
                   <GameResult 
                     key={game.id} 
@@ -607,6 +668,17 @@ function GameLibraryModal({ onClose }) {
                     isAdded={myGameApiIds.has(String(game.id))}
                   />
                 ))}
+                {loadingMore && (
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <div className="spinner"></div>
+                    <p style={{ marginTop: '10px', color: '#666' }}>さらに読み込み中...</p>
+                  </div>
+                )}
+                {!hasMoreResults && searchResults.length > 0 && (
+                  <p style={{ textAlign: 'center', padding: '10px', color: '#999', fontSize: '0.9rem' }}>
+                    すべての結果を表示しました
+                  </p>
+                )}
               </div>
             )}
           </div>
