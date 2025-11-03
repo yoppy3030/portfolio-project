@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './GameLibraryModal.css';
 import debounce from 'lodash.debounce';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 function GameResult({ game, onAdd, isAdded, translateToJapanese }) {
   // プラットフォーム名を取得（Nintendo Switch, PlayStation, Xbox, PC など）
@@ -222,6 +223,10 @@ function GameLibraryModal({ onClose }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreResults, setHasMoreResults] = useState(false);
   const [searchResultsRef, setSearchResultsRef] = useState(null);
+  const [sortOrder, setSortOrder] = useState('added'); // 並び替え順序: 'added', 'rating', 'playtime', 'title', 'custom'
+  const [isCustomOrder, setIsCustomOrder] = useState(false);
+  const [selectedLibraryPlatform, setSelectedLibraryPlatform] = useState(''); // マイライブラリのプラットフォーム絞り込み
+  const [selectedLibraryGenre, setSelectedLibraryGenre] = useState(''); // マイライブラリのジャンル絞り込み
 
   const getToken = () => localStorage.getItem('token');
 
@@ -233,7 +238,13 @@ function GameLibraryModal({ onClose }) {
       });
       const data = await response.json();
       if (data.success) {
-        setMyGames(data.playedGames);
+        // 初期データ取得時にソートを適用（カスタム順序でない場合）
+        if (!isCustomOrder && sortOrder !== 'custom') {
+          const sorted = getSortedGames(data.playedGames, sortOrder);
+          setMyGames(sorted);
+        } else {
+          setMyGames(data.playedGames);
+        }
       } else {
         setError(data.error || 'ライブラリの取得に失敗しました。');
       }
@@ -242,7 +253,57 @@ function GameLibraryModal({ onClose }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sortOrder, isCustomOrder]);
+
+  // 並び替え機能
+  const getSortedGames = (games, order) => {
+    if (!games || games.length === 0) return games;
+    
+    const sorted = [...games];
+    
+    switch (order) {
+      case 'rating':
+        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      case 'playtime':
+        return sorted.sort((a, b) => (b.playtime_hours || 0) - (a.playtime_hours || 0));
+      case 'title':
+        return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ja'));
+      case 'added':
+      default:
+        // created_atでソート（最新が先）
+        return sorted.sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return dateB - dateA;
+        });
+      case 'custom':
+        // カスタム順序はドラッグ&ドロップで維持
+        return sorted;
+    }
+  };
+
+  // ソート順が変更されたときの処理（カスタム順序でない場合のみ）
+  useEffect(() => {
+    if (sortOrder !== 'custom' && myGames.length > 0) {
+      const sorted = getSortedGames(myGames, sortOrder);
+      setMyGames(sorted);
+      setIsCustomOrder(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortOrder]); // sortOrderが変更されたときのみ実行
+
+  // ドラッグ&ドロップの処理
+  const handleDragEnd = useCallback((result) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(myGames);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    setMyGames(items);
+    setIsCustomOrder(true);
+    setSortOrder('custom');
+  }, [myGames]);
 
   useEffect(() => {
     fetchMyGames();
@@ -261,6 +322,13 @@ function GameLibraryModal({ onClose }) {
     'ポケモン': 'Pokemon',
     'スプラトゥーン': 'Splatoon',
     'モンスターハンター': 'Monster Hunter',
+    'MH': 'Monster Hunter',
+    'MH2': 'Monster Hunter 2',
+    'MH2ndG': 'Monster Hunter Freedom Unite',
+    'MH3': 'Monster Hunter 3',
+    'MHW': 'Monster Hunter: World',
+    'MHXX': 'Monster Hunter Generations Ultimate',
+    'MHRise': 'Monster Hunter Rise',
     'ドラゴンクエスト': 'Dragon Quest',
     'ファイナルファンタジー': 'Final Fantasy',
     'あつまれどうぶつの森': 'Animal Crossing',
@@ -479,15 +547,10 @@ function GameLibraryModal({ onClose }) {
           try {
             // ページサイズを増やして、より多くの結果を取得
             // ordering=-rating で評価順（人気順）にソート
-            let url = `https://api.rawg.io/api/games?key=${RAWG_API_KEY}&search=${encodeURIComponent(searchQuery)}&page_size=20&page=${page}&ordering=-rating`;
+            // プラットフォームフィルターはクライアント側で適用するため、APIには送らない
+            let url = `https://api.rawg.io/api/games?key=${RAWG_API_KEY}&search=${encodeURIComponent(searchQuery)}&page_size=20&page=${page}&ordering=-rating&search_exact=true`;
             
-            // プラットフォームフィルターが選択されている場合のみ追加
-            if (platformId && platformId !== '') {
-              url += `&platforms=${platformId}`;
-              console.log('Platform filter applied:', platformId);
-            }
-            
-            console.log('Fetching games from:', url);
+            console.log('Fetching games from:', url, 'Platform filter will be applied client-side:', platformId || 'none');
             
             const response = await fetch(url);
             console.log('Response status:', response.status, response.statusText);
@@ -500,7 +563,7 @@ function GameLibraryModal({ onClose }) {
             }
             
             const data = await response.json();
-            console.log('Search results received for query:', searchQuery, data);
+            console.log('RAWG API raw results for query:', searchQuery, data.results); // RAWG APIからの生の結果をログ出力
             console.log('Number of results:', data.results ? data.results.length : 0);
             
             if (data.results && data.results.length > 0) {
@@ -527,6 +590,29 @@ function GameLibraryModal({ onClose }) {
             lastError = err;
             continue; // 次のクエリを試す
           }
+        }
+        
+        console.log('Before client-side platform filtering, allResults count:', allResults.length, allResults.map(g => g.name)); // クライアントサイドフィルタリング前の結果
+
+        // プラットフォームフィルターが選択されている場合、クライアント側でもフィルタリング
+        if (platformId && platformId !== '') {
+          console.log('Client-side filtering by platform:', platformId);
+          allResults = allResults.filter(game => {
+            const gamePlatforms = game.platforms || [];
+            const hasPlatform = gamePlatforms.some(p => {
+              const platformIdStr = String(p.platform?.id || p.id || '');
+              const selectedPlatformStr = String(platformId);
+              return platformIdStr === selectedPlatformStr;
+            });
+            
+            if (!hasPlatform) {
+              console.log(`Game "${game.name}" (ID: ${game.id}) does not support platform ${platformId}`, {
+                gamePlatforms: gamePlatforms.map(p => ({ id: p.platform?.id || p.id, name: p.platform?.name || p.name }))
+              });
+            }
+            return hasPlatform;
+          });
+          console.log('After client-side platform filtering, results count:', allResults.length, allResults.map(g => g.name)); // クライアントサイドフィルタリング後の結果
         }
         
         // 結果を評価順にソート（重複を除去後）
@@ -636,7 +722,9 @@ function GameLibraryModal({ onClose }) {
         body: JSON.stringify({
           game_api_id: String(game.id),
           title: game.name,
-          image_url: game.background_image
+          image_url: game.background_image,
+          platforms: game.platforms, // RAWG APIから取得したplatformsをそのまま送信
+          genres: game.genres,       // RAWG APIから取得したgenresをそのまま送信
         })
       });
       const data = await response.json();
@@ -690,6 +778,26 @@ function GameLibraryModal({ onClose }) {
     }
   };
   
+  const filteredMyGames = useMemo(() => {
+    let filtered = myGames;
+
+    if (selectedLibraryPlatform) {
+      filtered = filtered.filter(game => {
+        const gamePlatforms = game.platforms || [];
+        return gamePlatforms.some(p => String(p.platform?.id || p.id) === selectedLibraryPlatform);
+      });
+    }
+
+    if (selectedLibraryGenre) {
+      filtered = filtered.filter(game => {
+        const gameGenres = game.genres || [];
+        return gameGenres.some(g => g.name === selectedLibraryGenre);
+      });
+    }
+
+    return getSortedGames(filtered, sortOrder);
+  }, [myGames, selectedLibraryPlatform, selectedLibraryGenre, sortOrder]);
+
   const myGameApiIds = new Set(myGames.map(g => g.game_api_id));
 
   return (
@@ -804,17 +912,135 @@ function GameLibraryModal({ onClose }) {
           <hr />
           
           <div className="my-library-section">
-            <h4>マイライブラリ ({myGames.length})</h4>
-            {loading ? <p>読み込み中...</p> : (
-              <div className="library-grid">
-                {myGames.length > 0 ? (
-                  myGames.map(game => (
-                    <LibraryItem key={game.id} game={game} onRemove={handleRemoveGame} onUpdate={handleUpdateGame} />
-                  ))
-                ) : (
-                  <p>ライブラリにゲームがありません。</p>
-                )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h4 style={{ margin: 0 }}>マイライブラリ ({filteredMyGames.length})</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <label htmlFor="sort-order" style={{ fontSize: '0.9rem', color: '#666' }}>並び替え:</label>
+                <select
+                  id="sort-order"
+                  value={sortOrder}
+                  onChange={(e) => {
+                    setSortOrder(e.target.value);
+                    setIsCustomOrder(false);
+                  }}
+                  style={{ padding: '5px 10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '0.9rem' }}
+                >
+                  <option value="added">追加日順（新しい順）</option>
+                  <option value="rating">評価順（高い順）</option>
+                  <option value="playtime">プレイ時間順（多い順）</option>
+                  <option value="title">タイトル順（あいうえお順）</option>
+                  <option value="custom">自由に並び替え</option>
+                </select>
+
+                <label htmlFor="library-platform-filter" style={{ fontSize: '0.9rem', color: '#666' }}>機種:</label>
+                <select
+                  id="library-platform-filter"
+                  value={selectedLibraryPlatform}
+                  onChange={(e) => setSelectedLibraryPlatform(e.target.value)}
+                  style={{ padding: '5px 10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '0.9rem' }}
+                >
+                  <option value="">全ての機種</option>
+                  <optgroup label="Nintendo">
+                    <option value="7">Nintendo Switch</option>
+                    <option value="83">Nintendo 3DS</option>
+                    <option value="20">Nintendo DS</option>
+                    <option value="10">Wii U</option>
+                    <option value="11">Wii</option>
+                    <option value="105">Game Boy Advance</option>
+                  </optgroup>
+                  <optgroup label="PlayStation">
+                    <option value="18">PlayStation 5</option>
+                    <option value="187">PlayStation 4</option>
+                    <option value="16">PlayStation 3</option>
+                    <option value="15">PlayStation 2</option>
+                    <option value="19">PlayStation Vita</option>
+                    <option value="17">PlayStation Portable (PSP)</option>
+                  </optgroup>
+                  <optgroup label="Xbox">
+                    <option value="186">Xbox Series X/S</option>
+                    <option value="1">Xbox One</option>
+                    <option value="14">Xbox 360</option>
+                  </optgroup>
+                  <optgroup label="その他">
+                    <option value="4">PC</option>
+                    <option value="3">iOS</option>
+                    <option value="21">Android</option>
+                  </optgroup>
+                </select>
+
+                <label htmlFor="library-genre-filter" style={{ fontSize: '0.9rem', color: '#666' }}>ジャンル:</label>
+                <select
+                  id="library-genre-filter"
+                  value={selectedLibraryGenre}
+                  onChange={(e) => setSelectedLibraryGenre(e.target.value)}
+                  style={{ padding: '5px 10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '0.9rem' }}
+                >
+                  <option value="">全てのジャンル</option>
+                  <option value="Action">アクション</option>
+                  <option value="Adventure">アドベンチャー</option>
+                  <option value="RPG">RPG</option>
+                  <option value="Strategy">ストラテジー</option>
+                  <option value="Shooter">シューター</option>
+                  <option value="Puzzle">パズル</option>
+                  <option value="Racing">レース</option>
+                  <option value="Sports">スポーツ</option>
+                  <option value="Simulation">シミュレーション</option>
+                  <option value="Fighting">格闘</option>
+                  <option value="Family">ファミリー</option>
+                  <option value="Arcade">アーケード</option>
+                  <option value="Platformer">プラットフォーマー</option>
+                </select>
               </div>
+            </div>
+            {loading ? <p>読み込み中...</p> : (
+              filteredMyGames.length > 0 ? (
+                sortOrder === 'custom' ? (
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <Droppable droppableId="library-grid" type="game" direction="grid">
+                      {(provided, snapshot) => (
+                        <div
+                          className="library-grid"
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          style={{
+                            backgroundColor: snapshot.isDraggingOver ? '#f0f0f0' : 'transparent',
+                            transition: 'background-color 0.2s',
+                          }}
+                        >
+                          {filteredMyGames.map((game, index) => (
+                            <Draggable key={game.id} draggableId={String(game.id)} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  style={{
+                                    ...provided.draggableProps.style,
+                                    opacity: snapshot.isDragging ? 0.7 : 1,
+                                    transform: provided.draggableProps.style?.transform,
+                                    zIndex: snapshot.isDragging ? 1000 : 1,
+                                  }}
+                                >
+                                  <LibraryItem game={game} onRemove={handleRemoveGame} onUpdate={handleUpdateGame} />
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                ) : (
+                  <div className="library-grid">
+                    {filteredMyGames.map(game => (
+                      <LibraryItem key={game.id} game={game} onRemove={handleRemoveGame} onUpdate={handleUpdateGame} />
+                    ))}
+                  </div>
+                )
+              ) : (
+                <p>ライブラリにゲームがありません。</p>
+              )
             )}
           </div>
         </div>

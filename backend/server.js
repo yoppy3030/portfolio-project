@@ -665,35 +665,44 @@ app.delete('/api/hobbies/:hobbyId', authenticateToken, (req, res) => {
 app.get('/api/played-games', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
 
-  // playtime_hoursカラムが存在しない可能性があるため、エラーを回避して取得
-  db.query('SELECT id, game_api_id, title, image_url, rating, comment, COALESCE(playtime_hours, NULL) as playtime_hours FROM played_games WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, results) => {
-    if (err) {
-      // playtime_hoursカラムが存在しない場合のエラーを回避
-      if (err.code === 'ER_BAD_FIELD_ERROR' && err.message.includes('playtime_hours')) {
-        // playtime_hoursなしで再試行
-        db.query('SELECT id, game_api_id, title, image_url, rating, comment FROM played_games WHERE user_id = ? ORDER BY created_at DESC', [userId], (err2, results2) => {
-          if (err2) {
-            console.error('データベースエラー:', err2);
-            return res.status(500).json({ success: false, error: 'プレイ済みゲームの取得中にデータベースエラーが発生しました。エラー詳細: ' + err2.message });
-          }
-          // playtime_hoursをnullとして追加
-          const resultsWithNull = results2.map(game => ({ ...game, playtime_hours: null }));
-          res.json({ success: true, playedGames: resultsWithNull });
-        });
+  db.query(
+    'SELECT id, game_api_id, title, image_url, rating, comment, COALESCE(playtime_hours, NULL) as playtime_hours, platforms, genres, created_at FROM played_games WHERE user_id = ? ORDER BY created_at DESC', // platforms, genres, created_at を追加
+    [userId],
+    (err, results) => {
+      if (err) {
+        // playtime_hoursカラムが存在しない場合のエラーを回避
+        if (err.code === 'ER_BAD_FIELD_ERROR' && (err.message.includes('playtime_hours') || err.message.includes('platforms') || err.message.includes('genres'))) {
+          // platforms, genres, playtime_hoursなしで再試行
+          db.query('SELECT id, game_api_id, title, image_url, rating, comment, created_at FROM played_games WHERE user_id = ? ORDER BY created_at DESC', [userId], (err2, results2) => {
+            if (err2) {
+              console.error('データベースエラー:', err2);
+              return res.status(500).json({ success: false, error: 'プレイ済みゲームの取得中にデータベースエラーが発生しました。エラー詳細: ' + err2.message });
+            }
+            // platforms, genres, playtime_hoursをnullとして追加
+            const resultsWithNull = results2.map(game => ({ ...game, playtime_hours: null, platforms: null, genres: null }));
+            res.json({ success: true, playedGames: resultsWithNull });
+          });
+        } else {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({ success: false, error: 'プレイ済みゲームの取得中にデータベースエラーが発生しました。エラー詳細: ' + err.message });
+        }
       } else {
-        console.error('データベースエラー:', err);
-        return res.status(500).json({ success: false, error: 'プレイ済みゲームの取得中にデータベースエラーが発生しました。エラー詳細: ' + err.message });
+        // platforms と genres をJSONパース
+        const playedGamesWithParsedData = results.map(game => ({
+          ...game,
+          platforms: game.platforms ? JSON.parse(game.platforms) : [],
+          genres: game.genres ? JSON.parse(game.genres) : [],
+        }));
+        res.json({ success: true, playedGames: playedGamesWithParsedData });
       }
-    } else {
-      res.json({ success: true, playedGames: results });
     }
-  });
+  );
 });
 
 // 新しいプレイ済みゲームを追加
 app.post('/api/played-games', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
-  const { game_api_id, title, image_url, rating, comment, playtime_hours } = req.body;
+  const { game_api_id, title, image_url, rating, comment, playtime_hours, platforms, genres } = req.body; // platforms と genres を追加
 
   if (!game_api_id || !title) {
     return res.status(400).json({ success: false, error: 'ゲームIDとタイトルは必須です。' });
@@ -706,7 +715,9 @@ app.post('/api/played-games', authenticateToken, (req, res) => {
     image_url,
     rating,
     comment,
-    playtime_hours: playtime_hours ? parseFloat(playtime_hours) : null
+    playtime_hours: playtime_hours ? parseFloat(playtime_hours) : null,
+    platforms: platforms ? JSON.stringify(platforms) : null, // JSON文字列に変換して保存
+    genres: genres ? JSON.stringify(genres) : null,         // JSON文字列に変換して保存
   };
 
   // playtime_hoursカラムが存在しない場合に備えて、エラー処理を追加
