@@ -259,3 +259,52 @@ input:checked + .slider:before {
   border-radius: 50%;
 }
 
+
+
+/* Hobbies Manager */
+.hobbies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hobby-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 4px;
+}
+
+.hobby-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-danger-outline {
+  background-color: transparent;
+  border: 1px solid #dc3545;
+  color: #dc3545;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-danger-outline:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+.error-message {
+    color: #dc3545;
+    margin-bottom: 1rem;
+}
+
+.success-message {
+    color: #28a745;
+    margin-bottom: 1rem;
+}
+

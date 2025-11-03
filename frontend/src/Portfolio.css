@@ -567,3 +567,26 @@
 .text-block:hover .project-card-actions {
   opacity: 1;
 }
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.checkbox-item input[type="checkbox"] {
+  width: auto;
+}
+
+.checkbox-item label {
+  font-weight: normal;
+}

@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import RGL, { WidthProvider } from 'react-grid-layout';
+import HobbiesDisplay from './HobbiesDisplay';
 
 import '../Portfolio.css';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
-const GridLayout = WidthProvider(RGL); // ここに移動
+const GridLayout = WidthProvider(RGL);
 
-const CATEGORIES = ["ダッシュボード", "学習", "趣味", "学校", "その他"];
+const CATEGORIES = ["ダッシュボード", "学習", "学校", "その他"];
 
 // A simple modal component for the form
 function AddProjectModal({ on_close, on_submit }) {
@@ -18,7 +19,7 @@ function AddProjectModal({ on_close, on_submit }) {
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
   const [textColor, setTextColor] = useState('#000000');
   const [size, setSize] = useState('medium');
-  const [category, setCategory] = useState(CATEGORIES[0]);
+  const [tags, setTags] = useState([]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -38,13 +39,21 @@ function AddProjectModal({ on_close, on_submit }) {
     }
   };
 
+  const handleTagChange = (tag) => {
+    setTags(prevTags =>
+      prevTags.includes(tag)
+        ? prevTags.filter(t => t !== tag)
+        : [...prevTags, tag]
+    );
+  };
+
   const handleProjectSubmit = (e) => {
     e.preventDefault();
     if (!title) {
       alert('プロジェクトのタイトルは必須です。');
       return;
     }
-    on_submit({ title, description, imageData, backgroundColor, textColor, size, category });
+    on_submit({ title, description, imageData, backgroundColor, textColor, size, tags });
   };
 
   return (
@@ -65,12 +74,21 @@ function AddProjectModal({ on_close, on_submit }) {
             <input id="project-image" type="file" accept="image/*" onChange={handleFileChange} />
           </div>
           <div className="form-group">
-            <label htmlFor="project-category">カテゴリー</label>
-            <select id="project-category" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <label>タグ</label>
+            <div className="checkbox-group">
               {CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+                <div key={cat} className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id={`add-tag-${cat}`}
+                    value={cat}
+                    checked={tags.includes(cat)}
+                    onChange={() => handleTagChange(cat)}
+                  />
+                  <label htmlFor={`add-tag-${cat}`}>{cat}</label>
+                </div>
               ))}
-            </select>
+            </div>
           </div>
           <div className="form-group">
             <label htmlFor="project-color">背景色</label>
@@ -100,18 +118,16 @@ function EditProjectModal({ project, on_close, on_submit }) {
   const [description, setDescription] = useState(project.description);
   const [imageData, setImageData] = useState(project.image_data);
   const [backgroundColor, setBackgroundColor] = useState(project.background_color || '#ffffff');
-  const [textColor, setTextColor] = useState(project.text_color || '#000000'); // Add textColor state
-  const [size, setSize] = useState(project.size || 'medium'); // Add size state
-  const [category, setCategory] = useState(project.category || CATEGORIES[0]);
+  const [textColor, setTextColor] = useState(project.text_color || '#000000');
+  const [size, setSize] = useState(project.size || 'medium');
+  const [tags, setTags] = useState(project.tags || []);
 
   useEffect(() => {
-    // Disable body scroll when the modal is open
     document.body.style.overflow = 'hidden';
-    // Re-enable body scroll when the modal is closed
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, []); // Empty dependency array ensures this effect runs only once when the modal mounts
+  }, []);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -124,13 +140,21 @@ function EditProjectModal({ project, on_close, on_submit }) {
     }
   };
 
+  const handleTagChange = (tag) => {
+    setTags(prevTags =>
+      prevTags.includes(tag)
+        ? prevTags.filter(t => t !== tag)
+        : [...prevTags, tag]
+    );
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!project.type === 'text' && !title) {
       alert('Project title is required.');
       return;
     }
-    on_submit({ ...project, title, description, imageData, backgroundColor, textColor, size, category });
+    on_submit({ ...project, title, description, imageData, backgroundColor, textColor, size, tags });
   };
 
   return (
@@ -151,12 +175,21 @@ function EditProjectModal({ project, on_close, on_submit }) {
             <input id="project-image" type="file" accept="image/*" onChange={handleFileChange} />
           </div>
           <div className="form-group">
-            <label htmlFor="project-category">カテゴリー</label>
-            <select id="project-category" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <label>タグ</label>
+            <div className="checkbox-group">
               {CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+                <div key={cat} className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id={`tag-${cat}`}
+                    value={cat}
+                    checked={tags.includes(cat)}
+                    onChange={() => handleTagChange(cat)}
+                  />
+                  <label htmlFor={`tag-${cat}`}>{cat}</label>
+                </div>
               ))}
-            </select>
+            </div>
           </div>
           <div className="form-group">
             <label htmlFor="project-color">背景色</label>
@@ -180,7 +213,6 @@ function EditProjectModal({ project, on_close, on_submit }) {
   );
 }
 
-// A simple modal component for adding text blocks
 function AddTextModal({ on_close, on_submit }) {
   const [content, setContent] = useState('');
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
@@ -233,7 +265,6 @@ function AddTextModal({ on_close, on_submit }) {
   );
 }
 
-// A modal component for editing text blocks
 function EditTextModal({ project, on_close, on_submit }) {
   const [content, setContent] = useState(project.content);
   const [backgroundColor, setBackgroundColor] = useState(project.background_color || '#ffffff');
@@ -286,8 +317,6 @@ function EditTextModal({ project, on_close, on_submit }) {
   );
 }
 
-
-// Helper function to convert project size to grid dimensions
 const sizeToDimensions = (size) => {
   switch (size) {
     case 'small':
@@ -301,7 +330,6 @@ const sizeToDimensions = (size) => {
   }
 };
 
-// TextEditBlock component for inline editing
 function TextEditBlock({ project, onContentUpdate, onDelete, onEdit }) {
   const [isEditing, setIsEditing] = useState(false);
   const [currentContent, setCurrentContent] = useState(project.content || '');
@@ -334,7 +362,7 @@ function TextEditBlock({ project, onContentUpdate, onDelete, onEdit }) {
         overflow: 'hidden',
         wordBreak: 'break-word',
         position: 'relative',
-        height: '100%', // 追加
+        height: '100%',
       }}
       onDoubleClick={handleDoubleClick}
     >
@@ -352,13 +380,13 @@ function TextEditBlock({ project, onContentUpdate, onDelete, onEdit }) {
             color: project.text_color,
             resize: 'none',
             outline: 'none',
-            fontSize: `${Math.min(Math.sqrt(project.layout_w * project.layout_h) * 8, 48)}px`, // 幅と高さの両方を考慮してフォントサイズを調整
+            fontSize: `${Math.min(Math.sqrt(project.layout_w * project.layout_h) * 8, 48)}px`,
             fontFamily: 'inherit',
             textAlign: 'center',
           }}
         />
       ) : (
-        <p style={{ margin: 0, color: project.text_color, fontSize: `${Math.min(Math.sqrt(project.layout_w * project.layout_h) * 8, 48)}px` }}>{currentContent}</p> // 幅と高さの両方を考慮してフォントサイズを調整
+        <p style={{ margin: 0, color: project.text_color, fontSize: `${Math.min(Math.sqrt(project.layout_w * project.layout_h) * 8, 48)}px` }}>{currentContent}</p>
       )}
       <div className="project-card-actions" style={{ top: '5px', right: '5px' }}>
         <button className="project-action-icon" onClick={(e) => { e.stopPropagation(); onEdit(project); }}>
@@ -372,60 +400,25 @@ function TextEditBlock({ project, onContentUpdate, onDelete, onEdit }) {
   );
 }
 
-export default function Portfolio({ onTemplateChange }) {
+export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio }) {
   const { portfolioId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [portfolio, setPortfolio] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddTextModal, setShowAddTextModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [editingTextBlock, setEditingTextBlock] = useState(null);
 
-  const fetchPortfolio = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/portfolios/${portfolioId}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch portfolio. You may not have access.');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setPortfolio(data.portfolio);
-        if (onTemplateChange) {
-          onTemplateChange(data.portfolio.template);
-        }
-      } else {
-        throw new Error(data.error || 'Failed to fetch portfolio.');
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [portfolioId, navigate, onTemplateChange]);
-
   useEffect(() => {
-    fetchPortfolio();
-
+    if (portfolio && onTemplateChange) {
+      onTemplateChange(portfolio.template);
+    }
     return () => {
       if (onTemplateChange) {
         onTemplateChange(null);
       }
     };
-  }, [fetchPortfolio, onTemplateChange]);
+  }, [portfolio, onTemplateChange]);
 
   const handleAddNewProject = async (projectData) => {
     const token = localStorage.getItem('token');
@@ -449,7 +442,7 @@ export default function Portfolio({ onTemplateChange }) {
         } else {
           setShowAddModal(false);
         }
-        fetchPortfolio(); // Refresh the portfolio data
+        fetchPortfolio();
       } else {
         alert(`Error: ${data.error}`);
       }
@@ -472,13 +465,7 @@ export default function Portfolio({ onTemplateChange }) {
       return;
     }
 
-    let dataToSend;
-    if (updatedData.type === 'text') {
-      dataToSend = updatedData;
-    } else {
-      const { size, ...restOfData } = updatedData;
-      dataToSend = { ...restOfData, size };
-    }
+    const dataToSend = updatedData;
 
     try {
       const response = await fetch(`http://localhost:5000/api/portfolios/${portfolioId}/projects/${projectId}`, {
@@ -495,7 +482,7 @@ export default function Portfolio({ onTemplateChange }) {
         if (updatedData.type !== 'text') {
           setEditingProject(null);
         }
-        fetchPortfolio(); // Refresh the portfolio data
+        fetchPortfolio();
       } else {
         alert(`Error: ${data.error}`);
       }
@@ -521,7 +508,7 @@ export default function Portfolio({ onTemplateChange }) {
 
       const data = await response.json();
       if (data.success) {
-        fetchPortfolio(); // Refresh the portfolio data
+        fetchPortfolio();
       } else {
         alert(`Error: ${data.error}`);
       }
@@ -532,23 +519,6 @@ export default function Portfolio({ onTemplateChange }) {
   };
 
   const handleLayoutChange = useCallback(async (layout) => {
-    // This needs to be adapted to use the state from this component
-    const currentProjects = portfolio.projects;
-    const updatedProjects = currentProjects.map(p => {
-        const layoutItem = layout.find(l => l.i === p.id.toString());
-        if (layoutItem) {
-            return {
-                ...p,
-                layout_x: layoutItem.x,
-                layout_y: layoutItem.y,
-                layout_w: layoutItem.w,
-                layout_h: layoutItem.h,
-            };
-        }
-        return p;
-    });
-    setPortfolio({ ...portfolio, projects: updatedProjects });
-
     const token = localStorage.getItem('token');
     try {
       await fetch(`http://localhost:5000/api/portfolios/${portfolioId}/layout`, {
@@ -562,9 +532,9 @@ export default function Portfolio({ onTemplateChange }) {
     } catch (err) {
       console.error('Failed to save layout:', err);
       alert('レイアウトの保存に失敗しました。ページをリロードしてください。');
-      fetchPortfolio(); // Re-fetch to ensure consistency
+      fetchPortfolio();
     }
-  }, [portfolio, portfolioId, fetchPortfolio]);
+  }, [portfolioId, fetchPortfolio]);
 
   const handleDeletePortfolio = async () => {
     if (!window.confirm('このポートフォリオを本当に削除しますか？この操作は元に戻せません。')) {
@@ -593,19 +563,17 @@ export default function Portfolio({ onTemplateChange }) {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!portfolio) return <div>Portfolio not found.</div>;
+  if (!portfolio) return <div>Loading...</div>;
 
   const searchParams = new URLSearchParams(location.search);
   const categoryFilter = searchParams.get('category');
 
   const filteredProjects = categoryFilter
-    ? portfolio.projects.filter(p => p.category === categoryFilter)
+    ? portfolio.projects.filter(p => p.tags?.includes(categoryFilter))
     : portfolio.projects;
 
   const generateLayout = () => {
-    return filteredProjects.map((p, index) => {
+    return (filteredProjects || []).map((p, index) => {
       const { w, h } = sizeToDimensions(p.size);
       const layout_x = p.layout_x !== null && p.layout_x !== undefined ? p.layout_x : (index * 4) % 12;
       const layout_y = p.layout_y !== null && p.layout_y !== undefined ? p.layout_y : Math.floor(index / 3) * 4;
@@ -628,13 +596,15 @@ export default function Portfolio({ onTemplateChange }) {
         <h1>{portfolio.title}</h1>
         <div className="portfolio-header-actions">
           <button className="btn-primary" onClick={() => setShowAddModal(true)}>新しいプロジェクトを追加</button>
-          <button className="btn-primary" onClick={() => setShowAddTextModal(true)}>テキストを追加</button> {/* 追加 */}
+          <button className="btn-primary" onClick={() => setShowAddTextModal(true)}>テキストを追加</button>
           <button className="btn-danger" onClick={handleDeletePortfolio}>ポートフォリオを削除</button>
         </div>
       </div>
 
+      <HobbiesDisplay />
+
       {showAddModal && <AddProjectModal on_close={() => setShowAddModal(false)} on_submit={handleAddNewProject} />}
-      {showAddTextModal && <AddTextModal on_close={() => setShowAddTextModal(false)} on_submit={handleAddNewProject} />} {/* 追加 */}
+      {showAddTextModal && <AddTextModal on_close={() => setShowAddTextModal(false)} on_submit={handleAddNewProject} />}
       {editingProject && <EditProjectModal project={editingProject} on_close={() => setEditingProject(null)} on_submit={handleUpdateProject} />}
       {editingTextBlock && <EditTextModal project={editingTextBlock} on_close={() => setEditingTextBlock(null)} on_submit={(updated) => { handleUpdateProject(updated); setEditingTextBlock(null); }} />}
 
@@ -654,8 +624,7 @@ export default function Portfolio({ onTemplateChange }) {
             <div
               key={project.id.toString()}
               data-grid={{ x: project.layout_x, y: project.layout_y, w: project.layout_w, h: project.layout_h }}
-              data-category={project.category || ''}
-              style={{ height: '100%' }} // ここに height: '100%' を追加
+              style={{ height: '100%' }}
             >
               {project.type === 'text' ? (
                 <TextEditBlock
@@ -670,9 +639,8 @@ export default function Portfolio({ onTemplateChange }) {
                   style={{
                     backgroundColor: project.background_color,
                     backgroundImage: project.image_data ? `url(${project.image_data})` : 'none',
-                    height: '100%', // project-card にも height: '100%' を追加
+                    height: '100%',
                   }}
-                  // onClick={() => navigate(`/portfolio/${portfolioId}/project/${project.id}`)} // Navigation can interfere with drag/resize
                 >
                   <div className="project-card-overlay"></div>
                   <div className="project-card-content">
@@ -680,9 +648,9 @@ export default function Portfolio({ onTemplateChange }) {
                     <p style={{ color: project.text_color, fontSize: `${Math.min(Math.sqrt((project.layout_w || 4) * (project.layout_h || 4)) * 4, 24)}px` }}>{project.description}</p>
                   </div>
                   
-                  {project.category && (
+                  {project.tags && project.tags.length > 0 && (
                     <div className="project-card-tags">
-                      <span className="project-tag">{project.category}</span>
+                      {project.tags.map(tag => <span key={tag} className="project-tag">{tag}</span>)}
                     </div>
                   )}
 

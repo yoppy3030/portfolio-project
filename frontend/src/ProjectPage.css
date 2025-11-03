@@ -1,32 +1,258 @@
-.project-detail-page {
+/* ProjectPage.css */
+
+.project-editor-page {
+  padding: 2rem;
+}
+
+.editor-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  padding: 40px 20px;
-  max-width: 1000px;
-  margin: 0 auto;
-  text-align: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
 }
 
-.project-header {
-  margin-bottom: 40px;
+.editor-header h1 {
+  font-size: 2rem;
+  margin: 0;
 }
 
-.project-header h1 {
-  font-size: 3em;
+
+.project-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.project-actions button {
+    padding: 0.8rem 1.2rem; /* ボタンのサイズを少し大きく */
+    border: none;
+    cursor: pointer;
+    border-radius: 5px; /* 角を少し丸く */
+    font-weight: 600; /* 文字を少し太く */
+    transition: all 0.3s ease; /* スムーズなトランジション */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* わずかな影 */
+}
+
+.project-actions .btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.project-actions .btn-primary:hover {
+  background-color: #0056b3;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* ホバー時の影を濃く */
+  transform: translateY(-2px); /* 少し上に移動 */
+}
+
+.project-actions .btn-secondary {
+  background-color: #f0f0f0;
   color: #333;
-  margin-bottom: 10px;
+  border: 1px solid #ccc;
 }
 
-.project-header p {
-  font-size: 1.2em;
-  color: #666;
-  line-height: 1.6;
+.project-actions .btn-secondary:hover {
+  background-color: #e0e0e0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* ホバー時の影を濃く */
+  transform: translateY(-2px); /* 少し上に移動 */
 }
 
-.project-content {
+
+.react-grid-layout {
+  background: #f9f9f9;
+  border: 1px dashed #ccc;
+  min-height: 500px;
+}
+
+.grid-item {
+  background: #fff;
+  border: 1px solid #ddd;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-radius: 4px;
+  overflow: hidden; /* Important for content blocks */
+}
+
+.content-block {
+  position: relative;
   width: 100%;
-  /* This can be further styled for flexible arrangement, e.g., using grid or flexbox */
-  /* For now, it will take full width and content inside can be styled */
-  text-align: left; /* Align content within this section to left by default */
+  height: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.text-block textarea {
+  width: 100%;
+  height: 100%;
+  border: none;
+  resize: none;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.text-block textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5);
+}
+
+.image-block {
+  padding: 0;
+  overflow: hidden;
+}
+
+.image-block img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.delete-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(255, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.grid-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.delete-btn:hover {
+  background: rgba(255, 0, 0, 1);
+}
+
+.delete-btn .material-icons {
+  font-size: 16px;
+}
+
+/* Text Editor Toolbar */
+.text-editor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f0f0f0;
+  padding: 5px;
+  border-bottom: 1px solid #ddd;
+}
+
+.text-editor-toolbar select {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.text-editor-toolbar button {
+  padding: 2px 8px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+/* Text Block Styles */
+.text-block h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 0.67em 0;
+}
+
+.text-block h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0.83em 0;
+}
+
+.text-block h3 {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin: 1em 0;
+}
+
+.text-block p {
+  margin: 1em 0;
+}
+
+/* Adjust textarea inside editor */
+.text-block textarea {
+  height: calc(100% - 40px); /* Adjust based on toolbar height */
+}
+
+/* Main container for editor and TOC */
+.project-editor-container {
+  display: flex;
+  flex-direction: row-reverse; /* TOC on the right */
+  align-items: flex-start;
+}
+
+.project-editor-main {
+  flex-grow: 1;
+}
+
+/* Table of Contents Sidebar */
+.toc-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  padding: 2rem;
+  position: sticky;
+  top: 2rem;
+  align-self: flex-start;
+  border-left: 1px solid #eee;
+  margin-left: 1rem;
+}
+
+.toc-sidebar h4 {
+  margin-top: 0;
+  font-size: 1.2em;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.5em;
+}
+
+.toc-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.toc-sidebar li a {
+  display: block;
+  padding: 0.5em 0;
+  color: #333;
+  text-decoration: none;
+  transition: color 0.2s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.toc-sidebar li:last-child a {
+    border-bottom: none;
+}
+
+.toc-sidebar li a:hover {
+  color: #007bff;
+}
+
+/* Indentation for heading levels */
+.toc-item.toc-level-h2 a {
+  padding-left: 1em;
+}
+
+.toc-item.toc-level-h3 a {
+  padding-left: 2em;
 }

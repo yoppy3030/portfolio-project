@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { withTranslation } from 'react-i18next';
+import HobbiesManager from './HobbiesManager';
 import '../Settings.css';
 
 function Settings({ user, onUserUpdate, onLogout, t, i18n, onLanguageChange, language }) {
@@ -244,6 +245,7 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n, onLanguageChange, lan
       <div className="settings-layout">
         <div className="settings-sidebar">
           <button onClick={() => { setMessage(''); setActiveTab('profile'); }} className={activeTab === 'profile' ? 'active' : ''}>{t('settings_profile_button')}</button>
+          <button onClick={() => { setMessage(''); setActiveTab('hobbies'); }} className={activeTab === 'hobbies' ? 'active' : ''}>{t('settings_hobbies_button', '趣味')}</button>
           <button onClick={() => { setMessage(''); setActiveTab('account'); }} className={activeTab === 'account' ? 'active' : ''}>{t('settings_account_button')}</button>
           <button onClick={() => { setMessage(''); setActiveTab('notifications'); }} className={activeTab === 'notifications' ? 'active' : ''}>{t('settings_notifications_button')}</button>
           <button onClick={() => { setMessage(''); setActiveTab('general'); }} className={activeTab === 'general' ? 'active' : ''}>{t('settings_general_title')}</button>
@@ -267,6 +269,9 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n, onLanguageChange, lan
               </div>
               <button onClick={handleProfileSave}>{t('settings_save_button')}</button>
             </div>
+          )}
+          {activeTab === 'hobbies' && (
+            <HobbiesManager />
           )}
           {activeTab === 'account' && (
             <div className="settings-content">

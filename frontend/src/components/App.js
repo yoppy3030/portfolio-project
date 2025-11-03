@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useMatch } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import Header from "./Header";
 import MainContent from "./MainContent";
@@ -25,9 +25,65 @@ function AppContent() {
   const [language, setLanguage] = useState(i18n.language);
   const [activeTemplate, setActiveTemplate] = useState(null);
 
+  // --- Portfolio State Management ---
+  const [portfolio, setPortfolio] = useState(null);
+  const portfolioMatch = useMatch('/portfolio/:portfolioId/*');
+  const portfolioIdFromUrl = portfolioMatch?.params?.portfolioId;
+
   const handleTemplateChange = useCallback((templateName) => {
     setActiveTemplate(templateName);
   }, []);
+
+  const fetchPortfolio = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token || !user) {
+      setPortfolio(null);
+      return;
+    }
+
+    let currentPortfolioId = portfolioIdFromUrl;
+
+    if (!currentPortfolioId) {
+      try {
+        const response = await fetch(`http://localhost:5000/api/user/portfolio`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            currentPortfolioId = data.portfolioId;
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user's portfolio link:", error);
+      }
+    }
+
+    if (currentPortfolioId) {
+      try {
+        const response = await fetch(`http://localhost:5000/api/portfolios/${currentPortfolioId}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.success) {
+          setPortfolio(data.portfolio);
+          handleTemplateChange(data.portfolio.template);
+        } else {
+          setPortfolio(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch portfolio:", error);
+        setPortfolio(null);
+      }
+    } else {
+      setPortfolio(null);
+    }
+  }, [user, portfolioIdFromUrl, handleTemplateChange]);
+
+  useEffect(() => {
+    fetchPortfolio();
+  }, [fetchPortfolio]);
+  // --- End of Portfolio State Management ---
 
   useEffect(() => {
     if (!location.pathname.startsWith('/portfolio/')) {
@@ -47,7 +103,6 @@ function AppContent() {
         if (data.success) {
           const userData = data.user;
           setUser(userData);
-          // Set theme and language from user data
           const userLang = userData.language || 'ja';
           i18n.changeLanguage(userLang);
           setLanguage(userLang);
@@ -65,9 +120,8 @@ function AppContent() {
     } else {
       setIsLoading(false);
     }
-  }, [i18n]); // Add i18n to dependency array
+  }, [i18n]);
 
-  // Apply theme when user object changes
   useEffect(() => {
     if (user && user.theme) {
       if (user.theme === 'dark') {
@@ -78,50 +132,43 @@ function AppContent() {
         document.body.classList.remove('dark-theme');
       }
     } else {
-      // Default theme if user or user.theme is not set
       document.body.classList.add('light-theme');
       document.body.classList.remove('dark-theme');
     }
   }, [user]);
 
-  // Function to update login state
   const handleLogin = (userData, token) => {
     localStorage.setItem('token', token);
     setUser(userData);
-    navigate('/'); // Redirect to homepage
+    navigate('/');
   };
 
-  // Logout process
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('token');
-    navigate('/'); // Redirect to homepage
+    navigate('/');
   };
 
-  // User info update process
   const handleUserUpdate = (updatedUser) => {
     setUser(updatedUser);
-    // Also update language if it changed
     const newLang = updatedUser.language || 'ja';
     if (language !== newLang) {
       handleLanguageChange(newLang);
     }
   };
 
-  // Language change handler
   const handleLanguageChange = (newLang) => {
     i18n.changeLanguage(newLang);
     setLanguage(newLang);
   };
 
-  // Don't render anything while loading
   if (isLoading) {
     return <div>{t('loading')}</div>;
   }
 
   return (
     <div className={`wrapper ${activeTemplate ? activeTemplate + '-template' : ''}`}>
-      <Header user={user} onLogout={handleLogout} theme={user?.theme || 'light'} language={language} activeTemplate={activeTemplate} />
+      <Header user={user} onLogout={handleLogout} theme={user?.theme || 'light'} language={language} activeTemplate={activeTemplate} portfolio={portfolio} />
       <Routes>
         <Route path="/" element={<MainContent user={user} theme={user?.theme} />} />
         <Route path="/register" element={<RegisterForm theme={user?.theme} />} />
@@ -131,8 +178,8 @@ function AppContent() {
         <Route path="/settings" element={<Settings user={user} onUserUpdate={handleUserUpdate} onLogout={handleLogout} onLanguageChange={handleLanguageChange} language={language} />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/portfolio-builder" element={<PortfolioBuilder theme={user?.theme} />} />
-        <Route path="/portfolio/:portfolioId" element={<Portfolio theme={user?.theme} onTemplateChange={handleTemplateChange} />} />
-        <Route path="/portfolio/:portfolioId/project/:projectId" element={<ProjectPage theme={user?.theme} />} />
+        <Route path="/portfolio/:portfolioId" element={<Portfolio onTemplateChange={handleTemplateChange} portfolio={portfolio} fetchPortfolio={fetchPortfolio} />} />
+        <Route path="/portfolio/:portfolioId/project/:projectId" element={<ProjectPage />} />
       </Routes>
       <Footer theme={user?.theme} activeTemplate={activeTemplate} />
     </div>

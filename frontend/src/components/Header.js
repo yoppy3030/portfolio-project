@@ -1,45 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation, useMatch } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import logoImg from '../assets/logo.png';
 import '../Header.css';
 
-const CATEGORIES = ["ダッシュボード", "学習", "趣味", "学校", "その他"];
+const CATEGORIES = ["ダッシュボード", "学習", "学校", "その他"];
 
-function Header({ user, onLogout, theme, language, activeTemplate }) {
+function Header({ user, onLogout, theme, language, activeTemplate, portfolio }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [openMenu, setOpenMenu] = useState(null);
-  const [portfolio, setPortfolio] = useState(null);
   const menuRef = useRef(null);
-  const portfolioMatch = useMatch('/portfolio/:portfolioId');
-  const portfolioIdFromUrl = portfolioMatch?.params?.portfolioId;
-
-  useEffect(() => {
-    const fetchHeaderPortfolio = async () => {
-      const portfolioId = portfolioIdFromUrl || user?.portfolioId;
-      if (user && portfolioId) {
-        const token = localStorage.getItem('token');
-        try {
-          const response = await fetch(`http://localhost:5000/api/portfolios/${portfolioId}`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          });
-          const data = await response.json();
-          if (data.success) {
-            setPortfolio(data.portfolio);
-          } else {
-            setPortfolio(null);
-          }
-        } catch (error) {
-          setPortfolio(null);
-        }
-      } else {
-        setPortfolio(null);
-      }
-    };
-    fetchHeaderPortfolio();
-  }, [user, portfolioIdFromUrl]);
 
   const handleCategoryClick = (category) => {
     if (openMenu === category) {
@@ -74,7 +46,7 @@ function Header({ user, onLogout, theme, language, activeTemplate }) {
         </div>
       );
     }
-    const projects = portfolio.projects?.filter(p => p.category === category) || [];
+    const projects = portfolio.projects?.filter(p => p.tags?.includes(category)) || [];
     if (projects.length === 0) {
       return (
         <div className="category-dropdown">
@@ -116,7 +88,7 @@ function Header({ user, onLogout, theme, language, activeTemplate }) {
         <div className="header-right-content">
           {user && (
             <nav className="header-nav" ref={menuRef}>
-              <Link to={user.portfolioId ? `/portfolio/${user.portfolioId}` : '/portfolio-builder'} className="header-nav-item">ポートフォリオ</Link>
+              <Link to={portfolio ? `/portfolio/${portfolio.id}` : '/portfolio-builder'} className="header-nav-item">ポートフォリオ</Link>
               {CATEGORIES.map(category => (
                 <div key={category} className="header-nav-item-container">
                   <button className="header-nav-item" onClick={() => handleCategoryClick(category)}>

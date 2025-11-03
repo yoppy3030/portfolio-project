@@ -578,6 +578,173 @@ app.put('/api/general-settings', authenticateToken, (req, res) => {
   }
 });
 
+// --- 趣味(Hobbies)関連API ---
+
+// 趣味テーブルのSQLスキーマ (要実行)
+// CREATE TABLE hobbies (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   user_id INT NOT NULL,
+//   name VARCHAR(255) NOT NULL,
+//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+//   UNIQUE KEY user_hobby (user_id, name)
+// );
+
+// ユーザーの趣味リストを取得
+app.get('/api/hobbies', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+
+  db.query('SELECT id, name FROM hobbies WHERE user_id = ? ORDER BY name', [userId], (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '趣味の取得中にデータベースエラーが発生しました。' });
+    }
+    res.json({ success: true, hobbies: results });
+  });
+});
+
+// 新しい趣味を追加
+app.post('/api/hobbies', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { name } = req.body;
+
+  if (!name || name.trim() === '') {
+    return res.status(400).json({ success: false, error: '趣味の名前は必須です。' });
+  }
+
+  db.query('INSERT INTO hobbies (user_id, name) VALUES (?, ?)', [userId, name.trim()], (err, result) => {
+    if (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ success: false, error: 'その趣味は既に追加されています。' });
+      }
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '趣味の追加中にデータベースエラーが発生しました。' });
+    }
+    res.status(201).json({ success: true, message: '趣味が追加されました。', hobby: { id: result.insertId, name: name.trim() } });
+  });
+});
+
+// 趣味を削除
+app.delete('/api/hobbies/:hobbyId', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { hobbyId } = req.params;
+
+  db.query('DELETE FROM hobbies WHERE id = ? AND user_id = ?', [hobbyId, userId], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '趣味の削除中にデータベースエラーが発生しました。' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: '趣味が見つからないか、削除する権限がありません。' });
+    }
+    res.json({ success: true, message: '趣味が削除されました。' });
+  });
+});
+
+// --- プレイ済みゲーム(Played Games)関連API ---
+
+// プレイ済みゲームテーブルのSQLスキーマ (要実行)
+// CREATE TABLE played_games (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   user_id INT NOT NULL,
+//   game_api_id VARCHAR(255) NOT NULL, // 外部APIのゲームID
+//   title VARCHAR(255) NOT NULL,
+//   image_url VARCHAR(2083),
+//   rating INT, // 5段階評価など
+//   comment TEXT,
+//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+//   UNIQUE KEY user_game (user_id, game_api_id)
+// );
+
+// ユーザーのプレイ済みゲームリストを取得
+app.get('/api/played-games', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+
+  db.query('SELECT id, game_api_id, title, image_url, rating, comment FROM played_games WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'プレイ済みゲームの取得中にデータベースエラーが発生しました。' });
+    }
+    res.json({ success: true, playedGames: results });
+  });
+});
+
+// 新しいプレイ済みゲームを追加
+app.post('/api/played-games', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { game_api_id, title, image_url, rating, comment } = req.body;
+
+  if (!game_api_id || !title) {
+    return res.status(400).json({ success: false, error: 'ゲームIDとタイトルは必須です。' });
+  }
+
+  const newGame = {
+    user_id: userId,
+    game_api_id,
+    title,
+    image_url,
+    rating,
+    comment
+  };
+
+  db.query('INSERT INTO played_games SET ?', newGame, (err, result) => {
+    if (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ success: false, error: 'そのゲームは既に追加されています。' });
+      }
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'ゲームの追加中にデータベースエラーが発生しました。' });
+    }
+    res.status(201).json({ success: true, message: 'ゲームがライブラリに追加されました。', playedGame: { id: result.insertId, ...newGame } });
+  });
+});
+
+// プレイ済みゲームを更新 (評価やコメント)
+app.put('/api/played-games/:playedGameId', authenticateToken, (req, res) => {
+    const { id: userId } = req.user;
+    const { playedGameId } = req.params;
+    const { rating, comment } = req.body;
+
+    if (rating === undefined && comment === undefined) {
+        return res.status(400).json({ success: false, error: '更新する評価またはコメントが必要です。' });
+    }
+
+    const fieldsToUpdate = {};
+    if (rating !== undefined) fieldsToUpdate.rating = rating;
+    if (comment !== undefined) fieldsToUpdate.comment = comment;
+
+    db.query('UPDATE played_games SET ? WHERE id = ? AND user_id = ?', [fieldsToUpdate, playedGameId, userId], (err, result) => {
+        if (err) {
+            console.error('データベースエラー:', err);
+            return res.status(500).json({ success: false, error: 'ゲーム情報の更新中にデータベースエラーが発生しました。' });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'ゲームが見つからないか、更新する権限がありません。' });
+        }
+        res.json({ success: true, message: 'ゲーム情報が更新されました。' });
+    });
+});
+
+// プレイ済みゲームを削除
+app.delete('/api/played-games/:playedGameId', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { playedGameId } = req.params;
+
+  db.query('DELETE FROM played_games WHERE id = ? AND user_id = ?', [playedGameId, userId], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'ゲームの削除中にデータベースエラーが発生しました。' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: 'ゲームが見つからないか、削除する権限がありません。' });
+    }
+    res.json({ success: true, message: 'ゲームがライブラリから削除されました。' });
+  });
+});
+
+
+
 // 新規ポートフォリオ作成API
 // Required table schema for 'portfolios' table:
 // CREATE TABLE portfolios (
@@ -929,7 +1096,7 @@ app.post('/api/portfolios/:portfolioId/projects', authenticateToken, (req, res) 
   });
 });
 
-// Get a single project
+// Get a single project with its content blocks
 app.get('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (req, res) => {
   try {
     const { portfolioId, projectId } = req.params;
@@ -945,7 +1112,7 @@ app.get('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (
         return res.status(403).json({ success: false, error: 'このポートフォリオにアクセスする権限がありません。' });
       }
 
-      // Now, get the project
+      // Now, get the project details
       db.query('SELECT * FROM projects WHERE id = ? AND portfolio_id = ?', [projectId, portfolioId], (err, projectResults) => {
         if (err) {
           console.error('データベースエラー:', err);
@@ -956,7 +1123,18 @@ app.get('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (
           return res.status(404).json({ success: false, error: 'プロジェクトが見つかりません。' });
         }
 
-        res.json({ success: true, project: projectResults[0] });
+        const project = projectResults[0];
+
+        // Then, get all content blocks for the project
+        db.query('SELECT * FROM project_contents WHERE project_id = ? ORDER BY content_order ASC', [projectId], (err, contentResults) => {
+          if (err) {
+            console.error('データベースエラー:', err);
+            return res.status(500).json({ success: false, error: 'コンテンツブロックの取得中にデータベースエラーが発生しました。' });
+          }
+
+          project.contents = contentResults;
+          res.json({ success: true, project: project });
+        });
       });
     });
   } catch (error) {
@@ -1288,6 +1466,236 @@ app.put('/api/portfolios/:portfolioId/layout', authenticateToken, (req, res) => 
         });
       });
     });
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// --- Content Block APIs ---
+
+// Add a new content block to a project
+app.post('/api/projects/:projectId/contents', authenticateToken, async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { id: userId } = req.user;
+    const { type, content, layout_w, layout_h, block_style } = req.body;
+
+    // 1. Verify ownership of the project
+    const projects = await new Promise((resolve, reject) => {
+      db.query('SELECT p.id FROM projects p JOIN portfolios pf ON p.portfolio_id = pf.id WHERE p.id = ? AND pf.user_id = ?', [projectId, userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    if (projects.length === 0) {
+      return res.status(403).json({ success: false, error: 'このプロジェクトにコンテンツを追加する権限がありません。' });
+    }
+
+    // 2. Get the new order for the content block
+    const orderResults = await new Promise((resolve, reject) => {
+      db.query('SELECT MAX(content_order) as max_order FROM project_contents WHERE project_id = ?', [projectId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+    const newOrder = (orderResults[0].max_order || 0) + 1;
+
+    // 3. Insert the new content block
+    const newContent = {
+      project_id: projectId,
+      type: type || 'text',
+      content: content || '',
+      layout_w: layout_w || 4,
+      layout_h: layout_h || 2,
+      content_order: newOrder,
+      block_style: block_style || 'p',
+    };
+
+    db.query('INSERT INTO project_contents SET ?', newContent, (err, result) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'コンテンツブロックの作成中にデータベースエラーが発生しました。' });
+      }
+      res.status(201).json({ success: true, message: 'コンテンツブロックが追加されました', contentId: result.insertId, newContent });
+    });
+
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// Update a content block
+app.put('/api/contents/:contentId', authenticateToken, async (req, res) => {
+  try {
+    const { contentId } = req.params;
+    const { id: userId } = req.user;
+    const { content, block_style } = req.body; // Accept block_style
+
+    // 1. Verify ownership through project and portfolio
+    const contents = await new Promise((resolve, reject) => {
+        const query = `
+            SELECT pc.id 
+            FROM project_contents pc
+            JOIN projects p ON pc.project_id = p.id
+            JOIN portfolios pf ON p.portfolio_id = pf.id
+            WHERE pc.id = ? AND pf.user_id = ?
+        `;
+      db.query(query, [contentId, userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    if (contents.length === 0) {
+      return res.status(403).json({ success: false, error: 'このコンテンツを更新する権限がありません。' });
+    }
+
+    // 2. Build the update query dynamically
+    const fieldsToUpdate = {};
+    if (content !== undefined) fieldsToUpdate.content = content;
+    if (block_style !== undefined) fieldsToUpdate.block_style = block_style;
+
+    if (Object.keys(fieldsToUpdate).length === 0) {
+      return res.status(400).json({ success: false, error: '更新するフィールドがありません。' });
+    }
+
+    // 3. Update the content block
+    db.query('UPDATE project_contents SET ? WHERE id = ?', [fieldsToUpdate, contentId], (err, result) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'コンテンツブロックの更新中にデータベースエラーが発生しました。' });
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ success: false, error: 'コンテンツブロックが見つかりません。' });
+      }
+      res.json({ success: true, message: 'コンテンツブロックが更新されました' });
+    });
+
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// Delete a content block
+app.delete('/api/contents/:contentId', authenticateToken, async (req, res) => {
+  try {
+    const { contentId } = req.params;
+    const { id: userId } = req.user;
+
+    // 1. Verify ownership
+    const contents = await new Promise((resolve, reject) => {
+        const query = `
+            SELECT pc.id 
+            FROM project_contents pc
+            JOIN projects p ON pc.project_id = p.id
+            JOIN portfolios pf ON p.portfolio_id = pf.id
+            WHERE pc.id = ? AND pf.user_id = ?
+        `;
+      db.query(query, [contentId, userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    if (contents.length === 0) {
+      return res.status(403).json({ success: false, error: 'このコンテンツを削除する権限がありません。' });
+    }
+
+    // 2. Delete the content
+    db.query('DELETE FROM project_contents WHERE id = ?', [contentId], (err, result) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'コンテンツブロックの削除中にデータベースエラーが発生しました。' });
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ success: false, error: 'コンテンツブロックが見つかりません。' });
+      }
+      res.json({ success: true, message: 'コンテンツブロックが削除されました' });
+    });
+
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
+// Update content block layouts for a project
+app.put('/api/projects/:projectId/contents/layout', authenticateToken, async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { id: userId } = req.user;
+    const { layout } = req.body; // Expect an array of layout objects [{ i, x, y, w, h }]
+
+    if (!layout || !Array.isArray(layout)) {
+      return res.status(400).json({ success: false, error: '有効なレイアウト配列が必要です。' });
+    }
+
+    // 1. Verify ownership of the project
+    const projects = await new Promise((resolve, reject) => {
+      db.query('SELECT p.id FROM projects p JOIN portfolios pf ON p.portfolio_id = pf.id WHERE p.id = ? AND pf.user_id = ?', [projectId, userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    if (projects.length === 0) {
+      return res.status(403).json({ success: false, error: 'このプロジェクトのレイアウトを更新する権限がありません。' });
+    }
+
+    // 2. Update layouts in a transaction
+    db.getConnection((err, connection) => {
+      if (err) {
+        console.error('データベース接続エラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+      }
+
+      connection.beginTransaction(async (err) => {
+        if (err) {
+          connection.release();
+          console.error('トランザクション開始エラー:', err);
+          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+        }
+
+        try {
+          for (const item of layout) {
+            const { i, x, y, w, h } = item;
+            const contentId = i;
+            await new Promise((resolve, reject) => {
+              connection.query(
+                'UPDATE project_contents SET layout_x = ?, layout_y = ?, layout_w = ?, layout_h = ? WHERE id = ? AND project_id = ?',
+                [x, y, w, h, contentId, projectId],
+                (err, result) => {
+                  if (err) return reject(err);
+                  resolve(result);
+                }
+              );
+            });
+          }
+
+          connection.commit((err) => {
+            if (err) {
+              return connection.rollback(() => {
+                connection.release();
+                throw err;
+              });
+            }
+            connection.release();
+            res.json({ success: true, message: 'レイアウトが更新されました' });
+          });
+        } catch (updateError) {
+          connection.rollback(() => {
+            connection.release();
+            console.error('レイアウト更新エラー:', updateError);
+            res.status(500).json({ success: false, error: 'レイアウトの更新中にデータベースエラーが発生しました。' });
+          });
+        }
+      });
+    });
+
   } catch (error) {
     console.error('サーバーエラー:', error);
     res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });

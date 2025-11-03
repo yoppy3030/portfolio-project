@@ -1,0 +1,229 @@
+/* GameLibraryModal.css */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+}
+
+.close-button {
+  background: #dc3545; /* Red background */
+  color: white;
+  border: none;
+  border-radius: 50%; /* Circular button */
+  width: 30px;
+  height: 30px;
+  font-size: 1.2rem; /* Adjust font size for icon */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  position: absolute; /* Position absolutely within modal-content */
+  top: 10px;
+  right: 10px;
+  z-index: 10; /* Ensure it's above other content */
+}
+
+.close-button:hover {
+  background-color: #c82333; /* Darker red on hover */
+}
+
+.close-button .material-icons {
+  font-size: 20px; /* Adjust icon size */
+}
+
+.modal-body {
+  overflow-y: auto;
+}
+
+.search-input-wrapper {
+  position: relative;
+}
+
+.search-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.search-controls input {
+  flex-grow: 1;
+}
+
+.search-controls select {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: white;
+  cursor: pointer;
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+.spinner {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+}
+
+.search-results {
+  margin-top: 15px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 4px;
+}
+
+.game-result-item, .library-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  gap: 15px;
+}
+
+.game-result-item:not(:last-child) {
+  border-bottom: 1px solid #eee;
+}
+
+.game-image {
+  width: 80px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.game-info {
+  flex-grow: 1;
+}
+
+.game-info p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.game-info small {
+  color: #666;
+}
+
+.btn-add-game, .btn-remove-game {
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid;
+}
+
+.btn-add-game {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+.btn-add-game:disabled {
+  background-color: #ccc;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+.btn-remove-game {
+  background-color: transparent;
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-remove-game:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+.my-library-section h4 {
+  margin-top: 0;
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 15px;
+}
+
+.library-item {
+  flex-direction: column;
+  align-items: stretch;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  border: 1px solid #eee;
+  padding: 0;
+  position: relative;
+}
+
+.library-item .game-image {
+  width: 100%;
+  height: 120px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.library-item .game-info {
+  padding: 10px;
+}
+
+.library-item .btn-remove-game {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.error-message {
+  color: #dc3545;
+  margin-bottom: 1rem;
+}
