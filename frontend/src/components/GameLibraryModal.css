@@ -117,7 +117,7 @@
 
 .search-results {
   margin-top: 15px;
-  max-height: 200px;
+  max-height: 400px;
   overflow-y: auto;
   border: 1px solid #eee;
   border-radius: 4px;
@@ -149,10 +149,14 @@
 .game-info p {
   margin: 0;
   font-weight: 600;
+  margin-bottom: 4px;
 }
 
 .game-info small {
   color: #666;
+  display: block;
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 .btn-add-game, .btn-remove-game {
@@ -226,4 +230,144 @@
 .error-message {
   color: #dc3545;
   margin-bottom: 1rem;
+}
+
+/* Rating and Comment Styles */
+.star-rating {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 5px;
+}
+
+.star {
+  font-size: 1.2rem;
+  color: #ddd;
+  transition: color 0.2s;
+}
+
+.star.filled {
+  color: #ffc107;
+}
+
+.star.interactive:hover {
+  color: #ffc107;
+  transform: scale(1.2);
+}
+
+.game-details {
+  margin-top: 10px;
+}
+
+.rating-display, .rating-section {
+  margin-bottom: 10px;
+}
+
+.rating-display label, .rating-section label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-right: 5px;
+}
+
+.comment-display {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.comment-display p {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 0;
+  padding: 8px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  word-wrap: break-word;
+}
+
+.no-details {
+  font-size: 0.85rem;
+  color: #999;
+  font-style: italic;
+  margin: 5px 0;
+}
+
+.edit-form {
+  margin-top: 10px;
+}
+
+.playtime-section, .comment-section {
+  margin-top: 10px;
+}
+
+.playtime-display {
+  margin-bottom: 10px;
+}
+
+.playtime-display label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-right: 5px;
+}
+
+.comment-section label {
+  display: block;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.comment-section textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.btn-save, .btn-cancel, .btn-edit {
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid;
+  font-size: 0.85rem;
+}
+
+.btn-save {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+.btn-save:hover {
+  background-color: #218838;
+}
+
+.btn-cancel {
+  background-color: transparent;
+  color: #6c757d;
+  border-color: #6c757d;
+}
+
+.btn-cancel:hover {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-edit {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  margin-top: 5px;
+}
+
+.btn-edit:hover {
+  background-color: #0056b3;
 }

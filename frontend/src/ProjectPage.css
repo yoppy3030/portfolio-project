@@ -13,8 +13,21 @@
   padding-bottom: 1rem;
 }
 
+.project-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .editor-header h1 {
   font-size: 2rem;
+  margin: 0;
+}
+
+.project-description {
+  font-size: 1rem;
+  color: #666;
   margin: 0;
 }
 

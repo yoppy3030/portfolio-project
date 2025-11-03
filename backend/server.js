@@ -652,28 +652,48 @@ app.delete('/api/hobbies/:hobbyId', authenticateToken, (req, res) => {
 //   image_url VARCHAR(2083),
 //   rating INT, // 5段階評価など
 //   comment TEXT,
+//   playtime_hours DECIMAL(10, 2), // プレイ時間（時間単位）
 //   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 //   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
 //   UNIQUE KEY user_game (user_id, game_api_id)
 // );
+// 
+// プレイ時間カラムを追加する場合（テーブルが既に存在する場合）:
+// ALTER TABLE played_games ADD COLUMN playtime_hours DECIMAL(10, 2);
 
 // ユーザーのプレイ済みゲームリストを取得
 app.get('/api/played-games', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
 
-  db.query('SELECT id, game_api_id, title, image_url, rating, comment FROM played_games WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, results) => {
+  // playtime_hoursカラムが存在しない可能性があるため、エラーを回避して取得
+  db.query('SELECT id, game_api_id, title, image_url, rating, comment, COALESCE(playtime_hours, NULL) as playtime_hours FROM played_games WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, results) => {
     if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'プレイ済みゲームの取得中にデータベースエラーが発生しました。' });
+      // playtime_hoursカラムが存在しない場合のエラーを回避
+      if (err.code === 'ER_BAD_FIELD_ERROR' && err.message.includes('playtime_hours')) {
+        // playtime_hoursなしで再試行
+        db.query('SELECT id, game_api_id, title, image_url, rating, comment FROM played_games WHERE user_id = ? ORDER BY created_at DESC', [userId], (err2, results2) => {
+          if (err2) {
+            console.error('データベースエラー:', err2);
+            return res.status(500).json({ success: false, error: 'プレイ済みゲームの取得中にデータベースエラーが発生しました。エラー詳細: ' + err2.message });
+          }
+          // playtime_hoursをnullとして追加
+          const resultsWithNull = results2.map(game => ({ ...game, playtime_hours: null }));
+          res.json({ success: true, playedGames: resultsWithNull });
+        });
+      } else {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'プレイ済みゲームの取得中にデータベースエラーが発生しました。エラー詳細: ' + err.message });
+      }
+    } else {
+      res.json({ success: true, playedGames: results });
     }
-    res.json({ success: true, playedGames: results });
   });
 });
 
 // 新しいプレイ済みゲームを追加
 app.post('/api/played-games', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
-  const { game_api_id, title, image_url, rating, comment } = req.body;
+  const { game_api_id, title, image_url, rating, comment, playtime_hours } = req.body;
 
   if (!game_api_id || !title) {
     return res.status(400).json({ success: false, error: 'ゲームIDとタイトルは必須です。' });
@@ -685,13 +705,28 @@ app.post('/api/played-games', authenticateToken, (req, res) => {
     title,
     image_url,
     rating,
-    comment
+    comment,
+    playtime_hours: playtime_hours ? parseFloat(playtime_hours) : null
   };
 
+  // playtime_hoursカラムが存在しない場合に備えて、エラー処理を追加
   db.query('INSERT INTO played_games SET ?', newGame, (err, result) => {
     if (err) {
       if (err.code === 'ER_DUP_ENTRY') {
         return res.status(409).json({ success: false, error: 'そのゲームは既に追加されています。' });
+      }
+      // playtime_hoursカラムが存在しない場合のエラーを処理
+      if (err.code === 'ER_BAD_FIELD_ERROR' && err.message.includes('playtime_hours')) {
+        // playtime_hoursを除外して再試行
+        const { playtime_hours, ...newGameWithoutPlaytime } = newGame;
+        db.query('INSERT INTO played_games SET ?', newGameWithoutPlaytime, (err2, result2) => {
+          if (err2) {
+            console.error('データベースエラー:', err2);
+            return res.status(500).json({ success: false, error: 'ゲームの追加中にデータベースエラーが発生しました。' });
+          }
+          res.status(201).json({ success: true, message: 'ゲームがライブラリに追加されました。', playedGame: { id: result2.insertId, ...newGameWithoutPlaytime, playtime_hours: null } });
+        });
+        return;
       }
       console.error('データベースエラー:', err);
       return res.status(500).json({ success: false, error: 'ゲームの追加中にデータベースエラーが発生しました。' });
@@ -700,22 +735,57 @@ app.post('/api/played-games', authenticateToken, (req, res) => {
   });
 });
 
-// プレイ済みゲームを更新 (評価やコメント)
+// プレイ済みゲームを更新 (評価やコメント、プレイ時間)
 app.put('/api/played-games/:playedGameId', authenticateToken, (req, res) => {
     const { id: userId } = req.user;
     const { playedGameId } = req.params;
-    const { rating, comment } = req.body;
+    const { rating, comment, playtime_hours } = req.body;
 
-    if (rating === undefined && comment === undefined) {
-        return res.status(400).json({ success: false, error: '更新する評価またはコメントが必要です。' });
+    // 更新するフィールドが1つもない場合
+    if (rating === undefined && comment === undefined && playtime_hours === undefined) {
+        return res.status(400).json({ success: false, error: '更新する項目（評価、コメント、プレイ時間）が少なくとも1つ必要です。' });
     }
 
     const fieldsToUpdate = {};
-    if (rating !== undefined) fieldsToUpdate.rating = rating;
-    if (comment !== undefined) fieldsToUpdate.comment = comment;
+    // ratingが明示的に送信された場合（nullを含む）
+    if ('rating' in req.body) {
+        fieldsToUpdate.rating = rating === null || rating === '' ? null : rating;
+    }
+    // commentが明示的に送信された場合（nullを含む）
+    if ('comment' in req.body) {
+        fieldsToUpdate.comment = comment === null || comment === '' ? null : comment;
+    }
+    // playtime_hoursが明示的に送信された場合（nullを含む）
+    if ('playtime_hours' in req.body) {
+        const playtimeValue = playtime_hours === null || playtime_hours === '' ? null : parseFloat(playtime_hours);
+        // カラムが存在しない場合のエラーを無視するため、更新を試行
+        if (playtimeValue !== null || playtime_hours === null) {
+            fieldsToUpdate.playtime_hours = playtimeValue;
+        }
+    }
 
     db.query('UPDATE played_games SET ? WHERE id = ? AND user_id = ?', [fieldsToUpdate, playedGameId, userId], (err, result) => {
         if (err) {
+            // playtime_hoursカラムが存在しない場合のエラーを処理
+            if (err.code === 'ER_BAD_FIELD_ERROR' && err.message.includes('playtime_hours') && fieldsToUpdate.playtime_hours !== undefined) {
+                // playtime_hoursを除外して再試行
+                const { playtime_hours, ...fieldsWithoutPlaytime } = fieldsToUpdate;
+                if (Object.keys(fieldsWithoutPlaytime).length > 0) {
+                    db.query('UPDATE played_games SET ? WHERE id = ? AND user_id = ?', [fieldsWithoutPlaytime, playedGameId, userId], (err2, result2) => {
+                        if (err2) {
+                            console.error('データベースエラー:', err2);
+                            return res.status(500).json({ success: false, error: 'ゲーム情報の更新中にデータベースエラーが発生しました。' });
+                        }
+                        if (result2.affectedRows === 0) {
+                            return res.status(404).json({ success: false, error: 'ゲームが見つからないか、更新する権限がありません。' });
+                        }
+                        res.json({ success: true, message: 'ゲーム情報が更新されました。（プレイ時間カラムが存在しないため、プレイ時間は更新されませんでした）' });
+                    });
+                    return;
+                } else {
+                    return res.status(400).json({ success: false, error: 'プレイ時間カラムがデータベースに存在しません。データベースを更新してください。' });
+                }
+            }
             console.error('データベースエラー:', err);
             return res.status(500).json({ success: false, error: 'ゲーム情報の更新中にデータベースエラーが発生しました。' });
         }

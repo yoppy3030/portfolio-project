@@ -3,12 +3,46 @@ import './GameLibraryModal.css';
 import debounce from 'lodash.debounce';
 
 function GameResult({ game, onAdd, isAdded }) {
+  // プラットフォーム名を取得（Nintendo Switch, PlayStation, Xbox, PC など）
+  const getPlatformNames = (platforms) => {
+    if (!platforms || !Array.isArray(platforms) || platforms.length === 0) {
+      return 'プラットフォーム情報なし';
+    }
+    
+    const platformNames = platforms
+      .map(p => p.platform?.name || p.name)
+      .filter(Boolean)
+      .slice(0, 3); // 最大3つまで表示
+    
+    return platformNames.length > 0 ? platformNames.join(', ') : 'プラットフォーム情報なし';
+  };
+
+  const platformNames = getPlatformNames(game.platforms);
+
   return (
     <div className="game-result-item">
       <img src={game.background_image} alt={game.name} className="game-image" />
       <div className="game-info">
         <p>{game.name}</p>
-        <small>{game.released}</small>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
+          {game.released && (
+            <small style={{ color: '#666' }}>{game.released}</small>
+          )}
+          {game.rating && game.rating > 0 && (
+            <small style={{ 
+              color: '#ff9800', 
+              fontWeight: '600',
+              backgroundColor: '#fff3e0',
+              padding: '2px 6px',
+              borderRadius: '4px'
+            }}>
+              ⭐ {game.rating.toFixed(1)}
+            </small>
+          )}
+        </div>
+        <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '0.8rem' }}>
+          {platformNames}
+        </small>
       </div>
       <button 
         onClick={() => onAdd(game)} 
@@ -21,13 +55,147 @@ function GameResult({ game, onAdd, isAdded }) {
   );
 }
 
-function LibraryItem({ game, onRemove }) {
+function LibraryItem({ game, onRemove, onUpdate }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [rating, setRating] = useState(game.rating || null);
+  const [comment, setComment] = useState(game.comment || '');
+  const [playtimeHours, setPlaytimeHours] = useState(game.playtime_hours ? String(game.playtime_hours) : '');
+
+  useEffect(() => {
+    setRating(game.rating || null);
+    setComment(game.comment || '');
+    setPlaytimeHours(game.playtime_hours ? String(game.playtime_hours) : '');
+  }, [game.rating, game.comment, game.playtime_hours]);
+
+  const handleSave = async () => {
+    const updateData = {};
+    // ratingを常に送信（nullも有効な値）
+    updateData.rating = rating === null || rating === 0 ? null : rating;
+    // commentを常に送信（空文字列はnullに変換）
+    updateData.comment = comment && comment.trim() ? comment.trim() : null;
+    // playtime_hoursを常に送信（空文字列はnullに変換）
+    updateData.playtime_hours = playtimeHours && playtimeHours.trim() ? parseFloat(playtimeHours) : null;
+    
+    console.log('Saving game update:', game.id, updateData);
+    await onUpdate(game.id, updateData);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setRating(game.rating || null);
+    setComment(game.comment || '');
+    setPlaytimeHours(game.playtime_hours ? String(game.playtime_hours) : '');
+    setIsEditing(false);
+  };
+
+  const renderStars = (value, interactive = false) => {
+    const ratingValue = value || 0;
+    return (
+      <div className="star-rating">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span
+            key={star}
+            className={`star ${star <= ratingValue ? 'filled' : ''} ${interactive ? 'interactive' : ''}`}
+            onClick={interactive ? () => setRating(star) : undefined}
+            style={{ cursor: interactive ? 'pointer' : 'default' }}
+          >
+            ★
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="library-item">
       <img src={game.image_url} alt={game.title} className="game-image" />
       <div className="game-info">
         <p>{game.title}</p>
-        {/* TODO: Add rating and comment functionality */}
+        {isEditing ? (
+          <div className="edit-form">
+            <div className="rating-section">
+              <label>評価:</label>
+              {renderStars(rating || 0, true)}
+              <button 
+                type="button"
+                onClick={() => setRating(null)} 
+                className="btn-clear-rating"
+                style={{ marginLeft: '10px', fontSize: '0.8rem', padding: '2px 8px' }}
+              >
+                評価をクリア
+              </button>
+            </div>
+            <div className="playtime-section">
+              <label>プレイ時間（時間）:</label>
+              <input
+                type="number"
+                value={playtimeHours}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // 数値のみ許可（小数点を含む）
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    setPlaytimeHours(value);
+                  }
+                }}
+                placeholder="例: 50.5"
+                min="0"
+                step="0.5"
+                style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+              />
+              <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '0.85rem' }}>
+                例: 50.5（50時間30分）、100（100時間）
+              </small>
+            </div>
+            <div className="comment-section">
+              <label>コメント:</label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="ゲームの感想を入力..."
+                rows={3}
+              />
+            </div>
+            <div className="edit-actions">
+              <button onClick={handleSave} className="btn-save">保存</button>
+              <button onClick={handleCancel} className="btn-cancel">キャンセル</button>
+            </div>
+          </div>
+        ) : (
+          <div className="game-details">
+            {rating !== null && rating !== undefined && rating > 0 ? (
+              <div className="rating-display">
+                <label>評価:</label>
+                {renderStars(rating)}
+              </div>
+            ) : null}
+            {playtimeHours && parseFloat(playtimeHours) > 0 ? (
+              <div className="playtime-display">
+                <label>プレイ時間:</label>
+                <span style={{ fontWeight: '600', color: '#2196F3' }}>
+                  {parseFloat(playtimeHours).toFixed(1)}時間
+                </span>
+              </div>
+            ) : null}
+            {comment && comment.trim() ? (
+              <div className="comment-display">
+                <p>{comment}</p>
+              </div>
+            ) : null}
+            {(!rating || rating === 0) && !playtimeHours && !comment && (
+              <p className="no-details">評価、プレイ時間、コメントを追加してください</p>
+            )}
+            <button 
+              type="button"
+              onClick={() => {
+                console.log('Edit button clicked for game:', game.id);
+                setIsEditing(true);
+              }} 
+              className="btn-edit"
+            >
+              編集
+            </button>
+          </div>
+        )}
       </div>
       <button onClick={() => onRemove(game.id)} className="btn-remove-game">削除</button>
     </div>
@@ -68,30 +236,224 @@ function GameLibraryModal({ onClose }) {
     fetchMyGames();
   }, [fetchMyGames]);
 
+  const RAWG_API_KEY = process.env.REACT_APP_RAWG_API_KEY || '';
+
+  console.log('GameLibraryModal - RAWG_API_KEY:', RAWG_API_KEY ? '設定済み' : '未設定');
+
+  // 日本語ゲーム名から英語名へのマッピング
+  const japaneseToEnglishMapping = {
+    'ゼルダ': 'Zelda',
+    'ゼルダの伝説': 'The Legend of Zelda',
+    'マリオ': 'Mario',
+    'スーパーマリオ': 'Super Mario',
+    'ポケモン': 'Pokemon',
+    'スプラトゥーン': 'Splatoon',
+    'モンスターハンター': 'Monster Hunter',
+    'ドラゴンクエスト': 'Dragon Quest',
+    'ファイナルファンタジー': 'Final Fantasy',
+    'あつまれどうぶつの森': 'Animal Crossing',
+    '動物の森': 'Animal Crossing',
+    'スーパースマッシュブラザーズ': 'Super Smash Bros',
+    'スマブラ': 'Super Smash Bros',
+    'ファイアーエムブレム': 'Fire Emblem',
+    'ゼノブレイド': 'Xenoblade',
+    '異度神剣': 'Xenoblade',
+    'リングフィット': 'Ring Fit Adventure',
+    'カービー': 'Kirby',
+    '星のカービー': 'Kirby',
+    'メトロイド': 'Metroid',
+    'ドンキーコング': 'Donkey Kong',
+    'ピクミン': 'Pikmin',
+    'ベヨネッタ': 'Bayonetta',
+    'フェアリーテイル': 'Fairy Tail',
+    '妖怪ウォッチ': 'Yo-kai Watch',
+    '真・三國無双': 'Dynasty Warriors',
+    '三國無双': 'Dynasty Warriors',
+    'ペルソナ': 'Persona',
+    'ソニック': 'Sonic',
+    'ストリートファイター': 'Street Fighter',
+    '鉄拳': 'Tekken',
+    'ダークソウル': 'Dark Souls',
+    'エルデンリング': 'Elden Ring',
+    'フォートナイト': 'Fortnite',
+    '原神': 'Genshin Impact',
+    'Apex Legends': 'Apex Legends',
+    'オーバーウォッチ': 'Overwatch',
+    'マインクラフト': 'Minecraft',
+    'レッドデッドリデンプション': 'Red Dead Redemption',
+    'グランド・セフト・オート': 'Grand Theft Auto',
+    'GTA': 'Grand Theft Auto',
+    'ウィッチャー': 'The Witcher',
+    'サイバーパンク': 'Cyberpunk',
+    'ホライゾン': 'Horizon',
+    'ゴッド・オブ・ウォー': 'God of War',
+    'スパイダーマン': 'Spider-Man',
+    'アサシンクリード': 'Assassin\'s Creed',
+    'バトルフィールド': 'Battlefield',
+    'コールオブデューティ': 'Call of Duty',
+    'COD': 'Call of Duty'
+  };
+
+  // 日本語キーワードを英語に変換（部分マッチ）
+  const translateJapaneseKeyword = (keyword) => {
+    const lowerKeyword = keyword.toLowerCase();
+    
+    // 完全一致
+    if (japaneseToEnglishMapping[keyword]) {
+      return japaneseToEnglishMapping[keyword];
+    }
+    
+    // 部分一致（キーワードに日本語ゲーム名が含まれている場合）
+    for (const [jp, en] of Object.entries(japaneseToEnglishMapping)) {
+      if (keyword.includes(jp) || jp.includes(keyword)) {
+        return en;
+      }
+    }
+    
+    // 翻訳できない場合は元のキーワードを返す
+    return keyword;
+  };
+
   const debouncedSearch = useCallback(
-    debounce(async (query) => {
+    debounce(async (query, platformId) => {
+      console.log('debouncedSearch called with:', { query, platformId, queryLength: query.length });
+      
       if (query.length < 2) {
+        console.log('Query too short, clearing results');
         setSearchResults([]);
+        setSearchLoading(false);
         return;
       }
+      
+      if (!RAWG_API_KEY) {
+        console.warn('RAWG_API_KEY is not set');
+        setError('RAWG APIキーが設定されていません。ゲーム検索機能を使用するには、環境変数REACT_APP_RAWG_API_KEYを設定してください。フロントエンドのルートディレクトリに.envファイルを作成し、REACT_APP_RAWG_API_KEY=あなたのAPIキー を追加してください。');
+        setSearchLoading(false);
+        return;
+      }
+      
+      console.log('Starting search...');
       setSearchLoading(true);
       setError('');
+      
       try {
-        const response = await fetch(`https://api.rawg.io/api/games?key=${RAWG_API_KEY}&search=${query}&page_size=5`);
-        const data = await response.json();
-        setSearchResults(data.results || []);
+        // 日本語キーワードを英語に変換
+        const translatedQuery = translateJapaneseKeyword(query);
+        console.log('Original query:', query, 'Translated query:', translatedQuery);
+        
+        // 元のクエリと翻訳後のクエリの両方で検索
+        const searchQueries = translatedQuery !== query 
+          ? [translatedQuery, query] // 翻訳された場合、両方試す
+          : [query]; // 翻訳できない場合は元のクエリのみ
+        
+        let allResults = [];
+        let lastError = null;
+        
+        // 複数のクエリで検索を試行
+        for (const searchQuery of searchQueries) {
+          try {
+            // ページサイズを増やして、より多くの結果を取得
+            // ordering=-rating で評価順（人気順）にソート
+            let url = `https://api.rawg.io/api/games?key=${RAWG_API_KEY}&search=${encodeURIComponent(searchQuery)}&page_size=20&ordering=-rating`;
+            
+            // プラットフォームフィルターが選択されている場合のみ追加
+            if (platformId && platformId !== '') {
+              url += `&platforms=${platformId}`;
+              console.log('Platform filter applied:', platformId);
+            }
+            
+            console.log('Fetching games from:', url);
+            
+            const response = await fetch(url);
+            console.log('Response status:', response.status, response.statusText);
+            
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              console.error('API Error:', errorData);
+              lastError = new Error(errorData.error || `HTTP error! status: ${response.status}`);
+              continue; // 次のクエリを試す
+            }
+            
+            const data = await response.json();
+            console.log('Search results received for query:', searchQuery, data);
+            console.log('Number of results:', data.results ? data.results.length : 0);
+            
+            if (data.results && data.results.length > 0) {
+              // 重複を避けて結果を追加
+              const newGames = data.results.filter(game => 
+                !allResults.some(existing => existing.id === game.id)
+              );
+              allResults = [...allResults, ...newGames];
+            }
+          } catch (err) {
+            console.error('Search error for query:', searchQuery, err);
+            lastError = err;
+            continue; // 次のクエリを試す
+          }
+        }
+        
+        // 結果を評価順にソート（重複を除去後）
+        allResults.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        
+        // 検索結果の各ゲームのプラットフォーム情報を確認
+        if (allResults.length > 0) {
+          // Nintendo Switch対応ゲームを確認
+          const nintendoGames = allResults.filter(game => 
+            game.platforms?.some(p => {
+              const platformName = (p.platform?.name || p.name || '').toLowerCase();
+              return platformName.includes('nintendo') || platformName.includes('switch');
+            })
+          );
+          console.log(`Nintendo games found: ${nintendoGames.length}`, nintendoGames.map(g => g.name));
+          
+          allResults.forEach((game, index) => {
+            const platformNames = game.platforms?.map(p => p.platform?.name || p.name).filter(Boolean) || [];
+            const hasNintendo = platformNames.some(name => 
+              name.toLowerCase().includes('nintendo') || name.toLowerCase().includes('switch')
+            );
+            console.log(`Game ${index + 1}: ${game.name}`, {
+              platforms: platformNames,
+              hasNintendo: hasNintendo,
+              rating: game.rating,
+              released: game.released
+            });
+          });
+          
+          // 最大20件まで表示
+          const displayResults = allResults.slice(0, 20);
+          setSearchResults(displayResults);
+          setError('');
+          console.log('Search results set:', displayResults.length, 'games (from', allResults.length, 'total results)');
+        } else {
+          setSearchResults([]);
+          if (platformId && platformId !== '') {
+            setError('選択したプラットフォームでの検索結果が見つかりませんでした。プラットフォームフィルターを解除するか、別のキーワードで試してください。');
+          } else {
+            setError('検索結果が見つかりませんでした。別のキーワードで試してください。');
+          }
+          console.log('No results found');
+        }
       } catch (err) {
-        setError('ゲームの検索に失敗しました。');
+        console.error('Search error:', err);
+        setSearchResults([]);
+        setError(`ゲームの検索に失敗しました: ${err.message}`);
       } finally {
         setSearchLoading(false);
+        console.log('Search completed');
       }
     }, 500),
-    []
+    [RAWG_API_KEY]
   );
 
   useEffect(() => {
-    debouncedSearch(searchTerm);
-  }, [searchTerm, debouncedSearch]);
+    console.log('useEffect triggered - searchTerm:', searchTerm, 'selectedPlatform:', selectedPlatform);
+    if (searchTerm) {
+      debouncedSearch(searchTerm, selectedPlatform);
+    } else {
+      setSearchResults([]);
+      setSearchLoading(false);
+    }
+  }, [searchTerm, selectedPlatform, debouncedSearch]);
 
   const handleAddGame = async (game) => {
     try {
@@ -134,6 +496,29 @@ function GameLibraryModal({ onClose }) {
       setError('サーバーとの通信に失敗しました。');
     }
   };
+
+  const handleUpdateGame = async (playedGameId, updateData) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/played-games/${playedGameId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify(updateData)
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchMyGames(); // Refresh library
+        setError(''); // Clear any previous errors
+      } else {
+        setError(data.error || 'ゲーム情報の更新に失敗しました。');
+      }
+    } catch (err) {
+      console.error('Update error:', err);
+      setError('サーバーとの通信に失敗しました。');
+    }
+  };
   
   const myGameApiIds = new Set(myGames.map(g => g.game_api_id));
 
@@ -149,39 +534,81 @@ function GameLibraryModal({ onClose }) {
           
           <div className="game-search-section">
             <h4>ゲームを検索して追加</h4>
+            <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '10px' }}>
+              💡 検索のヒント: 日本語名（例: ゼルダ、マリオ）や英語名（例: Zelda, Mario, Pokemon）で検索できます
+            </p>
             <div className="search-controls"> {/* New div for controls */}
               <input 
                 type="text"
-                placeholder="ゲームのタイトルを入力... (例: The Witcher 3)"
+                placeholder="ゲームのタイトルを入力... (例: ゼルダの伝説、Mario, Pokemon)"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  console.log('Input changed:', newValue);
+                  setSearchTerm(newValue);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    console.log('Enter key pressed, current searchTerm:', searchTerm);
+                  }
+                }}
               />
               <select
                 value={selectedPlatform}
-                onChange={(e) => setSelectedPlatform(e.target.value)}
+                onChange={(e) => {
+                  console.log('Platform changed to:', e.target.value);
+                  setSelectedPlatform(e.target.value);
+                }}
               >
                 <option value="">全てのプラットフォーム</option>
-                <option value="4">PC</option>
-                <option value="18">PlayStation 5</option>
-                <option value="187">PlayStation 4</option>
-                <option value="7">Nintendo Switch</option>
-                <option value="1">Xbox One</option>
-                <option value="186">Xbox Series X/S</option>
-                <option value="3">iOS</option>
-                <option value="21">Android</option>
+                <optgroup label="Nintendo">
+                  <option value="7">Nintendo Switch</option>
+                  <option value="83">Nintendo 3DS</option>
+                  <option value="10">Wii U</option>
+                  <option value="11">Wii</option>
+                  <option value="105">Game Boy Advance</option>
+                </optgroup>
+                <optgroup label="PlayStation">
+                  <option value="18">PlayStation 5</option>
+                  <option value="187">PlayStation 4</option>
+                  <option value="16">PlayStation 3</option>
+                  <option value="15">PlayStation 2</option>
+                </optgroup>
+                <optgroup label="Xbox">
+                  <option value="186">Xbox Series X/S</option>
+                  <option value="1">Xbox One</option>
+                  <option value="14">Xbox 360</option>
+                </optgroup>
+                <optgroup label="その他">
+                  <option value="4">PC</option>
+                  <option value="3">iOS</option>
+                  <option value="21">Android</option>
+                </optgroup>
               </select>
             </div>
-            {searchLoading && <div className="spinner"></div>}
-            <div className="search-results">
-              {searchResults.map(game => (
-                <GameResult 
-                  key={game.id} 
-                  game={game} 
-                  onAdd={handleAddGame}
-                  isAdded={myGameApiIds.has(String(game.id))}
-                />
-              ))}
-            </div>
+            {searchLoading && (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <div className="spinner"></div>
+                <p>検索中...</p>
+              </div>
+            )}
+            {!searchLoading && searchTerm.length >= 2 && searchResults.length === 0 && (
+              <p style={{ padding: '10px', color: '#666', textAlign: 'center' }}>
+                検索結果がありません
+              </p>
+            )}
+            {!searchLoading && searchResults.length > 0 && (
+              <div className="search-results">
+                {searchResults.map(game => (
+                  <GameResult 
+                    key={game.id} 
+                    game={game} 
+                    onAdd={handleAddGame}
+                    isAdded={myGameApiIds.has(String(game.id))}
+                  />
+                ))}
+              </div>
+            )}
           </div>
           
           <hr />
@@ -192,7 +619,7 @@ function GameLibraryModal({ onClose }) {
               <div className="library-grid">
                 {myGames.length > 0 ? (
                   myGames.map(game => (
-                    <LibraryItem key={game.id} game={game} onRemove={handleRemoveGame} />
+                    <LibraryItem key={game.id} game={game} onRemove={handleRemoveGame} onUpdate={handleUpdateGame} />
                   ))
                 ) : (
                   <p>ライブラリにゲームがありません。</p>

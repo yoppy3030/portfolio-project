@@ -301,7 +301,12 @@ export default function ProjectPage() {
           accept="image/*"
         />
         <div className="editor-header">
-          <h1>{project.title}</h1>
+          <div className="project-title-section">
+            <h1>{project.title}</h1>
+            {project.description && (
+              <p className="project-description">{project.description}</p>
+            )}
+          </div>
           <div className="project-actions">
             <button onClick={() => handleAddContent('text')} className="btn-primary">テキストを追加</button>
             <button onClick={() => handleAddContent('image')} className="btn-primary">画像を追加</button>
