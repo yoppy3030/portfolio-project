@@ -371,7 +371,25 @@ function GameLibraryModal({ onClose }) {
     'アサシンクリード': 'Assassin\'s Creed',
     'バトルフィールド': 'Battlefield',
     'コールオブデューティ': 'Call of Duty',
-    'COD': 'Call of Duty'
+    'COD': 'Call of Duty',
+    // ポケモン略称
+    'DP': 'Pokemon Diamond Pearl',
+    'BW': 'Pokemon Black White',
+    'XY': 'Pokemon X Y',
+    'USSM': 'Pokemon Ultra Sun Ultra Moon',
+    'SV': 'Pokemon Scarlet Violet',
+    'SS': 'Pokemon Sword Shield',
+    'LGPE': 'Pokemon Let's Go Pikachu Eevee',
+    'BDSP': 'Pokemon Brilliant Diamond Shining Pearl',
+    'PLA': 'Pokemon Legends Arceus',
+    'SM': 'Pokemon Sun Moon',
+    'ORAS': 'Pokemon Omega Ruby Alpha Sapphire',
+    'HGSS': 'Pokemon HeartGold SoulSilver',
+    'PT': 'Pokemon Platinum',
+    'RSE': 'Pokemon Ruby Sapphire Emerald',
+    'FRLG': 'Pokemon FireRed LeafGreen',
+    'GSC': 'Pokemon Gold Silver Crystal',
+    'RBY': 'Pokemon Red Blue Yellow'
   };
 
   // 英語名から日本語名へのマッピング（表示用）
