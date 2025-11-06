@@ -90,6 +90,7 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
       bgms: bgms.filter(bgm => bgm.url && bgm.url.trim() !== ''), // URLが空でないBGMのみを送信
     };
     
+    console.log('[DEBUG] handleSave: bgms before filtering:', bgms);
     console.log('Saving game update:', game.id, updateData);
     await onUpdate(game.id, updateData);
     setIsEditing(false);
@@ -975,7 +976,7 @@ function GameLibraryModal({ onClose, isOwner }) {
         // サーバーからの正式なデータで再同期（念のため）
         // fetchMyGames(); // 楽観的更新が成功すれば不要な場合もある
         setError('');
-        console.log('[DEBUG] API update successful.');
+        console.log('[DEBUG] API update successful. Response data:', data);
       } else {
         // 失敗した場合: UIをサーバーの状態にロールバック
         setError(data.error || 'ゲーム情報の更新に失敗しました。');
