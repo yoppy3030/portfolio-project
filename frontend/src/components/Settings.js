@@ -271,7 +271,7 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n, onLanguageChange, lan
             </div>
           )}
           {activeTab === 'hobbies' && (
-            <HobbiesManager />
+            <HobbiesManager isOwner={true} />
           )}
           {activeTab === 'account' && (
             <div className="settings-content">

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import GameLibraryModal from './GameLibraryModal'; // モーダルをインポート
 import '../Settings.css'; // スタイルを共有
 
-function HobbiesManager() {
+function HobbiesManager({ isOwner }) {
   const [hobbies, setHobbies] = useState([]);
   const [newHobby, setNewHobby] = useState('');
   const [loading, setLoading] = useState(false);
@@ -140,7 +140,7 @@ function HobbiesManager() {
         )}
       </div>
 
-      {isGameModalOpen && <GameLibraryModal onClose={() => setGameModalOpen(false)} />}
+      {isGameModalOpen && <GameLibraryModal onClose={() => setGameModalOpen(false)} isOwner={isOwner} />}
     </div>
   );
 }
