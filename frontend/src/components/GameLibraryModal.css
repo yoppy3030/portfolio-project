@@ -423,3 +423,86 @@
   outline: 2px dashed #007bff;
   background-color: #e9f4ff !important;
 }
+
+/* BGM Entry Styles */
+.bgm-entry {
+  display: flex; /* Keep flex for overall layout */
+  align-items: flex-start; /* Align items to the start (top) */
+  gap: 10px; /* Space between drag handle, inputs, and remove button */
+  margin-bottom: 5px;
+  padding: 5px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  position: relative;
+}
+
+.bgm-entry .material-icons {
+  cursor: grab;
+  color: #666;
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 8px; /* Align with the top of the first input group */
+}
+
+.bgm-entry-content {
+  flex-grow: 1; /* Allow content area to take available space */
+  display: flex;
+  flex-direction: column; /* Stack input groups vertically */
+  gap: 5px; /* Space between input groups */
+}
+
+.bgm-input-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.bgm-input-group label {
+  font-size: 0.8rem;
+  color: #555;
+  margin-bottom: 2px;
+}
+
+.bgm-input-group input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.bgm-entry .btn-remove-bgm {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 8px; /* Align with the top of the first input group */
+}
+
+.bgm-entry .btn-remove-bgm:hover {
+  background-color: #c82333;
+}
+
+/* Remove old specific input styles */
+.bgm-entry input[type="text"],
+.bgm-entry textarea {
+  /* These styles are now handled by .bgm-input-group input[type="text"] */
+  /* min-width: 0; */
+  /* flex-basis: 0; */
+}
+
+.bgm-entry input[type="text"]:nth-of-type(1) {
+  /* flex-grow: 1; */
+}
+
+.bgm-entry textarea {
+  /* flex-grow: 2; */
+  /* resize: vertical; */
+}
+

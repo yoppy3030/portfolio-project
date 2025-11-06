@@ -119,6 +119,18 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
     setBgms(newBgms);
   };
 
+  const handleBgmDragEnd = (result) => {
+    if (!result.destination) {
+      return;
+    }
+
+    const reorderedBgms = Array.from(bgms);
+    const [movedBgm] = reorderedBgms.splice(result.source.index, 1);
+    reorderedBgms.splice(result.destination.index, 0, movedBgm);
+
+    setBgms(reorderedBgms);
+  };
+
   const renderStars = (value, interactive = false) => {
     const ratingValue = value || 0;
     return (
@@ -215,23 +227,61 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
 
             <div className="bgm-section">
               <label>好きなBGM:</label>
-              {bgms.map((bgm, index) => (
-                <div key={index} className="bgm-entry">
-                  <input
-                    type="text"
-                    value={bgm.title}
-                    onChange={(e) => handleBgmChange(index, 'title', e.target.value)}
-                    placeholder="BGMのタイトル (例: メインテーマ)"
-                  />
-                  <input
-                    type="text"
-                    value={bgm.url}
-                    onChange={(e) => handleBgmChange(index, 'url', e.target.value)}
-                    placeholder="URL (例: https://www.youtube.com/...)"
-                  />
-                  <button type="button" onClick={() => removeBgm(index)} className="btn-remove-bgm">削除</button>
-                </div>
-              ))}
+              <DragDropContext onDragEnd={handleBgmDragEnd}>
+                <Droppable droppableId="bgm-list">
+                  {(provided) => (
+                    <div {...provided.droppableProps} ref={provided.innerRef}>
+                      {bgms.map((bgm, index) => (
+                        <Draggable key={index} draggableId={`bgm-${index}`} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className="bgm-entry"
+                              style={{
+                                ...provided.draggableProps.style,
+                                backgroundColor: snapshot.isDragging ? '#e0e0e0' : 'white',
+                                border: snapshot.isDragging ? '1px solid #ccc' : '1px solid #eee',
+                                padding: '8px',
+                                marginBottom: '5px',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                              }}
+                            >
+                              <i className="material-icons" style={{ cursor: 'grab' }}>drag_indicator</i>
+                              <div className="bgm-entry-content">
+                                <div className="bgm-input-group">
+                                  <label>BGM名:</label>
+                                  <input
+                                    type="text"
+                                    value={bgm.title}
+                                    onChange={(e) => handleBgmChange(index, 'title', e.target.value)}
+                                    placeholder="BGMのタイトル (例: メインテーマ)"
+                                  />
+                                </div>
+                                <div className="bgm-input-group">
+                                  <label>URL:</label>
+                                  <input
+                                    type="text"
+                                    value={bgm.url}
+                                    onChange={(e) => handleBgmChange(index, 'url', e.target.value)}
+                                    placeholder="URL (例: https://www.youtube.com/...)"
+                                  />
+                                </div>
+                              </div>
+                              <button type="button" onClick={() => removeBgm(index)} className="btn-remove-bgm">削除</button>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
               <button type="button" onClick={addBgm} className="btn-add-bgm">BGMを追加</button>
             </div>
 
