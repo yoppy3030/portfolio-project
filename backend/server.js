@@ -9,6 +9,8 @@ const jwt = require('jsonwebtoken');
 const helmet = require('helmet'); // セキュリティヘッダー用
 const rateLimit = require('express-rate-limit'); // レート制限用
 const bodyParser = require('body-parser'); // body-parserをインポート
+const path = require('path');
+const multer = require('multer');
 
 const app = express();
 
@@ -46,6 +48,10 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // メソッドを明示的に許可
   credentials: true
 }));
+
+// Serve uploaded files statically from the 'uploads' directory
+app.use('/uploads', cors()); // Apply CORS for static files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 環境変数から設定を取得
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-development';
@@ -87,6 +93,27 @@ const authenticateToken = (req, res, next) => {
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ success: false, error: '無効なトークンです' });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+// JWTトークン検証ミドルウェア (optional)
+const tryAuthenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      // Invalid token, but we don't want to block the request
+      req.user = null;
+      return next();
     }
     req.user = user;
     next();
@@ -658,152 +685,247 @@ app.delete('/api/hobbies/:hobbyId', authenticateToken, (req, res) => {
 //   UNIQUE KEY user_game (user_id, game_api_id)
 // );
 // 
+// BGMテーブルのSQLスキーマ (要実行)
+// CREATE TABLE game_bgms (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   played_game_id INT NOT NULL,
+//   title VARCHAR(255),
+//   url VARCHAR(2083) NOT NULL,
+//   FOREIGN KEY (played_game_id) REFERENCES played_games(id) ON DELETE CASCADE
+// );
+// 
+// played_gamesテーブルからbgm_urlカラムを削除する場合（既に追加した場合）:
+// ALTER TABLE played_games DROP COLUMN bgm_url;
+// 
 // プレイ時間カラムを追加する場合（テーブルが既に存在する場合）:
 // ALTER TABLE played_games ADD COLUMN playtime_hours DECIMAL(10, 2);
 
-// ユーザーのプレイ済みゲームリストを取得
 app.get('/api/played-games', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
 
-  db.query(
-    'SELECT id, game_api_id, title, image_url, rating, comment, COALESCE(playtime_hours, NULL) as playtime_hours, platforms, genres, created_at FROM played_games WHERE user_id = ? ORDER BY created_at DESC', // platforms, genres, created_at を追加
-    [userId],
-    (err, results) => {
-      if (err) {
-        // playtime_hoursカラムが存在しない場合のエラーを回避
-        if (err.code === 'ER_BAD_FIELD_ERROR' && (err.message.includes('playtime_hours') || err.message.includes('platforms') || err.message.includes('genres'))) {
-          // platforms, genres, playtime_hoursなしで再試行
-          db.query('SELECT id, game_api_id, title, image_url, rating, comment, created_at FROM played_games WHERE user_id = ? ORDER BY created_at DESC', [userId], (err2, results2) => {
-            if (err2) {
-              console.error('データベースエラー:', err2);
-              return res.status(500).json({ success: false, error: 'プレイ済みゲームの取得中にデータベースエラーが発生しました。エラー詳細: ' + err2.message });
-            }
-            // platforms, genres, playtime_hoursをnullとして追加
-            const resultsWithNull = results2.map(game => ({ ...game, playtime_hours: null, platforms: null, genres: null }));
-            res.json({ success: true, playedGames: resultsWithNull });
-          });
-        } else {
-          console.error('データベースエラー:', err);
-          return res.status(500).json({ success: false, error: 'プレイ済みゲームの取得中にデータベースエラーが発生しました。エラー詳細: ' + err.message });
-        }
-      } else {
-        // platforms と genres をJSONパース
-        const playedGamesWithParsedData = results.map(game => ({
-          ...game,
-          platforms: game.platforms ? JSON.parse(game.platforms) : [],
-          genres: game.genres ? JSON.parse(game.genres) : [],
-        }));
-        res.json({ success: true, playedGames: playedGamesWithParsedData });
-      }
+  const query = `
+    SELECT 
+      pg.id, pg.game_api_id, pg.title, pg.image_url, pg.rating, pg.comment, pg.playtime_hours, pg.platforms, pg.genres, pg.series, pg.created_at,
+      CONCAT('[', GROUP_CONCAT(CASE WHEN bgm.id IS NOT NULL THEN JSON_OBJECT('id', bgm.id, 'title', bgm.title, 'url', bgm.url) ELSE NULL END), ']') as bgms
+    FROM played_games pg
+    LEFT JOIN game_bgms bgm ON pg.id = bgm.played_game_id
+    WHERE pg.user_id = ?
+    GROUP BY pg.id
+    ORDER BY pg.created_at DESC
+  `;
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'プレイ済みゲームの取得中にデータベースエラーが発生しました。' });
     }
-  );
+
+    const playedGamesWithParsedData = results.map(game => ({
+      ...game,
+      platforms: (() => {
+        try {
+          return game.platforms ? JSON.parse(game.platforms) : [];
+        } catch (e) {
+          console.error("Error parsing platforms JSON:", e);
+          return [];
+        }
+      })(),
+      genres: (() => {
+        try {
+          return game.genres ? JSON.parse(game.genres) : [];
+        } catch (e) {
+          console.error("Error parsing genres JSON:", e);
+          return [];
+        }
+      })(),
+      series: game.series || null,
+      bgms: (() => {
+        try {
+          return game.bgms ? JSON.parse(game.bgms).filter(b => b !== null) : [];
+        } catch (e) {
+          console.error("Error parsing bgms JSON:", e);
+          return [];
+        }
+      })(),
+    }));
+
+    res.json({ success: true, playedGames: playedGamesWithParsedData });
+  });
 });
 
 // 新しいプレイ済みゲームを追加
 app.post('/api/played-games', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
-  const { game_api_id, title, image_url, rating, comment, playtime_hours, platforms, genres } = req.body; // platforms と genres を追加
+  const { game_api_id, title, image_url, platforms, genres, series, bgms } = req.body;
 
   if (!game_api_id || !title) {
     return res.status(400).json({ success: false, error: 'ゲームIDとタイトルは必須です。' });
   }
+  if (bgms !== undefined && !Array.isArray(bgms)) {
+    return res.status(400).json({ success: false, error: 'BGMは配列である必要があります。' });
+  }
 
-  const newGame = {
-    user_id: userId,
-    game_api_id,
-    title,
-    image_url,
-    rating,
-    comment,
-    playtime_hours: playtime_hours ? parseFloat(playtime_hours) : null,
-    platforms: platforms ? JSON.stringify(platforms) : null, // JSON文字列に変換して保存
-    genres: genres ? JSON.stringify(genres) : null,         // JSON文字列に変換して保存
-  };
-
-  // playtime_hoursカラムが存在しない場合に備えて、エラー処理を追加
-  db.query('INSERT INTO played_games SET ?', newGame, (err, result) => {
+  db.getConnection((err, connection) => {
     if (err) {
-      if (err.code === 'ER_DUP_ENTRY') {
-        return res.status(409).json({ success: false, error: 'そのゲームは既に追加されています。' });
-      }
-      // playtime_hoursカラムが存在しない場合のエラーを処理
-      if (err.code === 'ER_BAD_FIELD_ERROR' && err.message.includes('playtime_hours')) {
-        // playtime_hoursを除外して再試行
-        const { playtime_hours, ...newGameWithoutPlaytime } = newGame;
-        db.query('INSERT INTO played_games SET ?', newGameWithoutPlaytime, (err2, result2) => {
-          if (err2) {
-            console.error('データベースエラー:', err2);
-            return res.status(500).json({ success: false, error: 'ゲームの追加中にデータベースエラーが発生しました。' });
-          }
-          res.status(201).json({ success: true, message: 'ゲームがライブラリに追加されました。', playedGame: { id: result2.insertId, ...newGameWithoutPlaytime, playtime_hours: null } });
-        });
-        return;
-      }
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'ゲームの追加中にデータベースエラーが発生しました。' });
+      console.error('データベース接続エラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
     }
-    res.status(201).json({ success: true, message: 'ゲームがライブラリに追加されました。', playedGame: { id: result.insertId, ...newGame } });
+
+    connection.beginTransaction(async (err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ success: false, error: 'トランザクションの開始に失敗しました。' });
+      }
+
+      try {
+        // 1. played_games テーブルにゲームを挿入
+        const newGame = {
+          user_id: userId,
+          game_api_id,
+          title,
+          image_url,
+          platforms: platforms ? JSON.stringify(platforms) : null,
+          genres: genres ? JSON.stringify(genres) : null,
+          series: series || null,
+        };
+
+        const result = await new Promise((resolve, reject) => {
+          connection.query('INSERT INTO played_games SET ?', newGame, (err, result) => {
+            if (err) {
+              if (err.code === 'ER_DUP_ENTRY') return reject(new Error('GAME_ALREADY_EXISTS'));
+              return reject(err);
+            }
+            resolve(result);
+          });
+        });
+        const newPlayedGameId = result.insertId;
+
+        // 2. BGMリストを挿入 (存在する場合)
+        if (bgms && bgms.length > 0) {
+          const bgmValues = bgms.map(bgm => [newPlayedGameId, bgm.title || null, bgm.url]);
+          await new Promise((resolve, reject) => {
+            connection.query('INSERT INTO game_bgms (played_game_id, title, url) VALUES ?', [bgmValues], (err) => {
+              if (err) return reject(err);
+              resolve();
+            });
+          });
+        }
+
+        // 3. トランザクションをコミット
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              res.status(500).json({ success: false, error: '追加のコミットに失敗しました。' });
+            });
+          }
+          connection.release();
+          res.status(201).json({ success: true, message: 'ゲームがライブラリに追加されました。', playedGame: { id: newPlayedGameId, ...newGame } });
+        });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          if (error.message === 'GAME_ALREADY_EXISTS') {
+            return res.status(409).json({ success: false, error: 'そのゲームは既に追加されています。' });
+          }
+          console.error('トランザクションエラー:', error);
+          res.status(500).json({ success: false, error: 'ゲームの追加中にデータベースエラーが発生しました。' });
+        });
+      }
+    });
   });
 });
 
-// プレイ済みゲームを更新 (評価やコメント、プレイ時間)
+// プレイ済みゲームを更新 (評価、コメント、プレイ時間、シリーズ、BGM)
 app.put('/api/played-games/:playedGameId', authenticateToken, (req, res) => {
     const { id: userId } = req.user;
     const { playedGameId } = req.params;
-    const { rating, comment, playtime_hours } = req.body;
+    const { rating, comment, playtime_hours, series, bgms } = req.body;
 
-    // 更新するフィールドが1つもない場合
-    if (rating === undefined && comment === undefined && playtime_hours === undefined) {
-        return res.status(400).json({ success: false, error: '更新する項目（評価、コメント、プレイ時間）が少なくとも1つ必要です。' });
+    // バリデーション
+    if (rating !== undefined && rating !== null && (parseInt(rating, 10) < 1 || parseInt(rating, 10) > 10)) {
+        return res.status(400).json({ success: false, error: '評価は1から10の間、または未設定である必要があります。' });
     }
-
-    const fieldsToUpdate = {};
-    // ratingが明示的に送信された場合（nullを含む）
-    if ('rating' in req.body) {
-        fieldsToUpdate.rating = rating === null || rating === '' ? null : rating;
-    }
-    // commentが明示的に送信された場合（nullを含む）
-    if ('comment' in req.body) {
-        fieldsToUpdate.comment = comment === null || comment === '' ? null : comment;
-    }
-    // playtime_hoursが明示的に送信された場合（nullを含む）
-    if ('playtime_hours' in req.body) {
-        const playtimeValue = playtime_hours === null || playtime_hours === '' ? null : parseFloat(playtime_hours);
-        // カラムが存在しない場合のエラーを無視するため、更新を試行
-        if (playtimeValue !== null || playtime_hours === null) {
-            fieldsToUpdate.playtime_hours = playtimeValue;
-        }
+    if (bgms !== undefined && !Array.isArray(bgms)) {
+        return res.status(400).json({ success: false, error: 'BGMは配列である必要があります。' });
     }
 
-    db.query('UPDATE played_games SET ? WHERE id = ? AND user_id = ?', [fieldsToUpdate, playedGameId, userId], (err, result) => {
+    db.getConnection((err, connection) => {
         if (err) {
-            // playtime_hoursカラムが存在しない場合のエラーを処理
-            if (err.code === 'ER_BAD_FIELD_ERROR' && err.message.includes('playtime_hours') && fieldsToUpdate.playtime_hours !== undefined) {
-                // playtime_hoursを除外して再試行
-                const { playtime_hours, ...fieldsWithoutPlaytime } = fieldsToUpdate;
-                if (Object.keys(fieldsWithoutPlaytime).length > 0) {
-                    db.query('UPDATE played_games SET ? WHERE id = ? AND user_id = ?', [fieldsWithoutPlaytime, playedGameId, userId], (err2, result2) => {
-                        if (err2) {
-                            console.error('データベースエラー:', err2);
-                            return res.status(500).json({ success: false, error: 'ゲーム情報の更新中にデータベースエラーが発生しました。' });
-                        }
-                        if (result2.affectedRows === 0) {
-                            return res.status(404).json({ success: false, error: 'ゲームが見つからないか、更新する権限がありません。' });
-                        }
-                        res.json({ success: true, message: 'ゲーム情報が更新されました。（プレイ時間カラムが存在しないため、プレイ時間は更新されませんでした）' });
-                    });
-                    return;
-                } else {
-                    return res.status(400).json({ success: false, error: 'プレイ時間カラムがデータベースに存在しません。データベースを更新してください。' });
-                }
+            console.error('データベース接続エラー:', err);
+            return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+        }
+
+        connection.beginTransaction(async (err) => {
+            if (err) {
+                connection.release();
+                return res.status(500).json({ success: false, error: 'トランザクションの開始に失敗しました。' });
             }
-            console.error('データベースエラー:', err);
-            return res.status(500).json({ success: false, error: 'ゲーム情報の更新中にデータベースエラーが発生しました。' });
-        }
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, error: 'ゲームが見つからないか、更新する権限がありません。' });
-        }
-        res.json({ success: true, message: 'ゲーム情報が更新されました。' });
+
+            try {
+                // 1. played_games テーブルの基本情報を更新
+                const fieldsToUpdate = {};
+                if ('rating' in req.body) fieldsToUpdate.rating = rating === null || rating === '' ? null : parseInt(rating, 10);
+                if ('comment' in req.body) fieldsToUpdate.comment = comment === null || comment === '' ? null : comment;
+                if ('playtime_hours' in req.body) fieldsToUpdate.playtime_hours = playtime_hours === null || playtime_hours === '' ? null : parseFloat(playtime_hours);
+                if ('series' in req.body) fieldsToUpdate.series = series === null || series === '' ? null : series;
+
+                if (Object.keys(fieldsToUpdate).length > 0) {
+                    await new Promise((resolve, reject) => {
+                        connection.query('UPDATE played_games SET ? WHERE id = ? AND user_id = ?', [fieldsToUpdate, playedGameId, userId], (err, result) => {
+                            if (err) return reject(err);
+                            if (result.affectedRows === 0) return reject(new Error('GAME_NOT_FOUND'));
+                            resolve(result);
+                        });
+                    });
+                }
+
+                // 2. BGM情報を更新 (指定されている場合のみ)
+                if (bgms) {
+                    // 2a. 既存のBGMをすべて削除
+                    await new Promise((resolve, reject) => {
+                        connection.query('DELETE FROM game_bgms WHERE played_game_id = ?', [playedGameId], (err) => {
+                            if (err) return reject(err);
+                            resolve();
+                        });
+                    });
+
+                    // 2b. 新しいBGMリストを挿入
+                    if (bgms.length > 0) {
+                        const bgmValues = bgms.map(bgm => [playedGameId, bgm.title || null, bgm.url]);
+                        await new Promise((resolve, reject) => {
+                            connection.query('INSERT INTO game_bgms (played_game_id, title, url) VALUES ?', [bgmValues], (err) => {
+                                if (err) return reject(err);
+                                resolve();
+                            });
+                        });
+                    }
+                }
+
+                // 3. トランザクションをコミット
+                connection.commit((err) => {
+                    if (err) {
+                        return connection.rollback(() => {
+                            connection.release();
+                            res.status(500).json({ success: false, error: '更新のコミットに失敗しました。' });
+                        });
+                    }
+                    connection.release();
+                    res.json({ success: true, message: 'ゲーム情報が更新されました。' });
+                });
+
+            } catch (error) {
+                connection.rollback(() => {
+                    connection.release();
+                    if (error.message === 'GAME_NOT_FOUND') {
+                        return res.status(404).json({ success: false, error: 'ゲームが見つからないか、更新する権限がありません。' });
+                    }
+                    console.error('トランザクションエラー:', error);
+                    res.status(500).json({ success: false, error: 'ゲーム情報の更新中にデータベースエラーが発生しました。' });
+                });
+            }
+        });
     });
 });
 
@@ -882,29 +1004,32 @@ app.post('/api/portfolios', authenticateToken, (req, res) => {
   }
 });
 
-// ポートフォリオ詳細取得API
-app.get('/api/portfolios/:portfolioId', authenticateToken, (req, res) => {
+// ポートフォリオ詳細取得API (Publicly accessible)
+app.get('/api/portfolios/:portfolioId', tryAuthenticateToken, (req, res) => {
   try {
     const { portfolioId } = req.params;
-    const { id: userId } = req.user;
+    const loggedInUserId = req.user ? req.user.id : null;
 
-    // First, get portfolio details and verify ownership
-    db.query('SELECT * FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId], (err, portfolioResults) => {
+    // First, get portfolio details
+    db.query('SELECT * FROM portfolios WHERE id = ?', [portfolioId], (err, portfolioResults) => {
       if (err) {
         console.error('データベースエラー:', err);
         return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
       }
 
       if (portfolioResults.length === 0) {
-        return res.status(404).json({ success: false, error: 'ポートフォリオが見つからないか、アクセス権がありません。' });
+        return res.status(404).json({ success: false, error: 'ポートフォリオが見つかりません。' });
       }
 
       const portfolio = portfolioResults[0];
+      const isOwner = loggedInUserId === portfolio.user_id;
 
       // Next, get projects for this portfolio
       const projectsQuery = `
         SELECT
           p.*,
+          p.font_size,
+          p.background_image,
           GROUP_CONCAT(t.name ORDER BY t.name SEPARATOR ',') AS tags
         FROM
           projects p
@@ -926,7 +1051,6 @@ app.get('/api/portfolios/:portfolioId', authenticateToken, (req, res) => {
           return res.status(500).json({ success: false, error: 'プロジェクトの取得中にデータベースエラーが発生しました。' });
         }
 
-        // Add a fallback for layout properties and convert tags string to array
         const projectsWithData = projectResults.map(p => ({
           ...p,
           tags: p.tags ? p.tags.split(',') : [],
@@ -937,7 +1061,15 @@ app.get('/api/portfolios/:portfolioId', authenticateToken, (req, res) => {
         }));
 
         portfolio.projects = projectsWithData;
-        res.json({ success: true, portfolio: portfolio });
+        
+        // Return portfolio data with ownership flag
+        res.json({ 
+          success: true, 
+          portfolio: {
+            ...portfolio,
+            isOwner: isOwner 
+          }
+        });
       });
     });
   } catch (error) {
@@ -1049,6 +1181,8 @@ app.delete('/api/portfolios/:portfolioId', authenticateToken, (req, res) => {
 // Run the following SQL commands on your database:
 // ALTER TABLE projects ADD COLUMN size VARCHAR(20) NOT NULL DEFAULT 'medium';
 // ALTER TABLE projects ADD COLUMN text_color VARCHAR(7) DEFAULT '#000000';
+// ALTER TABLE projects ADD COLUMN font_size VARCHAR(50);
+// ALTER TABLE projects ADD COLUMN background_image VARCHAR(2083);
 app.post('/api/portfolios/:portfolioId/projects', authenticateToken, (req, res) => {
   const { portfolioId } = req.params;
   const { id: userId } = req.user;
@@ -1177,6 +1311,57 @@ app.post('/api/portfolios/:portfolioId/projects', authenticateToken, (req, res) 
   });
 });
 
+// Get a single project (publicly accessible)
+app.get('/api/public/projects/:projectId', tryAuthenticateToken, (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const loggedInUserId = req.user ? req.user.id : null;
+
+    // Get project details and owner user_id
+    const projectQuery = `
+      SELECT p.*, pf.user_id
+      FROM projects p
+      JOIN portfolios pf ON p.portfolio_id = pf.id
+      WHERE p.id = ?
+    `;
+
+    db.query(projectQuery, [projectId], (err, projectResults) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+      }
+
+      if (projectResults.length === 0) {
+        return res.status(404).json({ success: false, error: 'プロジェクトが見つかりません。' });
+      }
+
+      const project = projectResults[0];
+      const isOwner = loggedInUserId === project.user_id;
+
+      // Get all content blocks for the project
+      db.query('SELECT * FROM project_contents WHERE project_id = ? ORDER BY content_order ASC', [projectId], (err, contentResults) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({ success: false, error: 'コンテンツブロックの取得中にデータベースエラーが発生しました。' });
+        }
+
+        project.contents = contentResults;
+        
+        res.json({
+          success: true, 
+          project: {
+            ...project,
+            isOwner: isOwner
+          }
+        });
+      });
+    });
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
 // Get a single project with its content blocks
 app.get('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (req, res) => {
   try {
@@ -1228,7 +1413,7 @@ app.get('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (
 app.put('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (req, res) => {
   const { portfolioId, projectId } = req.params;
   const { id: userId } = req.user;
-  const { title, description, imageData, backgroundColor, textColor, content, size, type, tags, layout_w, layout_h } = req.body;
+  const { title, description, imageData, backgroundColor, textColor, content, size, type, tags, layout_w, layout_h, font_size, background_image } = req.body;
 
   if (type !== 'text' && !title) {
     return res.status(400).json({ success: false, error: 'プロジェクトタイトルは必須です。' });
@@ -1262,15 +1447,17 @@ app.put('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (
 
         // 2. Update the project itself
         const updatedProject = {
-          title: title,
-          description: description,
-          image_data: imageData,
-          background_color: backgroundColor,
-          text_color: textColor,
-          size: size,
-          content: content,
+          title: title || null,
+          description: description || null,
+          image_data: imageData || null,
+          background_color: backgroundColor || null,
+          text_color: textColor || null,
+          size: size || null,
+          content: content || null,
           layout_w: layout_w,
           layout_h: layout_h,
+          font_size: font_size || null,
+          background_image: background_image || null,
         };
         // Remove undefined properties so they don't null out existing values
         Object.keys(updatedProject).forEach(key => updatedProject[key] === undefined && delete updatedProject[key]);
@@ -1348,7 +1535,7 @@ app.put('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (
             return res.status(error.status).json({ success: false, error: error.message });
           }
           console.error('トランザクションエラー:', error);
-          res.status(500).json({ success: false, error: 'プロジェクトの更新中にデータベースエラーが発生しました。' });
+          res.status(500).json({ success: false, error: 'プロジェクトの更新中にデータベースエラーが発生しました。', details: error.message });
         });
       }
     });
@@ -1613,7 +1800,7 @@ app.put('/api/contents/:contentId', authenticateToken, async (req, res) => {
   try {
     const { contentId } = req.params;
     const { id: userId } = req.user;
-    const { content, block_style } = req.body; // Accept block_style
+    const { content, block_style, text_color, font_size, background_color, background_image } = req.body;
 
     // 1. Verify ownership through project and portfolio
     const contents = await new Promise((resolve, reject) => {
@@ -1638,6 +1825,10 @@ app.put('/api/contents/:contentId', authenticateToken, async (req, res) => {
     const fieldsToUpdate = {};
     if (content !== undefined) fieldsToUpdate.content = content;
     if (block_style !== undefined) fieldsToUpdate.block_style = block_style;
+    if (text_color !== undefined) fieldsToUpdate.text_color = text_color;
+    if (font_size !== undefined) fieldsToUpdate.font_size = font_size;
+    if (background_color !== undefined) fieldsToUpdate.background_color = background_color;
+    if (background_image !== undefined) fieldsToUpdate.background_image = background_image;
 
     if (Object.keys(fieldsToUpdate).length === 0) {
       return res.status(400).json({ success: false, error: '更新するフィールドがありません。' });
@@ -1964,6 +2155,34 @@ app.post('/api/reset-password', async (req, res) => {
       error: 'サーバーエラーが発生しました' 
     });
   }
+});
+
+// --- File Upload API ---
+
+// Multer storage configuration
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    // Sanitize the original file name to remove special characters and spaces
+    const safeOriginalName = file.originalname.replace(/[^a-zA-Z0-9-._]/g, '_');
+    cb(null, Date.now() + '-' + safeOriginalName);
+  }
+});
+
+const upload = multer({ storage: storage });
+
+// File upload endpoint
+app.post('/api/upload', authenticateToken, upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, error: 'ファイルがアップロードされませんでした。' });
+  }
+
+  // Construct the file path to be returned to the client
+  const filePath = `/uploads/${req.file.filename}`;
+
+  res.json({ success: true, filePath: filePath });
 });
 
 // エラーハンドリングミドルウェア

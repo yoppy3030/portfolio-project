@@ -64,26 +64,31 @@ function GameResult({ game, onAdd, isAdded, translateToJapanese }) {
   );
 }
 
-function LibraryItem({ game, onRemove, onUpdate }) {
+function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProvided, dndSnapshot, isOwner }) {
+  console.log(`[DEBUG] LibraryItem for game "${game.title}" received allSeries:`, allSeries);
   const [isEditing, setIsEditing] = useState(false);
   const [rating, setRating] = useState(game.rating || null);
   const [comment, setComment] = useState(game.comment || '');
   const [playtimeHours, setPlaytimeHours] = useState(game.playtime_hours ? String(game.playtime_hours) : '');
+  const [series, setSeries] = useState(game.series || '');
+  const [bgms, setBgms] = useState(game.bgms || []);
 
   useEffect(() => {
     setRating(game.rating || null);
     setComment(game.comment || '');
     setPlaytimeHours(game.playtime_hours ? String(game.playtime_hours) : '');
-  }, [game.rating, game.comment, game.playtime_hours]);
+    setSeries(game.series || '');
+    setBgms(game.bgms || []);
+  }, [game.rating, game.comment, game.playtime_hours, game.series, game.bgms]);
 
   const handleSave = async () => {
-    const updateData = {};
-    // ratingを常に送信（nullも有効な値）
-    updateData.rating = rating === null || rating === 0 ? null : rating;
-    // commentを常に送信（空文字列はnullに変換）
-    updateData.comment = comment && comment.trim() ? comment.trim() : null;
-    // playtime_hoursを常に送信（空文字列はnullに変換）
-    updateData.playtime_hours = playtimeHours && playtimeHours.trim() ? parseFloat(playtimeHours) : null;
+    const updateData = {
+      rating: rating === null || rating === 0 ? null : rating,
+      comment: comment && comment.trim() ? comment.trim() : null,
+      playtime_hours: playtimeHours && playtimeHours.trim() ? parseFloat(playtimeHours) : null,
+      series: series && series.trim() ? series.trim() : null,
+      bgms: bgms.filter(bgm => bgm.url && bgm.url.trim() !== ''), // URLが空でないBGMのみを送信
+    };
     
     console.log('Saving game update:', game.id, updateData);
     await onUpdate(game.id, updateData);
@@ -94,14 +99,31 @@ function LibraryItem({ game, onRemove, onUpdate }) {
     setRating(game.rating || null);
     setComment(game.comment || '');
     setPlaytimeHours(game.playtime_hours ? String(game.playtime_hours) : '');
+    setSeries(game.series || '');
+    setBgms(game.bgms || []);
     setIsEditing(false);
+  };
+
+  const handleBgmChange = (index, field, value) => {
+    const newBgms = [...bgms];
+    newBgms[index][field] = value;
+    setBgms(newBgms);
+  };
+
+  const addBgm = () => {
+    setBgms([...bgms, { title: '', url: '' }]);
+  };
+
+  const removeBgm = (index) => {
+    const newBgms = bgms.filter((_, i) => i !== index);
+    setBgms(newBgms);
   };
 
   const renderStars = (value, interactive = false) => {
     const ratingValue = value || 0;
     return (
       <div className="star-rating">
-        {[1, 2, 3, 4, 5].map((star) => (
+        {Array.from({ length: 10 }, (_, i) => i + 1).map((star) => (
           <span
             key={star}
             className={`star ${star <= ratingValue ? 'filled' : ''} ${interactive ? 'interactive' : ''}`}
@@ -115,8 +137,25 @@ function LibraryItem({ game, onRemove, onUpdate }) {
     );
   };
 
+  // isDraggable に応じて props を準備するが、コンポーネントの構造は変えない
+  const ref = isDraggable ? dndProvided.innerRef : null;
+  const draggableProps = isDraggable ? dndProvided.draggableProps : {};
+  const dragHandleProps = isDraggable ? dndProvided.dragHandleProps : {};
+  const style = isDraggable
+    ? {
+        ...dndProvided.draggableProps.style,
+        boxShadow: dndSnapshot.isDragging ? '0 6px 12px rgba(0,0,0,0.2)' : 'none',
+      }
+    : {};
+  const className = isDraggable ? 'library-item draggable' : 'library-item';
+
   return (
-    <div className="library-item">
+    <div ref={ref} {...draggableProps} style={style} className={className}>
+      {isDraggable && (
+        <div className="drag-handle" {...dragHandleProps}>
+          <i className="material-icons">drag_indicator</i>
+        </div>
+      )}
       <img src={game.image_url} alt={game.title} className="game-image" />
       <div className="game-info">
         <p>{game.title}</p>
@@ -141,7 +180,6 @@ function LibraryItem({ game, onRemove, onUpdate }) {
                 value={playtimeHours}
                 onChange={(e) => {
                   const value = e.target.value;
-                  // 数値のみ許可（小数点を含む）
                   if (value === '' || /^\d*\.?\d*$/.test(value)) {
                     setPlaytimeHours(value);
                   }
@@ -164,6 +202,39 @@ function LibraryItem({ game, onRemove, onUpdate }) {
                 rows={3}
               />
             </div>
+            <div className="series-section">
+              <label>シリーズ名:</label>
+              <input
+                type="text"
+                value={series}
+                onChange={(e) => setSeries(e.target.value)}
+                placeholder="例: ポケモン、ゼルダの伝説"
+                style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+              />
+            </div>
+
+            <div className="bgm-section">
+              <label>好きなBGM:</label>
+              {bgms.map((bgm, index) => (
+                <div key={index} className="bgm-entry">
+                  <input
+                    type="text"
+                    value={bgm.title}
+                    onChange={(e) => handleBgmChange(index, 'title', e.target.value)}
+                    placeholder="BGMのタイトル (例: メインテーマ)"
+                  />
+                  <input
+                    type="text"
+                    value={bgm.url}
+                    onChange={(e) => handleBgmChange(index, 'url', e.target.value)}
+                    placeholder="URL (例: https://www.youtube.com/...)"
+                  />
+                  <button type="button" onClick={() => removeBgm(index)} className="btn-remove-bgm">削除</button>
+                </div>
+              ))}
+              <button type="button" onClick={addBgm} className="btn-add-bgm">BGMを追加</button>
+            </div>
+
             <div className="edit-actions">
               <button onClick={handleSave} className="btn-save">保存</button>
               <button onClick={handleCancel} className="btn-cancel">キャンセル</button>
@@ -190,28 +261,44 @@ function LibraryItem({ game, onRemove, onUpdate }) {
                 <p>{comment}</p>
               </div>
             ) : null}
-            {(!rating || rating === 0) && !playtimeHours && !comment && (
-              <p className="no-details">評価、プレイ時間、コメントを追加してください</p>
+            {bgms && bgms.length > 0 ? (
+              <div className="bgm-display">
+                <label>好きなBGM:</label>
+                <ul>
+                  {bgms.map((bgm, index) => (
+                    <li key={index}>
+                      <a href={bgm.url} target="_blank" rel="noopener noreferrer">
+                        {bgm.title || `BGM ${index + 1}`}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {(!rating || rating === 0) && !playtimeHours && !comment && (!bgms || bgms.length === 0) && (
+              <p className="no-details">評価、プレイ時間、コメント、BGMを追加してください</p>
             )}
-            <button 
-              type="button"
-              onClick={() => {
-                console.log('Edit button clicked for game:', game.id);
-                setIsEditing(true);
-              }} 
-              className="btn-edit"
-            >
-              編集
-            </button>
+            {isOwner && (
+              <button 
+                type="button"
+                onClick={() => {
+                  console.log('Edit button clicked for game:', game.id);
+                  setIsEditing(true);
+                }} 
+                className="btn-edit"
+              >
+                編集
+              </button>
+            )}
           </div>
         )}
       </div>
-      <button onClick={() => onRemove(game.id)} className="btn-remove-game">削除</button>
+      {isOwner && <button onClick={() => onRemove(game.id)} className="btn-remove-game">削除</button>}
     </div>
   );
 }
 
-function GameLibraryModal({ onClose }) {
+function GameLibraryModal({ onClose, isOwner }) {
   const [myGames, setMyGames] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -223,14 +310,34 @@ function GameLibraryModal({ onClose }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreResults, setHasMoreResults] = useState(false);
   const [searchResultsRef, setSearchResultsRef] = useState(null);
-  const [sortOrder, setSortOrder] = useState('added'); // 並び替え順序: 'added', 'rating', 'playtime', 'title', 'custom'
+  const [sortOrder, setSortOrder] = useState(() => {
+    try {
+      const savedSortOrder = localStorage.getItem('sortOrderState');
+      return savedSortOrder ? JSON.parse(savedSortOrder) : 'added';
+    } catch (error) {
+      console.error('Failed to parse sortOrderState from localStorage', error);
+      return 'added';
+    }
+  }); // 並び替え順序: 'added', 'rating', 'playtime', 'title', 'custom'
   const [isCustomOrder, setIsCustomOrder] = useState(false);
   const [selectedLibraryPlatform, setSelectedLibraryPlatform] = useState(''); // マイライブラリのプラットフォーム絞り込み
   const [selectedLibraryGenre, setSelectedLibraryGenre] = useState(''); // マイライブラリのジャンル絞り込み
+  const [selectedSeriesForAdd, setSelectedSeriesForAdd] = useState(''); // 検索結果からゲームを追加する際のシリーズ名
+  const [expandedSeries, setExpandedSeries] = useState(() => { // シリーズフォルダの開閉状態 { "シリーズ名": true/false }
+    try {
+      const savedState = localStorage.getItem('expandedSeriesState');
+      return savedState ? JSON.parse(savedState) : {};
+    } catch (error) {
+      console.error('Failed to parse expandedSeriesState from localStorage', error);
+      return {};
+    }
+  });
+  const [updateCounter, setUpdateCounter] = useState(0); // 強制再描画用のカウンター
 
   const getToken = () => localStorage.getItem('token');
 
   const fetchMyGames = useCallback(async () => {
+    console.log('[DEBUG] fetchMyGames called');
     setLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/played-games', {
@@ -238,13 +345,31 @@ function GameLibraryModal({ onClose }) {
       });
       const data = await response.json();
       if (data.success) {
-        // 初期データ取得時にソートを適用（カスタム順序でない場合）
-        if (!isCustomOrder && sortOrder !== 'custom') {
-          const sorted = getSortedGames(data.playedGames, sortOrder);
-          setMyGames(sorted);
-        } else {
-          setMyGames(data.playedGames);
-        }
+        const games = data.playedGames;
+        console.log('[DEBUG] fetchMyGames: Setting myGames to:', games.map(g => g.title));
+        // 常にAPIから取得した順序でセットする
+        setMyGames(games);
+        console.log('[DEBUG] fetchMyGames: myGames set.');
+        
+        setUpdateCounter(c => c + 1); // 強制再描画をトリガー
+        
+        // 既存のlocalStorageの状態を尊重しつつ、新しいシリーズはデフォルトで開く
+        setExpandedSeries(prev => {
+            const seriesNames = [...new Set(games.map(g => g.series && g.series.trim() !== '' ? g.series.trim() : '未分類'))];
+            const newExpansionState = {...prev};
+            seriesNames.forEach(name => {
+                if (newExpansionState[name] === undefined) {
+                    newExpansionState[name] = true;
+                }
+            });
+            try {
+                localStorage.setItem('expandedSeriesState', JSON.stringify(newExpansionState));
+            } catch (error) {
+                console.error('Failed to save expandedSeriesState to localStorage', error);
+            }
+            return newExpansionState;
+        });
+
       } else {
         setError(data.error || 'ライブラリの取得に失敗しました。');
       }
@@ -253,7 +378,7 @@ function GameLibraryModal({ onClose }) {
     } finally {
       setLoading(false);
     }
-  }, [sortOrder, isCustomOrder]);
+  }, []);
 
   // 並び替え機能
   const getSortedGames = (games, order) => {
@@ -282,28 +407,26 @@ function GameLibraryModal({ onClose }) {
     }
   };
 
-  // ソート順が変更されたときの処理（カスタム順序でない場合のみ）
-  useEffect(() => {
-    if (sortOrder !== 'custom' && myGames.length > 0) {
-      const sorted = getSortedGames(myGames, sortOrder);
-      setMyGames(sorted);
-      setIsCustomOrder(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortOrder]); // sortOrderが変更されたときのみ実行
+  
 
   // ドラッグ&ドロップの処理
   const handleDragEnd = useCallback((result) => {
-    if (!result.destination) return;
+    if (!result.destination) {
+      return;
+    }
     
-    const items = Array.from(myGames);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    
-    setMyGames(items);
+    setMyGames(prevMyGames => { // 関数形式の更新
+      const items = Array.from(prevMyGames); // prevMyGames を参照
+      const [reorderedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, reorderedItem);
+      console.log('myGames after setMyGames (function update):', items.map(g => g.title)); // 更新後の myGames の内容をログ出力
+      return items;
+    });
+
     setIsCustomOrder(true);
     setSortOrder('custom');
-  }, [myGames]);
+    localStorage.setItem('sortOrderState', JSON.stringify('custom'));
+  }, []); // myGames に依存しない
 
   useEffect(() => {
     fetchMyGames();
@@ -379,7 +502,7 @@ function GameLibraryModal({ onClose }) {
     'USSM': 'Pokemon Ultra Sun Ultra Moon',
     'SV': 'Pokemon Scarlet Violet',
     'SS': 'Pokemon Sword Shield',
-    'LGPE': 'Pokemon Let's Go Pikachu Eevee',
+    'LGPE': 'Pokemon Let\'s Go Pikachu Eevee',
     'BDSP': 'Pokemon Brilliant Diamond Shining Pearl',
     'PLA': 'Pokemon Legends Arceus',
     'SM': 'Pokemon Sun Moon',
@@ -490,7 +613,7 @@ function GameLibraryModal({ onClose }) {
       const nameLower = englishName.toLowerCase();
       if (nameLower.includes(enLower)) {
         // 元の名前に含まれるシリーズ名を日本語に置換
-        return englishName.replace(new RegExp(en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), jp);
+        return englishName.replace(new RegExp(en.replace(/[.*+?^${}()|[\\]/g, '\\$&'), 'gi'), jp);
       }
     }
     
@@ -624,7 +747,7 @@ function GameLibraryModal({ onClose }) {
             });
             
             if (!hasPlatform) {
-              console.log(`Game "${game.name}" (ID: ${game.id}) does not support platform ${platformId}`, {
+              console.log(`Game \"${game.name}\" (ID: ${game.id}) does not support platform ${platformId}`, {
                 gamePlatforms: gamePlatforms.map(p => ({ id: p.platform?.id || p.id, name: p.platform?.name || p.name }))
               });
             }
@@ -743,6 +866,7 @@ function GameLibraryModal({ onClose }) {
           image_url: game.background_image,
           platforms: game.platforms, // RAWG APIから取得したplatformsをそのまま送信
           genres: game.genres,       // RAWG APIから取得したgenresをそのまま送信
+          series: selectedSeriesForAdd.trim() !== '' ? selectedSeriesForAdd.trim() : null, // シリーズ情報を追加
         })
       });
       const data = await response.json();
@@ -774,6 +898,19 @@ function GameLibraryModal({ onClose }) {
   };
 
   const handleUpdateGame = async (playedGameId, updateData) => {
+    console.log('[DEBUG] handleUpdateGame called with:', playedGameId, updateData);
+
+    // 楽観的更新: UIを即座に更新
+    setMyGames(prevGames => {
+      console.log('[DEBUG] Performing optimistic update...');
+      const newGames = prevGames.map(game =>
+        game.id === playedGameId ? { ...game, ...updateData } : game
+      );
+      const updatedGame = newGames.find(g => g.id === playedGameId);
+      console.log('[DEBUG] Optimistically updated game object:', updatedGame);
+      return newGames;
+    });
+
     try {
       const response = await fetch(`http://localhost:5000/api/played-games/${playedGameId}`, {
         method: 'PUT',
@@ -785,39 +922,79 @@ function GameLibraryModal({ onClose }) {
       });
       const data = await response.json();
       if (data.success) {
-        fetchMyGames(); // Refresh library
-        setError(''); // Clear any previous errors
+        // サーバーからの正式なデータで再同期（念のため）
+        // fetchMyGames(); // 楽観的更新が成功すれば不要な場合もある
+        setError('');
+        console.log('[DEBUG] API update successful.');
       } else {
+        // 失敗した場合: UIをサーバーの状態にロールバック
         setError(data.error || 'ゲーム情報の更新に失敗しました。');
+        fetchMyGames();
       }
     } catch (err) {
       console.error('Update error:', err);
       setError('サーバーとの通信に失敗しました。');
+      // 失敗した場合: UIをサーバーの状態にロールバック
+      fetchMyGames();
     }
   };
   
-  const filteredMyGames = useMemo(() => {
-    let filtered = myGames;
+  let filteredMyGames = myGames;
 
-    if (selectedLibraryPlatform) {
-      filtered = filtered.filter(game => {
-        const gamePlatforms = game.platforms || [];
-        return gamePlatforms.some(p => String(p.platform?.id || p.id) === selectedLibraryPlatform);
-      });
-    }
+  if (selectedLibraryPlatform) {
+    filteredMyGames = filteredMyGames.filter(game => {
+      const gamePlatforms = game.platforms || [];
+      return gamePlatforms.some(p => String(p.platform?.id || p.id) === selectedLibraryPlatform);
+    });
+  }
 
-    if (selectedLibraryGenre) {
-      filtered = filtered.filter(game => {
-        const gameGenres = game.genres || [];
-        return gameGenres.some(g => g.name === selectedLibraryGenre);
-      });
-    }
+  if (selectedLibraryGenre) {
+    filteredMyGames = filteredMyGames.filter(game => {
+      const gameGenres = game.genres || [];
+      return gameGenres.some(g => g.name === selectedLibraryGenre);
+    });
+  }
 
-    return getSortedGames(filtered, sortOrder);
-  }, [myGames, selectedLibraryPlatform, selectedLibraryGenre, sortOrder]);
+  filteredMyGames = getSortedGames(filteredMyGames, sortOrder);
 
   const myGameApiIds = new Set(myGames.map(g => g.game_api_id));
 
+  // groupedMyGames を useMemo から外し、直接計算するように変更
+  const groupedMyGames = (() => {
+    const groups = {};
+    filteredMyGames.forEach(game => {
+      const seriesName = game.series && game.series.trim() !== '' ? game.series.trim() : '未分類';
+      if (!groups[seriesName]) {
+        groups[seriesName] = [];
+      }
+      groups[seriesName].push(game);
+    });
+    // シリーズ名をアルファベット順にソート
+    const sortedSeriesNames = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'ja'));
+    const sortedGroups = {};
+    sortedSeriesNames.forEach(name => {
+      sortedGroups[name] = groups[name];
+    });
+    return sortedGroups;
+  })();
+
+  const toggleSeriesExpansion = useCallback((seriesName) => {
+    setExpandedSeries(prev => {
+      const newState = {
+        ...prev,
+        [seriesName]: !prev[seriesName]
+      };
+      try {
+        localStorage.setItem('expandedSeriesState', JSON.stringify(newState));
+      } catch (error) {
+        console.error('Failed to save expandedSeriesState to localStorage', error);
+      }
+      return newState;
+    });
+  }, []);
+
+  console.log('[DEBUG] GameLibraryModal Render. Current myGames (first 3):', myGames.slice(0, 3).map(g => g.title));
+  console.log('[DEBUG] GameLibraryModal Render. Current sortOrder:', sortOrder);
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -849,6 +1026,7 @@ function GameLibraryModal({ onClose }) {
                   }
                 }}
               />
+              
               <select
                 value={selectedPlatform}
                 onChange={(e) => {
@@ -938,7 +1116,9 @@ function GameLibraryModal({ onClose }) {
                   id="sort-order"
                   value={sortOrder}
                   onChange={(e) => {
-                    setSortOrder(e.target.value);
+                    const newSortOrder = e.target.value;
+                    setSortOrder(newSortOrder);
+                    localStorage.setItem('sortOrderState', JSON.stringify(newSortOrder));
                     setIsCustomOrder(false);
                   }}
                   style={{ padding: '5px 10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '0.9rem' }}
@@ -1011,51 +1191,101 @@ function GameLibraryModal({ onClose }) {
               </div>
             </div>
             {loading ? <p>読み込み中...</p> : (
-              filteredMyGames.length > 0 ? (
-                sortOrder === 'custom' ? (
-                  <DragDropContext onDragEnd={handleDragEnd}>
-                    <Droppable droppableId="library-grid" type="game" direction="grid">
-                      {(provided, snapshot) => (
-                        <div
-                          className="library-grid"
-                          {...provided.droppableProps}
-                          ref={provided.innerRef}
-                          style={{
-                            backgroundColor: snapshot.isDraggingOver ? '#f0f0f0' : 'transparent',
-                            transition: 'background-color 0.2s',
-                          }}
-                        >
-                          {filteredMyGames.map((game, index) => (
-                            <Draggable key={game.id} draggableId={String(game.id)} index={index}>
+              Object.keys(groupedMyGames).length > 0 ? (
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  <div className="series-list">
+                    {Object.entries(groupedMyGames).map(([seriesName, games]) => (
+                      <div key={seriesName} className="series-folder">
+                        <div className="series-header" onClick={() => toggleSeriesExpansion(seriesName)}>
+                          <h3>
+                            {seriesName} ({games.length})
+                            <i className="material-icons" style={{ marginLeft: '10px' }}>
+                              {expandedSeries[seriesName] ? 'expand_less' : 'expand_more'}
+                            </i>
+                          </h3>
+                        </div>
+                        {expandedSeries[seriesName] && (
+                          sortOrder === 'custom' ? (
+                            <Droppable droppableId={`library-grid-${seriesName}`} type="game">
                               {(provided, snapshot) => (
                                 <div
+                                  className="library-grid"
+                                  {...provided.droppableProps}
                                   ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
                                   style={{
-                                    ...provided.draggableProps.style,
-                                    opacity: snapshot.isDragging ? 0.7 : 1,
-                                    transform: provided.draggableProps.style?.transform,
-                                    zIndex: snapshot.isDragging ? 1000 : 1,
+                                    backgroundColor: snapshot.isDraggingOver ? '#f0f0f0' : 'transparent',
+                                    transition: 'background-color 0.2s',
                                   }}
                                 >
-                                  <LibraryItem game={game} onRemove={handleRemoveGame} onUpdate={handleUpdateGame} />
+                                  {games.map((game, index) => (
+                                    <Draggable key={game.id} draggableId={String(game.id)} index={index}>
+                                      {(provided, snapshot) => (
+                                        <LibraryItem
+                  key={game.id}
+                  game={game}
+                  onRemove={handleRemoveGame}
+                  onUpdate={handleUpdateGame}
+                  isDraggable={false}
+                  isOwner={isOwner}
+                />
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                  {provided.placeholder}
                                 </div>
                               )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </div>
+                            </Droppable>
+                          ) : (
+                            sortOrder === 'custom' ? (
+            <Droppable droppableId={`library-grid-${seriesName}`} type="game">
+              {(provided, snapshot) => (
+                <div
+                  className="library-grid"
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  style={{
+                    backgroundColor: snapshot.isDraggingOver ? '#f0f0f0' : 'transparent',
+                    transition: 'background-color 0.2s',
+                  }}
+                >
+                  {games.map((game, index) => (
+                    <Draggable key={game.id} draggableId={String(game.id)} index={index}>
+                      {(provided, snapshot) => (
+                        <LibraryItem
+                          game={game}
+                          onRemove={handleRemoveGame}
+                          onUpdate={handleUpdateGame}
+                          isDraggable={true}
+                          dndProvided={provided}
+                          dndSnapshot={snapshot}
+                        />
                       )}
-                    </Droppable>
-                  </DragDropContext>
-                ) : (
-                  <div className="library-grid">
-                    {filteredMyGames.map(game => (
-                      <LibraryItem key={game.id} game={game} onRemove={handleRemoveGame} onUpdate={handleUpdateGame} />
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          ) : (
+            <div className="library-grid">
+              {games.map(game => (
+                <LibraryItem
+                  key={game.id}
+                  game={game}
+                  onRemove={handleRemoveGame}
+                  onUpdate={handleUpdateGame}
+                  isDraggable={false}
+                  isOwner={isOwner}
+                />
+              ))}
+            </div>
+          )
+                          )
+                        )}
+                      </div>
                     ))}
                   </div>
-                )
+                </DragDropContext>
               ) : (
                 <p>ライブラリにゲームがありません。</p>
               )

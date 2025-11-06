@@ -1,66 +1,70 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './HobbiesDisplay.css';
+import GameLibraryModal from './GameLibraryModal'; // GameLibraryModalをインポート
 
-function HobbiesDisplay() {
+function HobbiesDisplay({ isOwner, portfolioId }) {
   const [hobbies, setHobbies] = useState([]);
-  const [playedGames, setPlayedGames] = useState([]);
+  const [playedGamesCount, setPlayedGamesCount] = useState(0); // ゲームの数だけを保持
   const [selectedHobby, setSelectedHobby] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isGameLibraryModalOpen, setGameLibraryModalOpen] = useState(false); // モーダルの表示状態
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError('');
-      const token = localStorage.getItem('token');
-      if (!token) {
-        // Not logged in, so don't display anything.
-        setLoading(false);
-        return;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // APIリクエストを並列で実行
+      const [hobbiesRes, gamesRes] = await Promise.all([
+        fetch('http://localhost:5000/api/hobbies', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('http://localhost:5000/api/played-games', { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
+
+      const hobbiesData = await hobbiesRes.json();
+      if (hobbiesData.success) {
+        setHobbies(hobbiesData.hobbies);
+      } else {
+        console.error(hobbiesData.error || 'Failed to fetch hobbies');
       }
 
-      try {
-        const [hobbiesRes, gamesRes] = await Promise.all([
-          fetch('http://localhost:5000/api/hobbies', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('http://localhost:5000/api/played-games', { headers: { 'Authorization': `Bearer ${token}` } })
-        ]);
-
-        const hobbiesData = await hobbiesRes.json();
-        const gamesData = await gamesRes.json();
-
-        if (hobbiesData.success) {
-          setHobbies(hobbiesData.hobbies);
-        } else {
-          // Don't block the whole page if hobbies fail, just log it.
-          console.error(hobbiesData.error || 'Failed to fetch hobbies');
-        }
-
-        if (gamesData.success) {
-          setPlayedGames(gamesData.playedGames);
-        } else {
-          console.error(gamesData.error || 'Failed to fetch played games');
-        }
-
-      } catch (err) {
-        setError('趣味またはゲームライブラリの読み込みに失敗しました。');
-        console.error(err);
-      } finally {
-        setLoading(false);
+      const gamesData = await gamesRes.json();
+      if (gamesData.success) {
+        setPlayedGamesCount(gamesData.playedGames.length); // ゲームの数だけを保存
+      } else {
+        console.error(gamesData.error || 'Failed to fetch played games');
       }
-    };
 
-    fetchData();
+    } catch (err) {
+      setError('趣味またはゲームライブラリの読み込みに失敗しました。');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   const handleHobbyClick = (hobbyName) => {
-    if (selectedHobby === hobbyName) {
-      setSelectedHobby(null); // Toggle off if clicked again
-    } else {
-      setSelectedHobby(hobbyName);
-    }
+    setSelectedHobby(prev => (prev === hobbyName ? null : hobbyName));
   };
 
-  // Don't render anything if there are no hobbies and not loading.
+  const handleOpenModal = () => {
+    setGameLibraryModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setGameLibraryModalOpen(false);
+    fetchData(); // モーダルを閉じたらデータを再取得して表示を更新
+  };
+
   if (!loading && hobbies.length === 0) {
     return null;
   }
@@ -85,23 +89,22 @@ function HobbiesDisplay() {
       </div>
 
       {selectedHobby === 'ゲーム' && (
-        <div className="game-library-display">
-          <h3>ゲームライブラリ</h3>
-          <div className="game-gallery">
-            {playedGames.length > 0 ? (
-              playedGames.map(game => (
-                <div key={game.id} className="game-card-display">
-                  <img src={game.image_url} alt={game.title} />
-                  <div className="game-card-title">{game.title}</div>
-                </div>
-              ))
+        <div className="game-library-summary">
+          <div className="summary-content">
+            {playedGamesCount > 0 ? (
+              <p>{playedGamesCount}個のゲームがライブラリにあります。</p>
             ) : (
-              <p>ライブラリにゲームがありません。設定ページから追加してください。</p>
+              <p>ライブラリにゲームがありません。</p>
             )}
+            <button onClick={handleOpenModal} className="manage-library-btn">
+              {playedGamesCount > 0 ? 'ライブラリを見る' : 'ゲームを追加する'}
+            </button>
           </div>
         </div>
       )}
       {/* TODO: Add displays for other hobbies if needed */}
+
+      {isGameLibraryModalOpen && <GameLibraryModal onClose={handleCloseModal} isOwner={isOwner} />}
     </div>
   );
 }

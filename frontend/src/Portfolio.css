@@ -3,6 +3,7 @@
   padding: 2rem;
   width: 100%;
   box-sizing: border-box;
+  min-height: 100%; /* 追加 */
 }
 
 .portfolio-header {
@@ -589,4 +590,9 @@
 
 .checkbox-item label {
   font-weight: normal;
+}
+
+/* Override react-grid-layout's default overflow to allow scrolling */
+.react-grid-item {
+  overflow: auto !important;
 }

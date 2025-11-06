@@ -112,15 +112,21 @@ function AddProjectModal({ on_close, on_submit }) {
   );
 }
 
-// EditProjectModal component (copied from ProjectPage.js)
+// EditProjectModal component
 function EditProjectModal({ project, on_close, on_submit }) {
   const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(project.description);
-  const [imageData, setImageData] = useState(project.image_data);
+  const [imageData, setImageData] = useState(project.image_data); // This is for the main image, not background
   const [backgroundColor, setBackgroundColor] = useState(project.background_color || '#ffffff');
   const [textColor, setTextColor] = useState(project.text_color || '#000000');
+  const [fontSize, setFontSize] = useState(project.font_size || '');
   const [size, setSize] = useState(project.size || 'medium');
   const [tags, setTags] = useState(project.tags || []);
+  const [backgroundImage, setBackgroundImage] = useState(project.background_image || ''); // Add this line
+  const [bgInputMethod, setBgInputMethod] = useState('url'); // Add this line
+  const [bgFile, setBgFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -129,15 +135,24 @@ function EditProjectModal({ project, on_close, on_submit }) {
     };
   }, []);
 
+  useEffect(() => {
+    const isUrl = project.background_image && project.background_image.startsWith('http');
+    setBgInputMethod(isUrl ? 'url' : 'upload');
+  }, [project.background_image]);
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImageData(reader.result);
+        setImageData(reader.result); // This handles the main image_data (legacy)
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleBgFileChange = (e) => {
+    setBgFile(e.target.files[0]);
   };
 
   const handleTagChange = (tag) => {
@@ -148,13 +163,50 @@ function EditProjectModal({ project, on_close, on_submit }) {
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!project.type === 'text' && !title) {
-      alert('Project title is required.');
-      return;
+    setError('');
+
+    let finalBackgroundImage = backgroundImage;
+
+    if (bgInputMethod === 'upload' && bgFile) {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('file', bgFile);
+      const token = localStorage.getItem('token');
+      try {
+        const uploadRes = await fetch('http://localhost:5000/api/upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          finalBackgroundImage = `http://localhost:5000${uploadData.filePath}`;
+        } else {
+          throw new Error(uploadData.error || '背景画像のアップロードに失敗しました。');
+        }
+      } catch (err) {
+        setError(err.message);
+        setUploading(false);
+        return;
+      } finally {
+        setUploading(false);
+      }
     }
-    on_submit({ ...project, title, description, imageData, backgroundColor, textColor, size, tags });
+
+    on_submit({ 
+      ...project, 
+      title, 
+      description, 
+      imageData, 
+      backgroundColor, 
+      textColor, 
+      fontSize,
+      background_image: finalBackgroundImage,
+      size, 
+      tags 
+    });
   };
 
   return (
@@ -163,48 +215,63 @@ function EditProjectModal({ project, on_close, on_submit }) {
         <h2>プロジェクトを編集</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="project-title">タイトル</label>
-            <input id="project-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <label>タイトル</label>
+            <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="form-group">
-            <label htmlFor="project-desc">説明</label>
-            <textarea id="project-desc" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <label>説明</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="form-group">
-            <label htmlFor="project-image">画像</label>
-            <input id="project-image" type="file" accept="image/*" onChange={handleFileChange} />
+            <label>メイン画像</label>
+            <input type="file" accept="image/*" onChange={handleFileChange} />
           </div>
           <div className="form-group">
             <label>タグ</label>
             <div className="checkbox-group">
               {CATEGORIES.map(cat => (
                 <div key={cat} className="checkbox-item">
-                  <input
-                    type="checkbox"
-                    id={`tag-${cat}`}
-                    value={cat}
-                    checked={tags.includes(cat)}
-                    onChange={() => handleTagChange(cat)}
-                  />
+                  <input type="checkbox" id={`tag-${cat}`} value={cat} checked={tags.includes(cat)} onChange={() => handleTagChange(cat)} />
                   <label htmlFor={`tag-${cat}`}>{cat}</label>
                 </div>
               ))}
             </div>
           </div>
+          
+          <h4>スタイル</h4>
           <div className="form-group">
-            <label htmlFor="project-color">背景色</label>
+            <label>背景色</label>
             <div className="color-picker-wrapper" style={{ backgroundColor: backgroundColor }}>
-              <input id="project-color" type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+              <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
             </div>
           </div>
           <div className="form-group">
-            <label htmlFor="project-text-color">文字色</label>
+            <label>文字色</label>
             <div className="color-picker-wrapper" style={{ backgroundColor: textColor }}>
-              <input id="project-text-color" type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
+              <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
             </div>
           </div>
+          <div className="form-group">
+            <label>文字サイズ (例: 16px, 1.2em)</label>
+            <input type="text" value={fontSize} onChange={(e) => setFontSize(e.target.value)} placeholder="例: 24px" />
+          </div>
+          <div className="form-group">
+            <label>背景画像</label>
+            <div className="input-method-toggle">
+              <button type="button" onClick={() => setBgInputMethod('url')} className={bgInputMethod === 'url' ? 'active' : ''}>URL</button>
+              <button type="button" onClick={() => setBgInputMethod('upload')} className={bgInputMethod === 'upload' ? 'active' : ''}>アップロード</button>
+            </div>
+            {bgInputMethod === 'upload' ? (
+              <input type="file" onChange={handleBgFileChange} accept="image/*" />
+            ) : (
+              <input type="text" value={backgroundImage} onChange={(e) => setBackgroundImage(e.target.value)} placeholder="背景画像のURLを入力" />
+            )}
+          </div>
+
+          {error && <p className="error-message" style={{color: 'red'}}>{error}</p>}
+
           <div className="form-actions">
-            <button type="submit" className="btn-primary">更新</button>
+            <button type="submit" className="btn-primary" disabled={uploading}>{uploading ? 'アップロード中...' : '更新'}</button>
             <button type="button" className="btn-secondary" onClick={on_close}>キャンセル</button>
           </div>
         </form>
@@ -269,6 +336,13 @@ function EditTextModal({ project, on_close, on_submit }) {
   const [content, setContent] = useState(project.content);
   const [backgroundColor, setBackgroundColor] = useState(project.background_color || '#ffffff');
   const [textColor, setTextColor] = useState(project.text_color || '#000000');
+  const [fontSize, setFontSize] = useState(project.font_size || '');
+  const [backgroundImage, setBackgroundImage] = useState(project.background_image || '');
+
+  const [bgInputMethod, setBgInputMethod] = useState('url');
+  const [bgFile, setBgFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -277,38 +351,101 @@ function EditTextModal({ project, on_close, on_submit }) {
     };
   }, []);
 
-  const handleTextSubmit = (e) => {
+  useEffect(() => {
+    const isUrl = project.background_image && project.background_image.startsWith('http');
+    setBgInputMethod(isUrl ? 'url' : 'upload');
+  }, [project.background_image]);
+
+  const handleBgFileChange = (e) => {
+    setBgFile(e.target.files[0]);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!content.trim()) {
-      alert('テキスト内容は必須です。');
-      return;
+    setError('');
+
+    let finalBackgroundImage = backgroundImage;
+
+    if (bgInputMethod === 'upload' && bgFile) {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('file', bgFile);
+      const token = localStorage.getItem('token');
+      try {
+        const uploadRes = await fetch('http://localhost:5000/api/upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          finalBackgroundImage = `http://localhost:5000${uploadData.filePath}`;
+        } else {
+          throw new Error(uploadData.error || '背景画像のアップロードに失敗しました。');
+        }
+      } catch (err) {
+        setError(err.message);
+        setUploading(false);
+        return;
+      } finally {
+        setUploading(false);
+      }
     }
-    on_submit({ ...project, content, backgroundColor, textColor });
+
+    on_submit({ 
+      ...project, 
+      content, 
+      backgroundColor, 
+      textColor, 
+      fontSize, 
+      background_image: finalBackgroundImage 
+    });
   };
 
   return (
     <div className="modal-backdrop">
       <div className="modal-content">
         <h2>テキストブロックを編集</h2>
-        <form onSubmit={handleTextSubmit}>
+        <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="text-content">テキスト内容</label>
-            <textarea id="text-content" value={content} onChange={(e) => setContent(e.target.value)} rows="5" />
+            <label>テキスト内容</label>
+            <textarea value={content} onChange={(e) => setContent(e.target.value)} rows="5" />
           </div>
+          
+          <h4>スタイル</h4>
           <div className="form-group">
-            <label htmlFor="text-bg-color">背景色</label>
+            <label>背景色</label>
             <div className="color-picker-wrapper" style={{ backgroundColor: backgroundColor }}>
-              <input id="text-bg-color" type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+              <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
             </div>
           </div>
           <div className="form-group">
-            <label htmlFor="text-color">文字色</label>
+            <label>文字色</label>
             <div className="color-picker-wrapper" style={{ backgroundColor: textColor }}>
-              <input id="text-color" type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
+              <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
             </div>
           </div>
+          <div className="form-group">
+            <label>文字サイズ (例: 16px, 1.2em)</label>
+            <input type="text" value={fontSize} onChange={(e) => setFontSize(e.target.value)} placeholder="例: 18px" />
+          </div>
+          <div className="form-group">
+            <label>背景画像</label>
+            <div className="input-method-toggle">
+              <button type="button" onClick={() => setBgInputMethod('url')} className={bgInputMethod === 'url' ? 'active' : ''}>URL</button>
+              <button type="button" onClick={() => setBgInputMethod('upload')} className={bgInputMethod === 'upload' ? 'active' : ''}>アップロード</button>
+            </div>
+            {bgInputMethod === 'upload' ? (
+              <input type="file" onChange={handleBgFileChange} accept="image/*" />
+            ) : (
+              <input type="text" value={backgroundImage} onChange={(e) => setBackgroundImage(e.target.value)} placeholder="背景画像のURLを入力" />
+            )}
+          </div>
+
+          {error && <p className="error-message" style={{color: 'red'}}>{error}</p>}
+
           <div className="form-actions">
-            <button type="submit" className="btn-primary">更新</button>
+            <button type="submit" className="btn-primary" disabled={uploading}>{uploading ? 'アップロード中...' : '更新'}</button>
             <button type="button" className="btn-secondary" onClick={on_close}>キャンセル</button>
           </div>
         </form>
@@ -330,12 +467,14 @@ const sizeToDimensions = (size) => {
   }
 };
 
-function TextEditBlock({ project, onContentUpdate, onDelete, onEdit }) {
+function TextEditBlock({ project, onContentUpdate, onDelete, onEdit, isEditMode }) {
   const [isEditing, setIsEditing] = useState(false);
   const [currentContent, setCurrentContent] = useState(project.content || '');
 
   const handleDoubleClick = () => {
-    setIsEditing(true);
+    if (isEditMode) {
+      setIsEditing(true);
+    }
   };
 
   const handleBlur = () => {
@@ -349,24 +488,47 @@ function TextEditBlock({ project, onContentUpdate, onDelete, onEdit }) {
     setCurrentContent(e.target.value);
   };
 
+  const blockStyles = {
+    padding: '10px',
+    wordBreak: 'break-word',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  };
+
+  if (project.background_image) {
+    blockStyles.backgroundImage = `url(${project.background_image})`;
+    blockStyles.backgroundSize = 'cover';
+    blockStyles.backgroundPosition = 'center';
+  } else if (project.background_color) {
+    blockStyles.backgroundColor = project.background_color;
+  }
+
+  const textContainerStyles = {
+    width: '100%',
+    height: '100%',
+    overflow: 'auto',
+    textAlign: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: project.text_color, // Inherit text color
+  };
+
+  const textStyles = {
+    margin: 0, 
+    fontSize: project.font_size || `${Math.min(Math.sqrt(project.layout_w * project.layout_h) * 8, 48)}px`
+  };
+
   return (
     <div
       className="text-block"
-      style={{
-        backgroundColor: project.background_color,
-        color: project.text_color,
-        padding: '10px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        wordBreak: 'break-word',
-        position: 'relative',
-        height: '100%',
-      }}
+      style={blockStyles}
       onDoubleClick={handleDoubleClick}
     >
-      {isEditing ? (
+      {isEditing && isEditMode ? (
         <textarea
           value={currentContent}
           onChange={handleChange}
@@ -380,27 +542,32 @@ function TextEditBlock({ project, onContentUpdate, onDelete, onEdit }) {
             color: project.text_color,
             resize: 'none',
             outline: 'none',
-            fontSize: `${Math.min(Math.sqrt(project.layout_w * project.layout_h) * 8, 48)}px`,
+            fontSize: project.font_size || `${Math.min(Math.sqrt(project.layout_w * project.layout_h) * 8, 48)}px`,
             fontFamily: 'inherit',
             textAlign: 'center',
+            overflow: 'auto', // Added for scrolling in edit mode
           }}
         />
       ) : (
-        <p style={{ margin: 0, color: project.text_color, fontSize: `${Math.min(Math.sqrt(project.layout_w * project.layout_h) * 8, 48)}px` }}>{currentContent}</p>
+        <div style={textContainerStyles}>
+          <p style={textStyles}>{currentContent}</p>
+        </div>
       )}
-      <div className="project-card-actions" style={{ top: '5px', right: '5px' }}>
-        <button className="project-action-icon" onClick={(e) => { e.stopPropagation(); onEdit(project); }}>
-          <i className="material-icons">more_vert</i>
-        </button>
-        <button className="project-action-icon delete-button" onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}>
-          <i className="material-icons">delete</i>
-        </button>
-      </div>
+      {isEditMode && (
+        <div className="project-card-actions" style={{ top: '5px', right: '5px' }}>
+          <button className="project-action-icon" onClick={(e) => { e.stopPropagation(); onEdit(project); }}>
+            <i className="material-icons">more_vert</i>
+          </button>
+          <button className="project-action-icon delete-button" onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}>
+            <i className="material-icons">delete</i>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio }) {
+export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio, user }) {
   const { portfolioId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -408,17 +575,23 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio 
   const [showAddTextModal, setShowAddTextModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [editingTextBlock, setEditingTextBlock] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  const isOwner = user && portfolio && user.id === portfolio.user_id;
 
   useEffect(() => {
     if (portfolio && onTemplateChange) {
       onTemplateChange(portfolio.template);
+    }
+    if (!isOwner) {
+      setIsEditMode(false);
     }
     return () => {
       if (onTemplateChange) {
         onTemplateChange(null);
       }
     };
-  }, [portfolio, onTemplateChange]);
+  }, [portfolio, onTemplateChange, isOwner]);
 
   const handleAddNewProject = async (projectData) => {
     const token = localStorage.getItem('token');
@@ -465,8 +638,6 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio 
       return;
     }
 
-    const dataToSend = updatedData;
-
     try {
       const response = await fetch(`http://localhost:5000/api/portfolios/${portfolioId}/projects/${projectId}`, {
         method: 'PUT',
@@ -474,7 +645,7 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(dataToSend),
+        body: JSON.stringify(updatedData),
       });
 
       const data = await response.json();
@@ -487,7 +658,7 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio 
         alert(`Error: ${data.error}`);
       }
     } catch (err) {
-      alert('プロジェクトの更新に失敗しました。');
+      alert('プロジェクトの更新中にデータベースエラーが発生しました。');
       console.error(err);
     }
   };
@@ -594,14 +765,29 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio 
     <div className="portfolio-container">
       <div className="portfolio-header">
         <h1>{portfolio.title}</h1>
-        <div className="portfolio-header-actions">
-          <button className="btn-primary" onClick={() => setShowAddModal(true)}>新しいプロジェクトを追加</button>
-          <button className="btn-primary" onClick={() => setShowAddTextModal(true)}>テキストを追加</button>
-          <button className="btn-danger" onClick={handleDeletePortfolio}>ポートフォリオを削除</button>
-        </div>
+        {isOwner && (
+          <div className="portfolio-controls">
+            <div className="edit-mode-toggle">
+              <label htmlFor="edit-mode-switch">編集モード</label>
+              <input
+                id="edit-mode-switch"
+                type="checkbox"
+                checked={isEditMode}
+                onChange={() => setIsEditMode(!isEditMode)}
+              />
+            </div>
+            {isEditMode && (
+              <div className="portfolio-header-actions">
+                <button className="btn-primary" onClick={() => setShowAddModal(true)}>新しいプロジェクトを追加</button>
+                <button className="btn-primary" onClick={() => setShowAddTextModal(true)}>テキストを追加</button>
+                <button className="btn-danger" onClick={handleDeletePortfolio}>ポートフォリオを削除</button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      <HobbiesDisplay />
+      <HobbiesDisplay isOwner={isOwner} portfolioId={portfolioId} />
 
       {showAddModal && <AddProjectModal on_close={() => setShowAddModal(false)} on_submit={handleAddNewProject} />}
       {showAddTextModal && <AddTextModal on_close={() => setShowAddTextModal(false)} on_submit={handleAddNewProject} />}
@@ -615,64 +801,88 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio 
           cols={12}
           rowHeight={100}
           onLayoutChange={handleLayoutChange}
-          isDraggable={true}
-          isResizable={true}
+          isDraggable={isOwner && isEditMode}
+          isResizable={isOwner && isEditMode}
           compactType={null}
           draggableCancel=".project-card-actions"
         >
-          {filteredProjects.map(project => (
-            <div
-              key={project.id.toString()}
-              data-grid={{ x: project.layout_x, y: project.layout_y, w: project.layout_w, h: project.layout_h }}
-              style={{ height: '100%' }}
-            >
-              {project.type === 'text' ? (
-                <TextEditBlock
-                  project={project}
-                  onContentUpdate={(updatedProject) => handleUpdateProject(updatedProject)}
-                  onDelete={handleDeleteProject}
-                  onEdit={(proj) => setEditingTextBlock(proj)}
-                />
-              ) : (
-                <div
-                  className={`project-card`}
-                  style={{
-                    backgroundColor: project.background_color,
-                    backgroundImage: project.image_data ? `url(${project.image_data})` : 'none',
-                    height: '100%',
-                  }}
-                >
-                  <div className="project-card-overlay"></div>
-                  <div className="project-card-content">
-                    <h3 style={{ color: project.text_color, fontSize: `${Math.min(Math.sqrt((project.layout_w || 4) * (project.layout_h || 4)) * 8, 48)}px` }}>{project.title}</h3>
-                    <p style={{ color: project.text_color, fontSize: `${Math.min(Math.sqrt((project.layout_w || 4) * (project.layout_h || 4)) * 4, 24)}px` }}>{project.description}</p>
-                  </div>
-                  
-                  {project.tags && project.tags.length > 0 && (
-                    <div className="project-card-tags">
-                      {project.tags.map(tag => <span key={tag} className="project-tag">{tag}</span>)}
-                    </div>
-                  )}
+          {filteredProjects.map(project => {
+            const cardStyles = {};
+            if (project.background_image) {
+              cardStyles.backgroundImage = `url(${project.background_image})`;
+            } else if (project.background_color) {
+              cardStyles.backgroundColor = project.background_color;
+            }
+            if (project.image_data) { // Legacy main image support
+              cardStyles.backgroundImage = `url(${project.image_data})`;
+            }
 
-                  <div className="project-card-actions">
-                      <button className="project-action-icon view-button" onClick={(e) => { e.stopPropagation(); navigate(`/portfolio/${portfolioId}/project/${project.id}`); }}>
-                          <i className="material-icons">open_in_new</i>
-                      </button>
-                      <button className="project-action-icon" onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}>
-                          <i className="material-icons">more_vert</i>
-                      </button>
-                      <button className="project-action-icon delete-button" onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}>
-                          <i className="material-icons">delete</i>
-                      </button>
+            const titleStyles = { 
+              color: project.text_color, 
+              fontSize: project.font_size || `${Math.min(Math.sqrt((project.layout_w || 4) * (project.layout_h || 4)) * 8, 48)}px` 
+            };
+            const descriptionStyles = { 
+              color: project.text_color, 
+              fontSize: project.font_size ? `calc(${project.font_size} * 0.6)` : `${Math.min(Math.sqrt((project.layout_w || 4) * (project.layout_h || 4)) * 4, 24)}px` 
+            };
+
+            return (
+              <div
+                key={project.id.toString()}
+                data-grid={{ x: project.layout_x, y: project.layout_y, w: project.layout_w, h: project.layout_h }}
+              >
+                {project.type === 'text' ? (
+                  <TextEditBlock
+                    project={project}
+                    onContentUpdate={(updatedProject) => handleUpdateProject(updatedProject)}
+                    onDelete={handleDeleteProject}
+                    onEdit={(proj) => setEditingTextBlock(proj)}
+                    isEditMode={isOwner && isEditMode}
+                  />
+                ) : (
+                  <div
+                    className={`project-card`}
+                    style={cardStyles}
+                    onClick={() => !isEditMode && navigate(`/portfolio/${portfolioId}/project/${project.id}`)}
+                  >
+                    <div className="project-card-overlay"></div>
+                    <div className="project-card-content">
+                      <h3 style={titleStyles}>{project.title}</h3>
+                      <p style={descriptionStyles}>{project.description}</p>
+                    </div>
+                    
+                    {project.tags && project.tags.length > 0 && (
+                      <div className="project-card-tags">
+                        {project.tags.map(tag => <span key={tag} className="project-tag">{tag}</span>)}
+                      </div>
+                    )}
+
+                    {isOwner && isEditMode && (
+                      <div className="project-card-actions">
+                          <button className="project-action-icon view-button" onClick={(e) => { e.stopPropagation(); navigate(`/portfolio/${portfolioId}/project/${project.id}`); }}>
+                              <i className="material-icons">open_in_new</i>
+                          </button>
+                          <button className="project-action-icon" onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}>
+                              <i className="material-icons">more_vert</i>
+                          </button>
+                          <button className="project-action-icon delete-button" onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}>
+                              <i className="material-icons">delete</i>
+                          </button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            )}
+          )}
         </GridLayout>
       ) : (
         <div className="no-projects-message">
-          <p>まだプロジェクトがありません。 "新しいプロジェクトを追加" をクリックして始めましょう！</p>
+          {isOwner && isEditMode ? (
+            <p>まだプロジェクトがありません。 "新しいプロジェクトを追加" をクリックして始めましょう！</p>
+          ) : (
+            <p>このポートフォリオにはまだプロジェクトがありません。</p>
+          )}
         </div>
       )}
     </div>

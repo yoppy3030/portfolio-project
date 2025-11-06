@@ -36,14 +36,11 @@ function AppContent() {
 
   const fetchPortfolio = useCallback(async () => {
     const token = localStorage.getItem('token');
-    if (!token || !user) {
-      setPortfolio(null);
-      return;
-    }
+    // No need to check for user here, as public portfolios can be fetched.
 
     let currentPortfolioId = portfolioIdFromUrl;
 
-    if (!currentPortfolioId) {
+    if (!currentPortfolioId && token) { // Only check for user-specific portfolio if logged in
       try {
         const response = await fetch(`http://localhost:5000/api/user/portfolio`, {
           headers: { 'Authorization': `Bearer ${token}` },
@@ -61,8 +58,12 @@ function AppContent() {
 
     if (currentPortfolioId) {
       try {
+        const headers = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
         const response = await fetch(`http://localhost:5000/api/portfolios/${currentPortfolioId}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+          headers: headers,
         });
         const data = await response.json();
         if (data.success) {
@@ -78,7 +79,7 @@ function AppContent() {
     } else {
       setPortfolio(null);
     }
-  }, [user, portfolioIdFromUrl, handleTemplateChange]);
+  }, [portfolioIdFromUrl, handleTemplateChange]);
 
   useEffect(() => {
     fetchPortfolio();
@@ -178,8 +179,8 @@ function AppContent() {
         <Route path="/settings" element={<Settings user={user} onUserUpdate={handleUserUpdate} onLogout={handleLogout} onLanguageChange={handleLanguageChange} language={language} />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/portfolio-builder" element={<PortfolioBuilder theme={user?.theme} />} />
-        <Route path="/portfolio/:portfolioId" element={<Portfolio onTemplateChange={handleTemplateChange} portfolio={portfolio} fetchPortfolio={fetchPortfolio} />} />
-        <Route path="/portfolio/:portfolioId/project/:projectId" element={<ProjectPage />} />
+        <Route path="/portfolio/:portfolioId" element={<Portfolio onTemplateChange={handleTemplateChange} portfolio={portfolio} fetchPortfolio={fetchPortfolio} user={user} />} />
+        <Route path="/portfolio/:portfolioId/project/:projectId" element={<ProjectPage user={user} />} />
       </Routes>
       <Footer theme={user?.theme} activeTemplate={activeTemplate} />
     </div>
