@@ -15,11 +15,16 @@ const CATEGORIES = ["ダッシュボード", "学習", "学校", "その他"];
 function AddProjectModal({ on_close, on_submit }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [imageData, setImageData] = useState(null);
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
   const [textColor, setTextColor] = useState('#000000');
+  const [fontSize, setFontSize] = useState('');
   const [size, setSize] = useState('medium');
   const [tags, setTags] = useState([]);
+  const [backgroundImage, setBackgroundImage] = useState('');
+  const [bgInputMethod, setBgInputMethod] = useState('url');
+  const [bgFile, setBgFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -28,15 +33,8 @@ function AddProjectModal({ on_close, on_submit }) {
     };
   }, []);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageData(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleBgFileChange = (e) => {
+    setBgFile(e.target.files[0]);
   };
 
   const handleTagChange = (tag) => {
@@ -47,63 +45,113 @@ function AddProjectModal({ on_close, on_submit }) {
     );
   };
 
-  const handleProjectSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title) {
       alert('プロジェクトのタイトルは必須です。');
       return;
     }
-    on_submit({ title, description, imageData, backgroundColor, textColor, size, tags });
+    setError('');
+
+    let finalBackgroundImage = backgroundImage;
+
+    if (bgInputMethod === 'upload' && bgFile) {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('file', bgFile);
+      const token = localStorage.getItem('token');
+      try {
+        const uploadRes = await fetch('http://localhost:5000/api/upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          finalBackgroundImage = `http://localhost:5000${uploadData.filePath}`;
+        } else {
+          throw new Error(uploadData.error || '背景画像のアップロードに失敗しました。');
+        }
+      } catch (err) {
+        setError(err.message);
+        setUploading(false);
+        return;
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    on_submit({
+      title,
+      description,
+      backgroundColor,
+      textColor,
+      font_size: fontSize,
+      background_image: finalBackgroundImage,
+      size,
+      tags
+    });
   };
 
   return (
     <div className="modal-backdrop">
       <div className="modal-content">
         <h2>新しいプロジェクトを追加</h2>
-        <form onSubmit={handleProjectSubmit}>
+        <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="project-title">タイトル</label>
-            <input id="project-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <label>タイトル</label>
+            <input type="text" value={title || ''} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="form-group">
-            <label htmlFor="project-desc">説明</label>
-            <textarea id="project-desc" value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label htmlFor="project-image">画像</label>
-            <input id="project-image" type="file" accept="image/*" onChange={handleFileChange} />
+            <label>説明</label>
+            <textarea value={description || ''} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="form-group">
             <label>タグ</label>
             <div className="checkbox-group">
               {CATEGORIES.map(cat => (
                 <div key={cat} className="checkbox-item">
-                  <input
-                    type="checkbox"
-                    id={`add-tag-${cat}`}
-                    value={cat}
-                    checked={tags.includes(cat)}
-                    onChange={() => handleTagChange(cat)}
-                  />
-                  <label htmlFor={`add-tag-${cat}`}>{cat}</label>
+                  <input type="checkbox" id={`tag-${cat}`} value={cat} checked={tags.includes(cat)} onChange={() => handleTagChange(cat)} />
+                  <label htmlFor={`tag-${cat}`}>{cat}</label>
                 </div>
               ))}
             </div>
           </div>
+          
+          <h4>スタイル</h4>
           <div className="form-group">
-            <label htmlFor="project-color">背景色</label>
+            <label>背景色</label>
             <div className="color-picker-wrapper" style={{ backgroundColor: backgroundColor }}>
-              <input id="project-color" type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+              <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
             </div>
           </div>
           <div className="form-group">
-            <label htmlFor="project-text-color">文字色</label>
+            <label>文字色</label>
             <div className="color-picker-wrapper" style={{ backgroundColor: textColor }}>
-              <input id="project-text-color" type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
+              <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
             </div>
           </div>
+          <div className="form-group">
+            <label>文字サイズ (例: 16px, 1.2em)</label>
+            <input type="text" value={fontSize || ''} onChange={(e) => setFontSize(e.target.value)} placeholder="例: 24px" />
+          </div>
+          <div className="form-group">
+            <label>背景画像</label>
+            <div className="input-method-toggle">
+              <button type="button" onClick={() => setBgInputMethod('url')} className={bgInputMethod === 'url' ? 'active' : ''}>URL</button>
+              <button type="button" onClick={() => setBgInputMethod('upload')} className={bgInputMethod === 'upload' ? 'active' : ''}>アップロード</button>
+            </div>
+            {bgInputMethod === 'upload' ? (
+              <input type="file" onChange={handleBgFileChange} accept="image/*" />
+            ) : (
+              <input type="text" value={backgroundImage || ''} onChange={(e) => setBackgroundImage(e.target.value)} placeholder="背景画像のURLを入力" />
+            )}
+          </div>
+
+          {error && <p className="error-message" style={{color: 'red'}}>{error}</p>}
+
           <div className="form-actions">
-            <button type="submit" className="btn-primary">プロジェクトを追加</button>
+            <button type="submit" className="btn-primary" disabled={uploading}>{uploading ? 'アップロード中...' : 'プロジェクトを追加'}</button>
             <button type="button" className="btn-secondary" onClick={on_close}>キャンセル</button>
           </div>
         </form>
@@ -114,9 +162,8 @@ function AddProjectModal({ on_close, on_submit }) {
 
 // EditProjectModal component
 function EditProjectModal({ project, on_close, on_submit }) {
-  const [title, setTitle] = useState(project.title);
-  const [description, setDescription] = useState(project.description);
-  const [imageData, setImageData] = useState(project.image_data); // This is for the main image, not background
+  const [title, setTitle] = useState(project.title || '');
+  const [description, setDescription] = useState(project.description || '');
   const [backgroundColor, setBackgroundColor] = useState(project.background_color || '#ffffff');
   const [textColor, setTextColor] = useState(project.text_color || '#000000');
   const [fontSize, setFontSize] = useState(project.font_size || '');
@@ -136,20 +183,18 @@ function EditProjectModal({ project, on_close, on_submit }) {
   }, []);
 
   useEffect(() => {
-    const isUrl = project.background_image && project.background_image.startsWith('http');
-    setBgInputMethod(isUrl ? 'url' : 'upload');
-  }, [project.background_image]);
+    setTitle(project.title || '');
+    setDescription(project.description || '');
+    setBackgroundColor(project.background_color || '#ffffff');
+    setTextColor(project.text_color || '#000000');
+    setFontSize(project.font_size || '');
+    setSize(project.size || 'medium');
+    setTags(project.tags || []);
+    setBackgroundImage(project.background_image || '');
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageData(reader.result); // This handles the main image_data (legacy)
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+    const isUrl = project.background_image && (project.background_image.startsWith('http') || project.background_image.startsWith('data:'));
+    setBgInputMethod(isUrl ? 'url' : 'upload');
+  }, [project]);
 
   const handleBgFileChange = (e) => {
     setBgFile(e.target.files[0]);
@@ -199,10 +244,9 @@ function EditProjectModal({ project, on_close, on_submit }) {
       ...project, 
       title, 
       description, 
-      imageData, 
       backgroundColor, 
       textColor, 
-      fontSize,
+      font_size: fontSize,
       background_image: finalBackgroundImage,
       size, 
       tags 
@@ -216,15 +260,11 @@ function EditProjectModal({ project, on_close, on_submit }) {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>タイトル</label>
-            <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <input type="text" value={title || ''} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="form-group">
             <label>説明</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>メイン画像</label>
-            <input type="file" accept="image/*" onChange={handleFileChange} />
+            <textarea value={description || ''} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="form-group">
             <label>タグ</label>
@@ -253,7 +293,7 @@ function EditProjectModal({ project, on_close, on_submit }) {
           </div>
           <div className="form-group">
             <label>文字サイズ (例: 16px, 1.2em)</label>
-            <input type="text" value={fontSize} onChange={(e) => setFontSize(e.target.value)} placeholder="例: 24px" />
+            <input type="text" value={fontSize || ''} onChange={(e) => setFontSize(e.target.value)} placeholder="例: 24px" />
           </div>
           <div className="form-group">
             <label>背景画像</label>
@@ -264,7 +304,7 @@ function EditProjectModal({ project, on_close, on_submit }) {
             {bgInputMethod === 'upload' ? (
               <input type="file" onChange={handleBgFileChange} accept="image/*" />
             ) : (
-              <input type="text" value={backgroundImage} onChange={(e) => setBackgroundImage(e.target.value)} placeholder="背景画像のURLを入力" />
+              <input type="text" value={backgroundImage || ''} onChange={(e) => setBackgroundImage(e.target.value)} placeholder="背景画像のURLを入力" />
             )}
           </div>
 
@@ -333,7 +373,7 @@ function AddTextModal({ on_close, on_submit }) {
 }
 
 function EditTextModal({ project, on_close, on_submit }) {
-  const [content, setContent] = useState(project.content);
+  const [content, setContent] = useState(project.content || '');
   const [backgroundColor, setBackgroundColor] = useState(project.background_color || '#ffffff');
   const [textColor, setTextColor] = useState(project.text_color || '#000000');
   const [fontSize, setFontSize] = useState(project.font_size || '');
@@ -352,9 +392,15 @@ function EditTextModal({ project, on_close, on_submit }) {
   }, []);
 
   useEffect(() => {
-    const isUrl = project.background_image && project.background_image.startsWith('http');
+    setContent(project.content || '');
+    setBackgroundColor(project.background_color || '#ffffff');
+    setTextColor(project.text_color || '#000000');
+    setFontSize(project.font_size || '');
+    setBackgroundImage(project.background_image || '');
+
+    const isUrl = project.background_image && (project.background_image.startsWith('http') || project.background_image.startsWith('data:'));
     setBgInputMethod(isUrl ? 'url' : 'upload');
-  }, [project.background_image]);
+  }, [project]);
 
   const handleBgFileChange = (e) => {
     setBgFile(e.target.files[0]);
@@ -397,8 +443,8 @@ function EditTextModal({ project, on_close, on_submit }) {
       content, 
       backgroundColor, 
       textColor, 
-      fontSize, 
-      background_image: finalBackgroundImage 
+      font_size: fontSize, 
+      background_image: finalBackgroundImage,
     });
   };
 
@@ -409,7 +455,7 @@ function EditTextModal({ project, on_close, on_submit }) {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>テキスト内容</label>
-            <textarea value={content} onChange={(e) => setContent(e.target.value)} rows="5" />
+            <textarea value={content || ''} onChange={(e) => setContent(e.target.value)} rows="5" />
           </div>
           
           <h4>スタイル</h4>
@@ -427,7 +473,7 @@ function EditTextModal({ project, on_close, on_submit }) {
           </div>
           <div className="form-group">
             <label>文字サイズ (例: 16px, 1.2em)</label>
-            <input type="text" value={fontSize} onChange={(e) => setFontSize(e.target.value)} placeholder="例: 18px" />
+            <input type="text" value={fontSize || ''} onChange={(e) => setFontSize(e.target.value)} placeholder="例: 18px" />
           </div>
           <div className="form-group">
             <label>背景画像</label>
@@ -438,7 +484,7 @@ function EditTextModal({ project, on_close, on_submit }) {
             {bgInputMethod === 'upload' ? (
               <input type="file" onChange={handleBgFileChange} accept="image/*" />
             ) : (
-              <input type="text" value={backgroundImage} onChange={(e) => setBackgroundImage(e.target.value)} placeholder="背景画像のURLを入力" />
+              <input type="text" value={backgroundImage || ''} onChange={(e) => setBackgroundImage(e.target.value)} placeholder="背景画像のURLを入力" />
             )}
           </div>
 
@@ -567,6 +613,14 @@ function TextEditBlock({ project, onContentUpdate, onDelete, onEdit, isEditMode 
   );
 }
 
+const addPxIfNeeded = (value) => {
+  if (!value) return null;
+  if (String(value).match(/^[0-9.]+$/)) {
+    return `${value}px`;
+  }
+  return value;
+};
+
 export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio, user }) {
   const { portfolioId } = useParams();
   const navigate = useNavigate();
@@ -592,6 +646,12 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
       }
     };
   }, [portfolio, onTemplateChange, isOwner]);
+
+  useEffect(() => {
+    if (portfolio) {
+      console.log("Portfolio data received by frontend:", portfolio);
+    }
+  }, [portfolio]);
 
   const handleAddNewProject = async (projectData) => {
     const token = localStorage.getItem('token');
@@ -810,20 +870,30 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
             const cardStyles = {};
             if (project.background_image) {
               cardStyles.backgroundImage = `url(${project.background_image})`;
+              cardStyles.backgroundPosition = 'center';
+              cardStyles.backgroundSize = 'cover'; // Changed back to 'cover'
+              cardStyles.backgroundRepeat = 'no-repeat';
             } else if (project.background_color) {
               cardStyles.backgroundColor = project.background_color;
             }
-            if (project.image_data) { // Legacy main image support
-              cardStyles.backgroundImage = `url(${project.image_data})`;
-            }
+
+            const addPxIfNeeded = (value) => {
+              if (!value) return null;
+              if (String(value).match(/^[0-9.]+$/)) {
+                return `${value}px`;
+              }
+              return value;
+            };
+
+            const processedFontSize = addPxIfNeeded(project.font_size);
 
             const titleStyles = { 
               color: project.text_color, 
-              fontSize: project.font_size || `${Math.min(Math.sqrt((project.layout_w || 4) * (project.layout_h || 4)) * 8, 48)}px` 
+              fontSize: processedFontSize || `${Math.min(Math.sqrt((project.layout_w || 4) * (project.layout_h || 4)) * 8, 48)}px` 
             };
             const descriptionStyles = { 
               color: project.text_color, 
-              fontSize: project.font_size ? `calc(${project.font_size} * 0.6)` : `${Math.min(Math.sqrt((project.layout_w || 4) * (project.layout_h || 4)) * 4, 24)}px` 
+              fontSize: processedFontSize ? `calc(${processedFontSize} * 0.7)` : `${Math.min(Math.sqrt((project.layout_w || 4) * (project.layout_h || 4)) * 4, 24)}px` 
             };
 
             return (
@@ -842,11 +912,11 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
                 ) : (
                   <div
                     className={`project-card`}
-                    style={cardStyles}
+                    style={{ ...cardStyles, height: '100%', position: 'relative' }}
                     onClick={() => !isEditMode && navigate(`/portfolio/${portfolioId}/project/${project.id}`)}
                   >
                     <div className="project-card-overlay"></div>
-                    <div className="project-card-content">
+                    <div className="project-card-content" style={{ background: 'transparent', position: 'relative', zIndex: 2 }}>
                       <h3 style={titleStyles}>{project.title}</h3>
                       <p style={descriptionStyles}>{project.description}</p>
                     </div>

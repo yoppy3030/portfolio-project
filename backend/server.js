@@ -1413,7 +1413,7 @@ app.get('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (
 app.put('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (req, res) => {
   const { portfolioId, projectId } = req.params;
   const { id: userId } = req.user;
-  const { title, description, imageData, backgroundColor, textColor, content, size, type, tags, layout_w, layout_h, font_size, background_image } = req.body;
+  const { title, description, imageData, backgroundColor, textColor, content, size, type, tags, layout_w, layout_h, font_size, background_image, background_position } = req.body;
 
   if (type !== 'text' && !title) {
     return res.status(400).json({ success: false, error: 'プロジェクトタイトルは必須です。' });
@@ -1458,6 +1458,7 @@ app.put('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (
           layout_h: layout_h,
           font_size: font_size || null,
           background_image: background_image || null,
+          background_position: background_position || null,
         };
         // Remove undefined properties so they don't null out existing values
         Object.keys(updatedProject).forEach(key => updatedProject[key] === undefined && delete updatedProject[key]);
@@ -1999,219 +2000,149 @@ app.get('/api/user/portfolio', authenticateToken, (req, res) => {
 
 // 認証コード送信API
 app.post('/api/send-verification-code', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, error: 'メールアドレスは必須です。' });
+  }
+
   try {
-    const { email } = req.body;
+    // ユーザーが存在するか確認
+    db.query('SELECT id FROM users WHERE email = ?', [email], async (err, results) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+      }
+      if (results.length === 0) {
+        return res.status(404).json({ success: false, error: 'このメールアドレスは登録されていません。' });
+      }
 
-    if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'メールアドレスを入力してください' 
-      });
-    }
+      const userId = results[0].id;
+      const code = crypto.randomBytes(3).toString('hex').toUpperCase(); // 6桁のランダムな英数字
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15分後に失効
 
-    db.query(
-      'SELECT id, email FROM users WHERE email = ?',
-      [email],
-      (err, results) => {
+      // 既存のコードを削除
+      db.query('DELETE FROM verification_codes WHERE user_id = ?', [userId], (err) => {
         if (err) {
           console.error('データベースエラー:', err);
-          return res.status(500).json({ 
-            success: false, 
-            error: 'データベースエラーが発生しました' 
-          });
+          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
         }
 
-        if (results.length === 0) {
-          return res.status(404).json({ 
-            success: false, 
-            error: 'メールアドレスが見つかりません' 
-          });
-        }
-
-        const code = crypto.randomInt(100000, 999999).toString();
-        
+        // 新しいコードを挿入
         db.query(
-          'UPDATE verification_codes SET used = TRUE WHERE email = ? AND used = FALSE',
-          [email],
-          (err) => {
+          'INSERT INTO verification_codes (user_id, code, expires_at) VALUES (?, ?, ?)',
+          [userId, code, expiresAt],
+          async (err, result) => {
             if (err) {
-              console.error('既存認証コード無効化エラー:', err);
+              console.error('データベースエラー:', err);
+              return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+            }
+
+            // メール送信
+            try {
+              await sendVerificationEmail(email, code);
+              res.json({ success: true, message: '認証コードを記載したメールを送信しました。' });
+            } catch (emailError) {
+              console.error('メール送信エラー:', emailError);
+              res.status(500).json({ success: false, error: 'メールの送信に失敗しました。' });
             }
           }
         );
-
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-        db.query(
-          'INSERT INTO verification_codes (email, code, expires_at) VALUES (?, ?, ?)',
-          [email, code, expiresAt],
-          (err) => {
-            if (err) {
-              console.error('認証コード保存エラー:', err);
-              return res.status(500).json({ 
-                success: false, 
-                error: '認証コードの保存に失敗しました' 
-              });
-            }
-
-            // 本番環境では実際のメール送信を実装
-            if (process.env.NODE_ENV === 'production') {
-              // メール送信処理（実装が必要）
-              console.log(`本番環境: 認証コード ${code} を ${email} に送信`);
-            } else {
-              console.log(`開発環境: 認証コード ${code} を ${email} に送信`);
-            }
-
-            res.json({ 
-              success: true, 
-              message: '認証コードを送信しました'
-            });
-          }
-        );
-      }
-    );
+      });
+    });
   } catch (error) {
     console.error('サーバーエラー:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'サーバーエラーが発生しました' 
-    });
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました。' });
   }
 });
 
-// パスワード再設定API
+// パスワードリセットAPI
 app.post('/api/reset-password', async (req, res) => {
+  const { email, code, newPassword } = req.body;
+  if (!email || !code || !newPassword) {
+    return res.status(400).json({ success: false, error: 'すべてのフィールドは必須です。' });
+  }
+  if (newPassword.length < 8) {
+    return res.status(400).json({ success: false, error: '新しいパスワードは8文字以上で入力してください。' });
+  }
+
   try {
-    const { email, verificationCode, newPassword } = req.body;
-
-    if (!email || !verificationCode || !newPassword) {
-      return res.status(400).json({ 
-        success: false, 
-        error: '必須フィールドが不足しています' 
-      });
-    }
-
-    if (newPassword.length < 8) {
-      return res.status(400).json({
-        success: false,
-        error: 'パスワードは8文字以上で入力してください'
-      });
-    }
-
+    // 認証コードを検証
     db.query(
-      'SELECT id, code FROM verification_codes WHERE email = ? AND code = ? AND used = FALSE AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1',
-      [email, verificationCode],
+      'SELECT vc.user_id FROM verification_codes vc JOIN users u ON vc.user_id = u.id WHERE u.email = ? AND vc.code = ? AND vc.expires_at > NOW()',
+      [email, code],
       async (err, results) => {
         if (err) {
           console.error('データベースエラー:', err);
-          return res.status(500).json({ 
-            success: false, 
-            error: 'データベースエラーが発生しました' 
-          });
+          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
         }
-
         if (results.length === 0) {
-          return res.status(400).json({ 
-            success: false, 
-            error: '認証コードが正しくないか、期限切れです' 
-          });
+          return res.status(400).json({ success: false, error: '認証コードが正しくないか、有効期限が切れています。' });
         }
 
+        const userId = results[0].user_id;
         const hash = await bcrypt.hash(newPassword, 12);
 
-        db.query(
-          'UPDATE users SET password_hash = ? WHERE email = ?',
-          [hash, email],
-          (err, result) => {
+        // パスワードを更新
+        db.query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, userId], (err, updateResult) => {
+          if (err) {
+            console.error('データベースエラー:', err);
+            return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+          }
+
+          // 使用済みの認証コードを削除
+          db.query('DELETE FROM verification_codes WHERE user_id = ?', [userId], (err) => {
             if (err) {
               console.error('データベースエラー:', err);
-              return res.status(500).json({ 
-                success: false, 
-                error: 'データベースエラーが発生しました' 
-              });
+              // ここではエラーを返さず、処理を続行する
             }
+          });
 
-            db.query(
-              'UPDATE verification_codes SET used = TRUE WHERE email = ? AND code = ?',
-              [email, verificationCode],
-              (err) => {
-                if (err) {
-                  console.error('認証コード使用済みマークエラー:', err);
-                }
-              }
-            );
-
-            res.json({ 
-              success: true, 
-              message: 'パスワードが再設定されました' 
-            });
-          }
-        );
+          res.json({ success: true, message: 'パスワードが正常にリセットされました。' });
+        });
       }
     );
   } catch (error) {
     console.error('サーバーエラー:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'サーバーエラーが発生しました' 
-    });
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました。' });
   }
 });
 
-// --- File Upload API ---
-
-// Multer storage configuration
+// ファイルアップロードAPI
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
-    // Sanitize the original file name to remove special characters and spaces
-    const safeOriginalName = file.originalname.replace(/[^a-zA-Z0-9-._]/g, '_');
-    cb(null, Date.now() + '-' + safeOriginalName);
+    // ファイル名が重複しないようにタイムスタンプと元の拡張子を付与
+    cb(null, Date.now() + path.extname(file.originalname));
   }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+  fileFilter: function (req, file, cb) {
+    const filetypes = /jpeg|jpg|png|gif|webp/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Error: File upload only supports the following filetypes - ' + filetypes));
+  }
+});
 
-// File upload endpoint
 app.post('/api/upload', authenticateToken, upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, error: 'ファイルがアップロードされませんでした。' });
   }
-
-  // Construct the file path to be returned to the client
+  // Construct the full URL to the file
   const filePath = `/uploads/${req.file.filename}`;
-
-  res.json({ success: true, filePath: filePath });
+  res.json({ success: true, message: 'ファイルがアップロードされました。', filePath: filePath });
 });
 
-// エラーハンドリングミドルウェア
-app.use((err, req, res, next) => {
-  console.error('未処理エラー:', err);
-  res.status(500).json({
-    success: false,
-    error: 'サーバーエラーが発生しました'
-  });
-});
-
-// 404ハンドラー
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'エンドポイントが見つかりません'
-  });
-});
-
+// サーバーの起動
 const PORT = process.env.PORT || 5000;
-
-// サーバー起動
 app.listen(PORT, () => {
   console.log(`サーバーがポート${PORT}で起動しました`);
-  console.log(`環境: ${process.env.NODE_ENV || 'development'}`);
-  console.log('APIエンドポイント:');
-  console.log('  - 新規登録: POST /api/register');
-  console.log('  - ログイン: POST /api/login');
-  console.log('  - トークン検証: GET /api/verify-token');
-  console.log('  - 認証コード送信: POST /api/send-verification-code');
-  console.log('  - パスワード再設定: POST /api/reset-password');
 });
