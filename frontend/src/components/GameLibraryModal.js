@@ -740,7 +740,7 @@ function GameLibraryModal({ onClose, isOwner }) {
             // ページサイズを増やして、より多くの結果を取得
             // ordering=-rating で評価順（人気順）にソート
             // プラットフォームフィルターはクライアント側で適用するため、APIには送らない
-            let url = `https://api.rawg.io/api/games?key=${RAWG_API_KEY}&search=${encodeURIComponent(searchQuery)}&page_size=20&page=${page}&ordering=-rating&search_exact=true`;
+            let url = `https://api.rawg.io/api/games?key=${RAWG_API_KEY}&search=${encodeURIComponent(searchQuery)}&page_size=20&page=${page}&ordering=-rating`;
             
             console.log('Fetching games from:', url, 'Platform filter will be applied client-side:', platformId || 'none');
             
