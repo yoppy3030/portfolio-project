@@ -284,6 +284,7 @@
   background-color: #f5f5f5;
   border-radius: 4px;
   word-wrap: break-word;
+  white-space: pre-wrap; /* Add this line to preserve line breaks */
 }
 
 .no-details {

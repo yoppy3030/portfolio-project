@@ -703,6 +703,30 @@ app.delete('/api/hobbies/:hobbyId', authenticateToken, (req, res) => {
 // プレイ時間カラムを追加する場合（テーブルが既に存在する場合）:
 // ALTER TABLE played_games ADD COLUMN playtime_hours DECIMAL(10, 2);
 
+// --- 音楽鑑賞(Music Appreciation)関連API ---
+
+// 音楽ジャンルテーブルのSQLスキーマ (要実行)
+// CREATE TABLE music_genres (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   name VARCHAR(255) NOT NULL UNIQUE
+// );
+//
+// ユーザー音楽設定テーブルのSQLスキーマ (要実行)
+// CREATE TABLE user_music_preferences (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   user_id INT NOT NULL,
+//   genre_id INT,
+//   artist_name VARCHAR(255),
+//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+//   FOREIGN KEY (genre_id) REFERENCES music_genres(id) ON DELETE SET NULL,
+//   UNIQUE KEY user_genre_artist (user_id, genre_id, artist_name)
+// );
+//
+// 初期ジャンルデータの挿入例 (要実行)
+// INSERT IGNORE INTO music_genres (name) VALUES
+// ('クラシック'), ('洋楽'), ('J-POP'), ('軍歌'), ('国歌'), ('ロック'), ('ポップ'), ('ジャズ'), ('ヒップホップ'), ('R&B'), ('エレクトロニック'), ('フォーク'), ('カントリー'), ('ブルース'), ('メタル'), ('レゲエ'), ('ソウル'), ('ワールドミュージック'), ('アニメソング'), ('ゲーム音楽');
+
 app.get('/api/played-games', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
 
@@ -753,6 +777,76 @@ app.get('/api/played-games', authenticateToken, (req, res) => {
     }));
 
     res.json({ success: true, playedGames: playedGamesWithParsedData });
+  });
+});
+
+// 音楽ジャンルリストを取得
+app.get('/api/music-genres', (req, res) => {
+  db.query('SELECT id, name FROM music_genres ORDER BY name', (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '音楽ジャンルの取得中にデータベースエラーが発生しました。' });
+    }
+    res.json({ success: true, genres: results });
+  });
+});
+
+// ユーザーの音楽設定リストを取得
+app.get('/api/user-music-preferences', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+
+  const query = `
+    SELECT ump.id, ump.artist_name, mg.name AS genre_name, mg.id AS genre_id
+    FROM user_music_preferences ump
+    LEFT JOIN music_genres mg ON ump.genre_id = mg.id
+    WHERE ump.user_id = ?
+    ORDER BY mg.name, ump.artist_name
+  `;
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'ユーザーの音楽設定の取得中にデータベースエラーが発生しました。' });
+    }
+    res.json({ success: true, preferences: results });
+  });
+});
+
+// ユーザーの音楽設定を追加
+app.post('/api/user-music-preferences', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { genre_id, artist_name } = req.body;
+
+  if (!genre_id && !artist_name) {
+    return res.status(400).json({ success: false, error: 'ジャンルまたはアーティスト名は必須です。' });
+  }
+
+  db.query('INSERT INTO user_music_preferences (user_id, genre_id, artist_name) VALUES (?, ?, ?)', [userId, genre_id || null, artist_name || null], (err, result) => {
+    if (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ success: false, error: 'その音楽設定は既に追加されています。' });
+      }
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '音楽設定の追加中にデータベースエラーが発生しました。' });
+    }
+    res.status(201).json({ success: true, message: '音楽設定が追加されました。', preference: { id: result.insertId, genre_id, artist_name } });
+  });
+});
+
+// ユーザーの音楽設定を削除
+app.delete('/api/user-music-preferences/:preferenceId', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { preferenceId } = req.params;
+
+  db.query('DELETE FROM user_music_preferences WHERE id = ? AND user_id = ?', [preferenceId, userId], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '音楽設定の削除中にデータベースエラーが発生しました。' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: '音楽設定が見つからないか、削除する権限がありません。' });
+    }
+    res.json({ success: true, message: '音楽設定が削除されました。' });
   });
 });
 
