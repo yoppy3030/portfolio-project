@@ -14,6 +14,9 @@ const multer = require('multer');
 
 const app = express();
 
+// 最大BGMエントリ数
+const MAX_BGM_ENTRIES = 30;
+
 // 本番環境用のセキュリティ設定（開発環境では無効化）
 if (process.env.NODE_ENV === 'production') {
   app.use(helmet());
@@ -764,6 +767,9 @@ app.post('/api/played-games', authenticateToken, (req, res) => {
   if (bgms !== undefined && !Array.isArray(bgms)) {
     return res.status(400).json({ success: false, error: 'BGMは配列である必要があります。' });
   }
+  if (bgms && bgms.length > MAX_BGM_ENTRIES) {
+    return res.status(400).json({ success: false, error: `登録できるBGMの数は${MAX_BGM_ENTRIES}個までです。` });
+  }
 
   db.getConnection((err, connection) => {
     if (err) {
@@ -849,6 +855,9 @@ app.put('/api/played-games/:playedGameId', authenticateToken, (req, res) => {
     }
     if (bgms !== undefined && !Array.isArray(bgms)) {
         return res.status(400).json({ success: false, error: 'BGMは配列である必要があります。' });
+    }
+    if (bgms && bgms.length > MAX_BGM_ENTRIES) {
+        return res.status(400).json({ success: false, error: `登録できるBGMの数は${MAX_BGM_ENTRIES}個までです。` });
     }
 
     db.getConnection((err, connection) => {
