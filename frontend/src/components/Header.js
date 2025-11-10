@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import logoImg from '../assets/logo.png';
 import '../Header.css';
 
-const CATEGORIES = ["ダッシュボード", "学習", "学校", "その他"];
+const CATEGORIES = ["dashboard", "learning", "school", "other"];
 
 function Header({ user, onLogout, theme, language, activeTemplate, portfolio }) {
   const { t } = useTranslation();
@@ -50,7 +50,7 @@ function Header({ user, onLogout, theme, language, activeTemplate, portfolio }) 
     if (projects.length === 0) {
       return (
         <div className="category-dropdown">
-          <div className="category-menu-item">プロジェクトがありません</div>
+          <div className="category-menu-item">{t('header_no_projects')}</div>
         </div>
       );
     }
@@ -88,11 +88,11 @@ function Header({ user, onLogout, theme, language, activeTemplate, portfolio }) 
         <div className="header-right-content">
           {user && (
             <nav className="header-nav" ref={menuRef}>
-              <Link to={portfolio ? `/portfolio/${portfolio.id}` : '/portfolio-builder'} className="header-nav-item">ポートフォリオ</Link>
+              <Link to={portfolio ? `/portfolio/${portfolio.id}` : '/portfolio-builder'} className="header-nav-item">{t('header_portfolio')}</Link>
               {CATEGORIES.map(category => (
                 <div key={category} className="header-nav-item-container">
                   <button className="header-nav-item" onClick={() => handleCategoryClick(category)}>
-                    {category}
+                    {t(`header_category_${category}`)}
                     <i className="material-icons">arrow_drop_down</i>
                   </button>
                   {openMenu === category && renderCategoryMenu(category)}

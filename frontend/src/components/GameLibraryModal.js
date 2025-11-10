@@ -87,7 +87,7 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
       comment: comment && comment.trim() ? comment.trim() : null,
       playtime_hours: playtimeHours && playtimeHours.trim() ? parseFloat(playtimeHours) : null,
       series: series && series.trim() ? series.trim() : null,
-      bgms: bgms.filter(bgm => bgm.url && bgm.url.trim() !== ''), // URLが空でないBGMのみを送信
+      bgms: bgms.filter(bgm => (bgm.title && bgm.title.trim() !== '') || (bgm.url && bgm.url.trim() !== '')), // URLが空でないBGMのみを送信
     };
     
     console.log('[DEBUG] handleSave: bgms before filtering:', bgms);

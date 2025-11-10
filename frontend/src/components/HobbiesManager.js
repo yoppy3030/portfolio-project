@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import GameLibraryModal from './GameLibraryModal'; // モーダルをインポート
 import '../Settings.css'; // スタイルを共有
 
@@ -9,6 +10,8 @@ function HobbiesManager({ isOwner }) {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [isGameModalOpen, setGameModalOpen] = useState(false); // モーダルの表示状態
+
+  const { t } = useTranslation();
 
   const fetchHobbies = useCallback(async () => {
     setLoading(true);
@@ -24,14 +27,14 @@ function HobbiesManager({ isOwner }) {
       if (data.success) {
         setHobbies(data.hobbies);
       } else {
-        setError(data.error || '趣味の取得に失敗しました。');
+        setError(data.error || t('hobbies_alert_fetch_failed'));
       }
     } catch (err) {
-      setError('サーバーとの通信に失敗しました。');
+      setError(t('hobbies_alert_server_error'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchHobbies();
@@ -39,7 +42,7 @@ function HobbiesManager({ isOwner }) {
 
   const handleAddHobby = async () => {
     if (!newHobby.trim()) {
-      setError('趣味の名前を入力してください。');
+      setError(t('hobbies_alert_name_required'));
       return;
     }
     setError('');
@@ -56,19 +59,19 @@ function HobbiesManager({ isOwner }) {
       });
       const data = await response.json();
       if (data.success) {
-        setMessage('趣味を追加しました。');
+        setMessage(t('hobbies_message_added'));
         setNewHobby('');
         fetchHobbies(); // リストを再取得
       } else {
-        setError(data.error || '趣味の追加に失敗しました。');
+        setError(data.error || t('hobbies_alert_add_failed'));
       }
     } catch (err) {
-      setError('サーバーとの通信に失敗しました。');
+      setError(t('hobbies_alert_server_error'));
     }
   };
 
   const handleDeleteHobby = async (hobbyId) => {
-    if (!window.confirm('この趣味を本当に削除しますか？')) {
+    if (!window.confirm(t('hobbies_confirm_delete'))) {
       return;
     }
     setError('');
@@ -83,25 +86,25 @@ function HobbiesManager({ isOwner }) {
       });
       const data = await response.json();
       if (data.success) {
-        setMessage('趣味を削除しました。');
+        setMessage(t('hobbies_message_deleted'));
         fetchHobbies(); // リストを再取得
       } else {
-        setError(data.error || '趣味の削除に失敗しました。');
+        setError(data.error || t('hobbies_alert_delete_failed'));
       }
     } catch (err) {
-      setError('サーバーとの通信に失敗しました。');
+      setError(t('hobbies_alert_server_error'));
     }
   };
 
   return (
     <div className="settings-content">
-      <h3>趣味の管理</h3>
+      <h3>{t('hobbies_title')}</h3>
       
       {error && <p className="error-message">{error}</p>}
       {message && <p className="success-message">{message}</p>}
 
       <div className="form-group">
-        <label htmlFor="new-hobby">新しい趣味を追加</label>
+        <label htmlFor="new-hobby">{t('hobbies_label_add_new')}</label>
         <div style={{ display: 'flex', gap: '10px' }}>
           <input
             type="text"
@@ -109,19 +112,19 @@ function HobbiesManager({ isOwner }) {
             value={newHobby}
             onChange={(e) => setNewHobby(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleAddHobby()}
-            placeholder="例: 映画鑑賞"
+            placeholder={t('hobbies_placeholder_example')}
             disabled={loading}
           />
           <button onClick={handleAddHobby} disabled={loading}>
-            {loading ? '追加中...' : '追加'}
+            {loading ? t('hobbies_adding') : t('hobbies_add_button')}
           </button>
         </div>
       </div>
 
       <hr />
 
-      <h4>現在の趣味</h4>
-      {loading && <p>読み込み中...</p>}
+      <h4>{t('hobbies_current_hobbies')}</h4>
+      {loading && <p>{t('loading')}</p>}
       <div className="hobbies-list">
         {hobbies.length > 0 ? (
           hobbies.map(hobby => (
@@ -129,14 +132,14 @@ function HobbiesManager({ isOwner }) {
               <span>{hobby.name}</span>
               <div className="hobby-actions">
                 {hobby.name.toLowerCase() === 'ゲーム' && (
-                  <button className="btn-secondary" style={{ marginRight: '10px' }} onClick={() => setGameModalOpen(true)}>プレイ記録を編集</button>
+                  <button className="btn-secondary" style={{ marginRight: '10px' }} onClick={() => setGameModalOpen(true)}>{t('hobbies_edit_play_records')}</button>
                 )}
-                <button className="btn-danger-outline" onClick={() => handleDeleteHobby(hobby.id)}>削除</button>
+                <button className="btn-danger-outline" onClick={() => handleDeleteHobby(hobby.id)}>{t('hobbies_delete_button')}</button>
               </div>
             </div>
           ))
         ) : (
-          !loading && <p>まだ趣味が登録されていません。</p>
+          !loading && <p>{t('hobbies_no_hobbies_registered')}</p>
         )}
       </div>
 
