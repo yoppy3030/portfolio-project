@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import '../ProjectPage.css';
+import '../Portfolio.css'; // Corrected path
 
 const GridLayout = WidthProvider(RGL);
 
@@ -114,9 +115,9 @@ function ContentBlock({ block, isEditMode, onUpdate, onDelete, onEdit }) {
     <div id={`block-${block.id}`} className={`content-block ${block.type}`} onDoubleClick={handleDoubleClick}>
       {renderContent()}
       {isEditMode && (
-        <div className="block-actions">
-          <button onClick={() => onEdit(block)}><i className="material-icons">edit</i></button>
-          <button onClick={() => onDelete(block.id)}><i className="material-icons">delete</i></button>
+        <div className="project-card-actions">
+          <button className="project-action-icon" onClick={() => onEdit(block)}><i className="material-icons">edit</i></button>
+          <button className="project-action-icon delete-button" onClick={() => onDelete(block.id)}><i className="material-icons">delete</i></button>
         </div>
       )}
     </div>
@@ -194,8 +195,8 @@ function ContentModal({ block, on_close, on_submit }) {
     };
 
     return (
-        <div className="modal-backdrop">
-            <div className="modal-content">
+        <div className="modal-backdrop" onClick={on_close}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <h2>{isNew ? '新しいコンテンツを追加' : 'コンテンツを編集'}</h2>
                 <form onSubmit={handleSubmit}>
                     {/* Basic Settings */}

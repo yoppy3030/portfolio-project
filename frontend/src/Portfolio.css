@@ -246,6 +246,23 @@
   opacity: 1;
 }
 
+.react-grid-item:hover .project-card-actions {
+  opacity: 1;
+}
+
+.project-card-overlay {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.05); /* Even lighter overlay */
+  z-index: 1;
+  transition: background-color 0.3s;
+  pointer-events: none; /* 追加 */
+}
+
 .project-action-icon {
   background: rgba(0,0,0,0.5);
   color: white;

@@ -94,8 +94,8 @@ function AddProjectModal({ on_close, on_submit }) {
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-content">
+    <div className="modal-backdrop" onClick={on_close}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <h2>新しいプロジェクトを追加</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -254,8 +254,8 @@ function EditProjectModal({ project, on_close, on_submit }) {
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-content">
+    <div className="modal-backdrop" onClick={on_close}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <h2>プロジェクトを編集</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -342,8 +342,8 @@ function AddTextModal({ on_close, on_submit }) {
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-content">
+    <div className="modal-backdrop" onClick={on_close}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <h2>新しいテキストブロックを追加</h2>
         <form onSubmit={handleTextSubmit}>
           <div className="form-group">
@@ -449,8 +449,8 @@ function EditTextModal({ project, on_close, on_submit }) {
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-content">
+    <div className="modal-backdrop" onClick={on_close}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <h2>テキストブロックを編集</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -600,9 +600,9 @@ function TextEditBlock({ project, onContentUpdate, onDelete, onEdit, isEditMode 
         </div>
       )}
       {isEditMode && (
-        <div className="project-card-actions" style={{ top: '5px', right: '5px' }}>
+        <div className="project-card-actions">
           <button className="project-action-icon" onClick={(e) => { e.stopPropagation(); onEdit(project); }}>
-            <i className="material-icons">more_vert</i>
+            <i className="material-icons">edit</i>
           </button>
           <button className="project-action-icon delete-button" onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}>
             <i className="material-icons">delete</i>
@@ -933,7 +933,7 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
                               <i className="material-icons">open_in_new</i>
                           </button>
                           <button className="project-action-icon" onClick={(e) => { e.stopPropagation(); handleEditProject(project); }}>
-                              <i className="material-icons">more_vert</i>
+                              <i className="material-icons">edit</i>
                           </button>
                           <button className="project-action-icon delete-button" onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}>
                               <i className="material-icons">delete</i>
