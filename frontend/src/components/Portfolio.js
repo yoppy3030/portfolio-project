@@ -913,7 +913,7 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
                     
                     {project.tags && project.tags.length > 0 && (
                       <div className="project-card-tags">
-                        {project.tags.map(tag => <span key={tag} className="project-tag">{tag}</span>)}
+                        {project.tags.map(tag => <span key={tag} className="project-tag">{t(`header_category_${tag}`)}</span>)}
                       </div>
                     )}
 

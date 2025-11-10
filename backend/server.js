@@ -1566,10 +1566,14 @@ app.put('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (
         // Remove undefined properties so they don't null out existing values
         Object.keys(updatedProject).forEach(key => updatedProject[key] === undefined && delete updatedProject[key]);
 
+        console.log('Received project update request for projectId:', projectId, 'with body:', req.body);
+        console.log('Constructed updatedProject object:', updatedProject);
+
         if (Object.keys(updatedProject).length > 0) {
             await new Promise((resolve, reject) => {
                 connection.query('UPDATE projects SET ? WHERE id = ? AND portfolio_id = ?', [updatedProject, projectId, portfolioId], (err, result) => {
                     if (err) return reject(err);
+                    console.log('Project update query result:', result);
                     // Note: affectedRows can be 0 if the data is the same. We only error if the project is not found.
                     // A more robust check might be needed if no-op updates are a concern.
                     resolve(result);
