@@ -653,6 +653,7 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
   useEffect(() => {
     if (portfolio) {
       console.log("Portfolio data received by frontend:", portfolio);
+      console.log("Projects with tags:", portfolio.projects?.map(p => ({ id: p.id, title: p.title, tags: p.tags })));
     }
   }, [portfolio]);
 

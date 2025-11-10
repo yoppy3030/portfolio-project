@@ -167,6 +167,8 @@ function AppContent() {
     return <div>{t('loading')}</div>;
   }
 
+  console.log("Current portfolio state in App.js:", portfolio);
+
   return (
     <div className={`wrapper ${activeTemplate ? activeTemplate + '-template' : ''}`}>
       <Header user={user} onLogout={handleLogout} theme={user?.theme || 'light'} language={language} activeTemplate={activeTemplate} portfolio={portfolio} />
