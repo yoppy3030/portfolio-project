@@ -7,119 +7,78 @@ function FAQ() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const faqs = [
+    {
+      section: t('faq.gettingStarted.title'),
+      items: [
+        { q: t('faq.gettingStarted.q1'), a: t('faq.gettingStarted.a1') },
+        { q: t('faq.gettingStarted.q2'), a: t('faq.gettingStarted.a2') },
+      ],
+    },
+    {
+      section: t('faq.account.title'),
+      items: [
+        { q: t('faq.account.q1'), a: t('faq.account.a1') },
+        { q: t('faq.account.q2'), a: t('faq.account.a2') },
+        { q: t('faq.account.q3'), a: t('faq.account.a3') },
+        { q: t('faq.account.q4'), a: t('faq.account.a4') },
+        { q: t('faq.account.q5'), a: t('faq.account.a5') },
+      ],
+    },
+    {
+      section: t('faq.portfolio.title'),
+      items: [
+        { q: t('faq.portfolio.q1'), a: t('faq.portfolio.a1') },
+        { q: t('faq.portfolio.q2'), a: t('faq.portfolio.a2') },
+        { q: t('faq.portfolio.q3'), a: t('faq.portfolio.a3') },
+        { q: t('faq.portfolio.q4'), a: t('faq.portfolio.a4') },
+        { q: t('faq.portfolio.q5'), a: t('faq.portfolio.a5') },
+        { q: t('faq.portfolio.q6'), a: t('faq.portfolio.a6') },
+        { q: t('faq.portfolio.q7'), a: t('faq.portfolio.a7') },
+      ],
+    },
+    {
+      section: t('faq.projectPage.title'),
+      items: [
+        { q: t('faq.projectPage.q1'), a: t('faq.projectPage.a1') },
+        { q: t('faq.projectPage.q2'), a: t('faq.projectPage.a2') },
+        { q: t('faq.projectPage.q3'), a: t('faq.projectPage.a3') },
+        { q: t('faq.projectPage.q4'), a: t('faq.projectPage.a4') },
+      ],
+    },
+    {
+      section: t('faq.hobbies.title'),
+      items: [
+        { q: t('faq.hobbies.q1'), a: t('faq.hobbies.a1') },
+        { q: t('faq.hobbies.q2'), a: t('faq.hobbies.a2') },
+        { q: t('faq.hobbies.q3'), a: t('faq.hobbies.a3') },
+      ],
+    },
+    {
+      section: t('faq.other.title'),
+      items: [
+        { q: t('faq.other.q1'), a: t('faq.other.a1') },
+        { q: t('faq.other.q2'), a: t('faq.other.a2', { email: 'your-support-email@example.com' }) },
+      ],
+    },
+  ];
+
   return (
     <div className={`faq-container expanded`}>
-      <button onClick={() => navigate(-1)} className="back-button">{t('faq_back_button')}</button>
-      <h1>{t('faq_main_title')}</h1>
+      <button onClick={() => navigate(-1)} className="back-button">{t('faq.backButton')}</button>
+      <h1>{t('faq.mainTitle')}</h1>
 
-      <section>
-        <h2>{t('faq_section1_title')}</h2>
-        <details>
-          <summary>{t('faq_section1_q1_summary')}</summary>
-          <p>{t('faq_section1_q1_details')}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section1_q2_summary')}</summary>
-          <p>
-            <strong>{t('faq_register')}:</strong> {t('faq_section1_q2_p1')}<br />
-            <strong>{t('faq_login')}:</strong> {t('faq_section1_q2_p2')}<br />
-            <strong>{t('faq_unsubscribe')}:</strong> {t('faq_section1_q2_p3')}<br />
-            <strong>{t('faq_password_reset')}:</strong> {t('faq_section1_q2_p4')}
-          </p>
-        </details>
-        <details>
-          <summary>{t('faq_section1_q3_summary')}</summary>
-          <p>{t('faq_section1_q3_details')}</p>
-        </details>
-      </section>
-
-      <section>
-        <h2>{t('faq_section2_title')}</h2>
-        <details>
-          <summary>{t('faq_section2_q1_summary')}</summary>
-          <p>{t('faq_section2_q1_details')}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section2_q2_summary')}</summary>
-          <p>{t('faq_section2_q2_details')}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section2_q3_summary')}</summary>
-          <p>{t('faq_section2_q3_details')}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section2_q4_summary')}</summary>
-          <p>{t('faq_section2_q4_details')}</p>
-        </details>
-      </section>
-
-      <section>
-        <h2>{t('faq_section3_title')}</h2>
-        <details>
-          <summary>{t('faq_section3_q1_summary')}</summary>
-          <p>{t('faq_section3_q1_details')}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section3_q2_summary')}</summary>
-          <p>{t('faq_section3_q2_details')}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section3_q3_summary')}</summary>
-          <p>{t('faq_section3_q3_details')}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section3_q4_summary')}</summary>
-          <p>{t('faq_section3_q4_details')}</p>
-        </details>
-      </section>
-
-      <section>
-        <h2>{t('faq_section4_title')}</h2>
-        <details>
-          <summary>{t('faq_section4_q1_summary')}</summary>
-          <p>{t('faq_section4_q1_details')}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section4_q2_summary')}</summary>
-          <p>{t('faq_section4_q2_details')}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section4_q3_summary')}</summary>
-          <p>{t('faq_section4_q3_details')}</p>
-        </details>
-      </section>
-
-      <section>
-        <h2>{t('faq_section5_title')}</h2>
-        <details>
-          <summary>{t('faq_section5_q1_summary')}</summary>
-          <p>{t('faq_section5_q1_details', { email: 'support@example.com' })}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section5_q2_summary')}</summary>
-          <p>{t('faq_section5_q2_details')}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section5_q3_summary')}</summary>
-          <p>{t('faq_section5_q3_details')}</p>
-        </details>
-      </section>
-
-      <section>
-        <h2>{t('faq_section6_title')}</h2>
-        <details>
-          <summary>{t('faq_section6_q1_summary')}</summary>
-          <p>{t('faq_section6_q1_details')}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section6_q2_summary')}</summary>
-          <p>{t('faq_section6_q2_details')}</p>
-        </details>
-        <details>
-          <summary>{t('faq_section6_q3_summary')}</summary>
-          <p>{t('faq_section6_q3_details')}</p>
-        </details>
-      </section>
+      {faqs.map((section, sectionIndex) => (
+        <section key={sectionIndex}>
+          <h2>{section.section}</h2>
+          {section.items.map((item, itemIndex) => (
+            <details key={itemIndex}>
+              <summary>{item.q}</summary>
+              <p dangerouslySetInnerHTML={{ __html: item.a }} />
+            </details>
+          ))}
+        </section>
+      ))}
     </div>
   );
 }

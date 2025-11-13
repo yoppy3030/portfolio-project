@@ -1,0 +1,113 @@
+/* MusicAppreciationDisplay.css */
+
+.music-appreciation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 24px;
+  padding: 24px;
+}
+
+.music-card-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  overflow: hidden;
+}
+
+.music-card-container:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.music-card {
+  padding: 24px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.music-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.music-genre-badge {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.music-artist-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.song-count {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.song-list-container {
+  padding: 0 24px 24px;
+  background-color: #ffffff;
+}
+
+.song-list-display {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.song-list-display li {
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.song-list-display li:last-child {
+  border-bottom: none;
+}
+
+.song-link {
+  color: #3b82f6;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.song-link:hover {
+  color: #1d4ed8;
+}
+
+.youtube-icon {
+  color: #ef4444;
+  font-size: 1.25rem;
+}
+
+.song-artist {
+  color: #6b7280;
+  font-size: 0.8rem;
+  margin-left: 8px;
+}
+
+.no-songs-message {
+  color: #9ca3af;
+  font-style: italic;
+  text-align: center;
+  padding: 20px 0;
+}

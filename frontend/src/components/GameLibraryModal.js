@@ -20,7 +20,7 @@ function GameResult({ game, onAdd, isAdded, translateToJapanese }) {
 
   const platformNames = getPlatformNames(game.platforms);
   // 日本語名があれば日本語名を、なければ英語名を表示
-  const displayName = translateToJapanese ? translateToJapanese(game.name) : game.name;
+  const displayName = translateToJapanese ? translateToJapanese(game.name) : game.name; 
   const showEnglishName = displayName !== game.name; // 日本語名に変換できた場合
 
   return (
@@ -64,7 +64,7 @@ function GameResult({ game, onAdd, isAdded, translateToJapanese }) {
   );
 }
 
-function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProvided, dndSnapshot, isOwner }) {
+function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProvided, dndSnapshot, isOwner, layoutMode }) {
   console.log(`[DEBUG] LibraryItem for game "${game.title}" received allSeries:`, allSeries);
   const [isEditing, setIsEditing] = useState(false);
   const [rating, setRating] = useState(game.rating || null);
@@ -160,7 +160,7 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
         boxShadow: dndSnapshot.isDragging ? '0 6px 12px rgba(0,0,0,0.2)' : 'none',
       }
     : {};
-  const className = isDraggable ? 'library-item draggable' : 'library-item';
+  const className = `library-item ${isDraggable ? 'draggable' : ''} ${layoutMode}`;
 
   return (
     <div ref={ref} {...draggableProps} style={style} className={className}>
@@ -384,6 +384,7 @@ function GameLibraryModal({ onClose, isOwner }) {
     }
   });
   const [updateCounter, setUpdateCounter] = useState(0); // 強制再描画用のカウンター
+  const [layoutMode, setLayoutMode] = useState('grid'); // 'grid' or 'list'
 
   const getToken = () => localStorage.getItem('token');
 
@@ -567,7 +568,7 @@ function GameLibraryModal({ onClose, isOwner }) {
   };
 
   // 英語名から日本語名へのマッピング（表示用）
-  const englishToJapaneseMapping = {
+  const englishToJapaneseMapping = useMemo(() => ({
     // Nintendo
     'The Legend of Zelda': 'ゼルダの伝説',
     'Zelda': 'ゼルダ',
@@ -646,7 +647,7 @@ function GameLibraryModal({ onClose, isOwner }) {
     'FIFA': 'FIFA',
     'Pro Evolution Soccer': 'ウイニングイレブン',
     'PES': 'ウイニングイレブン'
-  };
+  }), []);
 
   // 英語名を日本語名に変換（表示用）
   const translateToJapanese = useCallback((englishName) => {
@@ -664,13 +665,18 @@ function GameLibraryModal({ onClose, isOwner }) {
       const nameLower = englishName.toLowerCase();
       if (nameLower.includes(enLower)) {
         // 元の名前に含まれるシリーズ名を日本語に置換
-        return englishName.replace(new RegExp(en.replace(/[.*+?^${}()|[\\]/g, '\\$&'), 'gi'), jp);
+        return englishName.replace(new RegExp(escapeRegExp(en), 'gi'), jp);
       }
     }
     
     // 翻訳できない場合は元の英語名を返す
     return englishName;
-  }, []);
+  }, [englishToJapaneseMapping]);
+
+  // 正規表現の特殊文字をエスケープするヘルパー関数
+  const escapeRegExp = (string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, (match) => '\\' + match);
+  };
 
   // 日本語キーワードを英語に変換（部分マッチ）
   const translateJapaneseKeyword = (keyword) => {
@@ -798,7 +804,7 @@ function GameLibraryModal({ onClose, isOwner }) {
             });
             
             if (!hasPlatform) {
-              console.log(`Game \"${game.name}\" (ID: ${game.id}) does not support platform ${platformId}`, {
+              console.log(`Game "${game.name}" (ID: ${game.id}) does not support platform ${platformId}`, {
                 gamePlatforms: gamePlatforms.map(p => ({ id: p.platform?.id || p.id, name: p.platform?.name || p.name }))
               });
             }
@@ -1239,6 +1245,14 @@ function GameLibraryModal({ onClose, isOwner }) {
                   <option value="Arcade">アーケード</option>
                   <option value="Platformer">プラットフォーマー</option>
                 </select>
+                <div className="layout-toggle">
+                  <button onClick={() => setLayoutMode('grid')} className={layoutMode === 'grid' ? 'active' : ''}>
+                    <i className="material-icons">grid_view</i>
+                  </button>
+                  <button onClick={() => setLayoutMode('list')} className={layoutMode === 'list' ? 'active' : ''}>
+                    <i className="material-icons">view_list</i>
+                  </button>
+                </div>
               </div>
             </div>
             {loading ? <p>読み込み中...</p> : (
@@ -1260,7 +1274,7 @@ function GameLibraryModal({ onClose, isOwner }) {
                             <Droppable droppableId={`library-grid-${seriesName}`} type="game">
                               {(provided, snapshot) => (
                                 <div
-                                  className="library-grid"
+                                  className={`library-grid ${layoutMode}`}
                                   {...provided.droppableProps}
                                   ref={provided.innerRef}
                                   style={{
@@ -1272,13 +1286,14 @@ function GameLibraryModal({ onClose, isOwner }) {
                                     <Draggable key={game.id} draggableId={String(game.id)} index={index}>
                                       {(provided, snapshot) => (
                                         <LibraryItem
-                  key={game.id}
-                  game={game}
-                  onRemove={handleRemoveGame}
-                  onUpdate={handleUpdateGame}
-                  isDraggable={false}
-                  isOwner={isOwner}
-                />
+                                          key={game.id}
+                                          game={game}
+                                          onRemove={handleRemoveGame}
+                                          onUpdate={handleUpdateGame}
+                                          isDraggable={false}
+                                          isOwner={isOwner}
+                                          layoutMode={layoutMode}
+                                        />
                                       )}
                                     </Draggable>
                                   ))}
@@ -1291,7 +1306,7 @@ function GameLibraryModal({ onClose, isOwner }) {
             <Droppable droppableId={`library-grid-${seriesName}`} type="game">
               {(provided, snapshot) => (
                 <div
-                  className="library-grid"
+                  className={`library-grid ${layoutMode}`}
                   {...provided.droppableProps}
                   ref={provided.innerRef}
                   style={{
@@ -1309,6 +1324,7 @@ function GameLibraryModal({ onClose, isOwner }) {
                           isDraggable={true}
                           dndProvided={provided}
                           dndSnapshot={snapshot}
+                          layoutMode={layoutMode}
                         />
                       )}
                     </Draggable>
@@ -1318,7 +1334,7 @@ function GameLibraryModal({ onClose, isOwner }) {
               )}
             </Droppable>
           ) : (
-            <div className="library-grid">
+            <div className={`library-grid ${layoutMode}`}>
               {games.map(game => (
                 <LibraryItem
                   key={game.id}
@@ -1327,6 +1343,7 @@ function GameLibraryModal({ onClose, isOwner }) {
                   onUpdate={handleUpdateGame}
                   isDraggable={false}
                   isOwner={isOwner}
+                  layoutMode={layoutMode}
                 />
               ))}
             </div>

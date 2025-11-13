@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import HobbiesDisplay from './HobbiesDisplay';
@@ -36,6 +36,8 @@ function AddProjectModal({ on_close, on_submit, t }) {
 
   const handleBgFileChange = (e) => {
     setBgFile(e.target.files[0]);
+    setBackgroundImage(''); // Clear background image URL when a file is selected
+    setBackgroundColor(''); // Clear background color when an image file is selected
   };
 
   const handleTagChange = (tag) => {
@@ -55,6 +57,7 @@ function AddProjectModal({ on_close, on_submit, t }) {
     setError('');
 
     let finalBackgroundImage = backgroundImage;
+    let finalBackgroundColor = backgroundColor;
 
     if (bgInputMethod === 'upload' && bgFile) {
       setUploading(true);
@@ -70,6 +73,7 @@ function AddProjectModal({ on_close, on_submit, t }) {
         const uploadData = await uploadRes.json();
         if (uploadData.success) {
           finalBackgroundImage = `http://localhost:5000${uploadData.filePath}`;
+          finalBackgroundColor = null; // Ensure color is cleared if image is uploaded
         } else {
           throw new Error(uploadData.error || t('portfolio_alert_bg_upload_failed'));
         }
@@ -80,18 +84,27 @@ function AddProjectModal({ on_close, on_submit, t }) {
       } finally {
         setUploading(false);
       }
+    } else if (backgroundImage) {
+      finalBackgroundColor = null; // Ensure color is cleared if image URL is provided
+    } else if (backgroundColor) {
+      finalBackgroundImage = null; // Ensure image is cleared if color is provided
     }
 
-    on_submit({
+    const projectData = {
       title,
       description,
-      backgroundColor,
       textColor,
       font_size: fontSize,
       background_image: finalBackgroundImage,
       size,
-      tags
-    });
+      tags,
+    };
+
+    if (finalBackgroundColor !== null) {
+      projectData.backgroundColor = finalBackgroundColor;
+    }
+
+    on_submit(projectData);
   };
 
   return (
@@ -123,7 +136,7 @@ function AddProjectModal({ on_close, on_submit, t }) {
           <div className="form-group">
             <label>{t('portfolio_label_background_color')}</label>
             <div className="color-picker-wrapper" style={{ backgroundColor: backgroundColor }}>
-              <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+              <input type="color" value={backgroundColor} onChange={(e) => { setBackgroundColor(e.target.value); setBackgroundImage(''); setBgFile(null); }} />
             </div>
           </div>
           <div className="form-group">
@@ -145,7 +158,7 @@ function AddProjectModal({ on_close, on_submit, t }) {
             {bgInputMethod === 'upload' ? (
               <input type="file" onChange={handleBgFileChange} accept="image/*" />
             ) : (
-              <input type="text" value={backgroundImage || ''} onChange={(e) => setBackgroundImage(e.target.value)} placeholder={t('portfolio_placeholder_bg_image_url')} />
+              <input type="text" value={backgroundImage || ''} onChange={(e) => { setBackgroundImage(e.target.value); setBackgroundColor(''); }} placeholder={t('portfolio_placeholder_bg_image_url')} />
             )}
           </div>
 
@@ -199,6 +212,8 @@ function EditProjectModal({ project, on_close, on_submit, t }) {
 
   const handleBgFileChange = (e) => {
     setBgFile(e.target.files[0]);
+    setBackgroundImage(''); // Clear background image URL when a file is selected
+    setBackgroundColor(''); // Clear background color when an image file is selected
   };
 
   const handleTagChange = (tag) => {
@@ -214,6 +229,7 @@ function EditProjectModal({ project, on_close, on_submit, t }) {
     setError('');
 
     let finalBackgroundImage = backgroundImage;
+    let finalBackgroundColor = backgroundColor;
 
     if (bgInputMethod === 'upload' && bgFile) {
       setUploading(true);
@@ -229,6 +245,7 @@ function EditProjectModal({ project, on_close, on_submit, t }) {
         const uploadData = await uploadRes.json();
         if (uploadData.success) {
           finalBackgroundImage = `http://localhost:5000${uploadData.filePath}`;
+          finalBackgroundColor = null; // Ensure color is cleared if image is uploaded
         } else {
           throw new Error(uploadData.error || t('portfolio_alert_bg_upload_failed'));
         }
@@ -239,13 +256,17 @@ function EditProjectModal({ project, on_close, on_submit, t }) {
       } finally {
         setUploading(false);
       }
+    } else if (backgroundImage) {
+      finalBackgroundColor = null; // Ensure color is cleared if image URL is provided
+    } else if (backgroundColor) {
+      finalBackgroundImage = null; // Ensure image is cleared if color is provided
     }
 
     on_submit({ 
       ...project, 
       title, 
       description, 
-      backgroundColor, 
+      backgroundColor: finalBackgroundColor, 
       textColor, 
       font_size: fontSize,
       background_image: finalBackgroundImage,
@@ -283,7 +304,7 @@ function EditProjectModal({ project, on_close, on_submit, t }) {
           <div className="form-group">
             <label>{t('portfolio_label_background_color')}</label>
             <div className="color-picker-wrapper" style={{ backgroundColor: backgroundColor }}>
-              <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+              <input type="color" value={backgroundColor} onChange={(e) => { setBackgroundColor(e.target.value); setBackgroundImage(''); setBgFile(null); }} />
             </div>
           </div>
           <div className="form-group">
@@ -305,7 +326,7 @@ function EditProjectModal({ project, on_close, on_submit, t }) {
             {bgInputMethod === 'upload' ? (
               <input type="file" onChange={handleBgFileChange} accept="image/*" />
             ) : (
-              <input type="text" value={backgroundImage || ''} onChange={(e) => setBackgroundImage(e.target.value)} placeholder={t('portfolio_placeholder_bg_image_url')} />
+              <input type="text" value={backgroundImage || ''} onChange={(e) => { setBackgroundImage(e.target.value); setBackgroundColor(''); }} placeholder={t('portfolio_placeholder_bg_image_url')} />
             )}
           </div>
 
@@ -405,6 +426,8 @@ function EditTextModal({ project, on_close, on_submit, t }) {
 
   const handleBgFileChange = (e) => {
     setBgFile(e.target.files[0]);
+    setBackgroundImage(''); // Clear background image URL when a file is selected
+    setBackgroundColor(''); // Clear background color when an image file is selected
   };
 
   const handleSubmit = async (e) => {
@@ -412,6 +435,7 @@ function EditTextModal({ project, on_close, on_submit, t }) {
     setError('');
 
     let finalBackgroundImage = backgroundImage;
+    let finalBackgroundColor = backgroundColor;
 
     if (bgInputMethod === 'upload' && bgFile) {
       setUploading(true);
@@ -427,6 +451,7 @@ function EditTextModal({ project, on_close, on_submit, t }) {
         const uploadData = await uploadRes.json();
         if (uploadData.success) {
           finalBackgroundImage = `http://localhost:5000${uploadData.filePath}`;
+          finalBackgroundColor = ''; // Ensure color is cleared if image is uploaded
         } else {
           throw new Error(uploadData.error || t('portfolio_alert_bg_upload_failed'));
         }
@@ -437,12 +462,16 @@ function EditTextModal({ project, on_close, on_submit, t }) {
       } finally {
         setUploading(false);
       }
+    } else if (backgroundImage) {
+      finalBackgroundColor = ''; // Ensure color is cleared if image URL is provided
+    } else if (backgroundColor) {
+      finalBackgroundImage = ''; // Ensure image is cleared if color is provided
     }
 
     on_submit({ 
       ...project, 
       content, 
-      backgroundColor, 
+      backgroundColor: finalBackgroundColor, 
       textColor, 
       font_size: fontSize, 
       background_image: finalBackgroundImage,
@@ -463,7 +492,7 @@ function EditTextModal({ project, on_close, on_submit, t }) {
           <div className="form-group">
             <label>{t('portfolio_label_background_color')}</label>
             <div className="color-picker-wrapper" style={{ backgroundColor: backgroundColor }}>
-              <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+              <input type="color" value={backgroundColor} onChange={(e) => { setBackgroundColor(e.target.value); setBackgroundImage(''); setBgFile(null); }} />
             </div>
           </div>
           <div className="form-group">
@@ -485,7 +514,7 @@ function EditTextModal({ project, on_close, on_submit, t }) {
             {bgInputMethod === 'upload' ? (
               <input type="file" onChange={handleBgFileChange} accept="image/*" />
             ) : (
-              <input type="text" value={backgroundImage || ''} onChange={(e) => setBackgroundImage(e.target.value)} placeholder={t('portfolio_placeholder_bg_image_url')} />
+              <input type="text" value={backgroundImage || ''} onChange={(e) => { setBackgroundImage(e.target.value); setBackgroundColor(''); }} placeholder={t('portfolio_placeholder_bg_image_url')} />
             )}
           </div>
 
@@ -557,10 +586,10 @@ function TextEditBlock({ project, onContentUpdate, onDelete, onEdit, isEditMode 
     width: '100%',
     height: '100%',
     overflow: 'auto',
-    textAlign: 'center',
+    textAlign: 'left',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     color: project.text_color, // Inherit text color
   };
 
@@ -591,7 +620,7 @@ function TextEditBlock({ project, onContentUpdate, onDelete, onEdit, isEditMode 
             outline: 'none',
             fontSize: project.font_size || `${Math.min(Math.sqrt(project.layout_w * project.layout_h) * 8, 48)}px`,
             fontFamily: 'inherit',
-            textAlign: 'center',
+            textAlign: 'left',
             overflow: 'auto', // Added for scrolling in edit mode
           }}
         />
@@ -625,7 +654,6 @@ const addPxIfNeeded = (value) => {
 export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio, user }) {
   const { portfolioId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddTextModal, setShowAddTextModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
@@ -867,13 +895,7 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
               cardStyles.backgroundColor = project.background_color;
             }
 
-            const addPxIfNeeded = (value) => {
-              if (!value) return null;
-              if (String(value).match(/^[0-9.]+$/)) {
-                return `${value}px`;
-              }
-              return value;
-            };
+            
 
             const processedFontSize = addPxIfNeeded(project.font_size);
 

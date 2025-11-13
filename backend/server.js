@@ -792,24 +792,64 @@ app.get('/api/music-genres', (req, res) => {
 });
 
 // ユーザーの音楽設定リストを取得
-app.get('/api/user-music-preferences', authenticateToken, (req, res) => {
+app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
   const { id: userId } = req.user;
 
-  const query = `
-    SELECT ump.id, ump.artist_name, mg.name AS genre_name, mg.id AS genre_id
-    FROM user_music_preferences ump
-    LEFT JOIN music_genres mg ON ump.genre_id = mg.id
-    WHERE ump.user_id = ?
-    ORDER BY mg.name, ump.artist_name
-  `;
+  try {
+    // 1. ユーザーの音楽設定を取得
+    const preferences = await new Promise((resolve, reject) => {
+      const query = `
+        SELECT ump.id, ump.artist_name, mg.name AS genre_name, mg.id AS genre_id
+        FROM user_music_preferences ump
+        LEFT JOIN music_genres mg ON ump.genre_id = mg.id
+        WHERE ump.user_id = ?
+        ORDER BY mg.name, ump.artist_name
+      `;
+      db.query(query, [userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
 
-  db.query(query, [userId], (err, results) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'ユーザーの音楽設定の取得中にデータベースエラーが発生しました。' });
+    if (preferences.length === 0) {
+      return res.json({ success: true, preferences: [] });
     }
-    res.json({ success: true, preferences: results });
-  });
+
+    // 2. 関連するお気に入りの曲をすべて取得
+    const preferenceIds = preferences.map(p => p.id);
+    const songs = await new Promise((resolve, reject) => {
+      const query = `
+        SELECT id, preference_id, song_title, artist_name, youtube_url 
+        FROM favorite_songs 
+        WHERE preference_id IN (?)
+        ORDER BY created_at ASC
+      `;
+      db.query(query, [preferenceIds], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    // 3. 曲を各設定にマッピング
+    const songsMap = new Map();
+    songs.forEach(song => {
+      if (!songsMap.has(song.preference_id)) {
+        songsMap.set(song.preference_id, []);
+      }
+      songsMap.get(song.preference_id).push(song);
+    });
+
+    const preferencesWithSongs = preferences.map(pref => ({
+      ...pref,
+      songs: songsMap.get(pref.id) || []
+    }));
+
+    res.json({ success: true, preferences: preferencesWithSongs });
+
+  } catch (err) {
+    console.error('データベースエラー:', err);
+    res.status(500).json({ success: false, error: 'ユーザーの音楽設定の取得中にデータベースエラーが発生しました。' });
+  }
 });
 
 // ユーザーの音楽設定を追加
@@ -848,6 +888,151 @@ app.delete('/api/user-music-preferences/:preferenceId', authenticateToken, (req,
     }
     res.json({ success: true, message: '音楽設定が削除されました。' });
   });
+});
+
+// Add a favorite song to a preference
+app.post('/api/music-preferences/:preferenceId/songs', authenticateToken, async (req, res) => {
+  const { preferenceId } = req.params;
+  const { id: userId } = req.user;
+  const { song_title, artist_name, youtube_url } = req.body;
+
+  if (!song_title) {
+    return res.status(400).json({ success: false, error: '曲名は必須です。' });
+  }
+
+  try {
+    // Verify ownership of the preference
+    const preferences = await new Promise((resolve, reject) => {
+      db.query('SELECT id FROM user_music_preferences WHERE id = ? AND user_id = ?', [preferenceId, userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    if (preferences.length === 0) {
+      return res.status(403).json({ success: false, error: 'この設定に曲を追加する権限がありません。' });
+    }
+
+    // Insert the new song
+    const newSong = {
+      preference_id: preferenceId,
+      song_title,
+      artist_name: artist_name || null,
+      youtube_url: youtube_url || null,
+    };
+
+    const result = await new Promise((resolve, reject) => {
+      db.query('INSERT INTO favorite_songs SET ?', newSong, (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+
+    res.status(201).json({ success: true, message: '曲が追加されました。', songId: result.insertId });
+
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: '曲の追加中にサーバーエラーが発生しました。' });
+  }
+});
+
+// Delete a favorite song
+app.delete('/api/songs/:songId', authenticateToken, async (req, res) => {
+  const { songId } = req.params;
+  const { id: userId } = req.user;
+
+  try {
+    // Verify ownership by joining through preferences and users table
+    const songs = await new Promise((resolve, reject) => {
+      const query = `
+        SELECT fs.id
+        FROM favorite_songs fs
+        JOIN user_music_preferences ump ON fs.preference_id = ump.id
+        WHERE fs.id = ? AND ump.user_id = ?
+      `;
+      db.query(query, [songId, userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    if (songs.length === 0) {
+      return res.status(403).json({ success: false, error: 'この曲を削除する権限がありません。' });
+    }
+
+    // Delete the song
+    await new Promise((resolve, reject) => {
+      db.query('DELETE FROM favorite_songs WHERE id = ?', [songId], (err, result) => {
+        if (err) return reject(err);
+        if (result.affectedRows === 0) return reject(new Error('Song not found'));
+        resolve(result);
+      });
+    });
+
+    res.json({ success: true, message: '曲が削除されました。' });
+
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    if (error.message === 'Song not found') {
+        return res.status(404).json({ success: false, error: '曲が見つかりません。' });
+    }
+    res.status(500).json({ success: false, error: '曲の削除中にサーバーエラーが発生しました。' });
+  }
+});
+
+// Update a favorite song
+app.put('/api/songs/:songId', authenticateToken, async (req, res) => {
+  const { songId } = req.params;
+  const { id: userId } = req.user;
+  const { song_title, artist_name, youtube_url } = req.body;
+
+  if (!song_title) {
+    return res.status(400).json({ success: false, error: '曲名は必須です。' });
+  }
+
+  try {
+    // Verify ownership
+    const songs = await new Promise((resolve, reject) => {
+      const query = `
+        SELECT fs.id
+        FROM favorite_songs fs
+        JOIN user_music_preferences ump ON fs.preference_id = ump.id
+        WHERE fs.id = ? AND ump.user_id = ?
+      `;
+      db.query(query, [songId, userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    if (songs.length === 0) {
+      return res.status(403).json({ success: false, error: 'この曲を編集する権限がありません。' });
+    }
+
+    // Update the song
+    const updatedSong = {
+      song_title,
+      artist_name: artist_name || null,
+      youtube_url: youtube_url || null,
+    };
+
+    await new Promise((resolve, reject) => {
+      db.query('UPDATE favorite_songs SET ? WHERE id = ?', [updatedSong, songId], (err, result) => {
+        if (err) return reject(err);
+        if (result.affectedRows === 0) return reject(new Error('Song not found'));
+        resolve(result);
+      });
+    });
+
+    res.json({ success: true, message: '曲が更新されました。' });
+
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    if (error.message === 'Song not found') {
+        return res.status(404).json({ success: false, error: '曲が見つかりません。' });
+    }
+    res.status(500).json({ success: false, error: '曲の更新中にサーバーエラーが発生しました。' });
+  }
 });
 
 // 新しいプレイ済みゲームを追加
@@ -1289,7 +1474,7 @@ app.delete('/api/portfolios/:portfolioId', authenticateToken, (req, res) => {
 app.post('/api/portfolios/:portfolioId/projects', authenticateToken, (req, res) => {
   const { portfolioId } = req.params;
   const { id: userId } = req.user;
-  const { title, description, imageData, backgroundColor, textColor, type, content, tags, size, layout_w, layout_h } = req.body;
+  const { title, description, imageData, backgroundColor, textColor, type, content, tags, size, layout_w, layout_h, font_size, background_image } = req.body;
 
   if (type !== 'text' && !title) {
     return res.status(400).json({ success: false, error: 'プロジェクトタイトルは必須です。' });
@@ -1336,7 +1521,7 @@ app.post('/api/portfolios/:portfolioId/projects', authenticateToken, (req, res) 
           title: title || '',
           description: description || null,
           image_data: imageData || null,
-          background_color: backgroundColor || null,
+          background_color: background_image ? null : (backgroundColor || null),
           text_color: textColor || null,
           project_order: newOrder,
           type: type || 'project',
@@ -1344,6 +1529,8 @@ app.post('/api/portfolios/:portfolioId/projects', authenticateToken, (req, res) 
           size: size || 'medium',
           layout_w: layout_w || 4,
           layout_h: layout_h || 4,
+          font_size: font_size || null,
+          background_image: background_image || null,
         };
 
         const projectInsertResult = await new Promise((resolve, reject) => {
@@ -1855,7 +2042,7 @@ app.post('/api/projects/:projectId/contents', authenticateToken, async (req, res
   try {
     const { projectId } = req.params;
     const { id: userId } = req.user;
-    const { type, content, layout_w, layout_h, block_style } = req.body;
+    const { type, content, layout_w, layout_h, block_style, text_color, font_size, background_color, background_image } = req.body;
 
     // 1. Verify ownership of the project
     const projects = await new Promise((resolve, reject) => {
@@ -1887,6 +2074,10 @@ app.post('/api/projects/:projectId/contents', authenticateToken, async (req, res
       layout_h: layout_h || 2,
       content_order: newOrder,
       block_style: block_style || 'p',
+      text_color: text_color || null,
+      font_size: font_size || null,
+      background_color: background_color || null,
+      background_image: background_image || null,
     };
 
     db.query('INSERT INTO project_contents SET ?', newContent, (err, result) => {

@@ -137,29 +137,53 @@ function ContentModal({ block, on_close, on_submit }) {
     const [fontSize, setFontSize] = useState(block.font_size || '');
     const [backgroundColor, setBackgroundColor] = useState(block.background_color || '');
     
+    // File states
     const [bgFile, setBgFile] = useState(null);
+    const [contentFile, setContentFile] = useState(null);
+    const [contentInputMethod, setContentInputMethod] = useState('url');
 
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState('');
 
-    
-
-    const handleFileChange = (e) => {
+    const handleBgFileChange = (e) => {
         setBgFile(e.target.files[0]);
+    };
+
+    const handleContentFileChange = (e) => {
+        setContentFile(e.target.files[0]);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        
-        let finalBackgroundImage = block.background_image || ''; // Keep existing image by default
+        setUploading(true);
 
-        if (bgFile) { // Only check for bgFile
-            setUploading(true);
-            const formData = new FormData();
-            formData.append('file', bgFile);
-            const token = localStorage.getItem('token');
-            try {
+        let finalContent = content;
+        let finalBackgroundImage = block.background_image || '';
+        const token = localStorage.getItem('token');
+
+        try {
+            // 1. Upload content file if it exists
+            if ((type === 'image' || type === 'video') && contentInputMethod === 'upload' && contentFile) {
+                const formData = new FormData();
+                formData.append('file', contentFile);
+                const uploadRes = await fetch('http://localhost:5000/api/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData,
+                });
+                const uploadData = await uploadRes.json();
+                if (uploadData.success) {
+                    finalContent = `http://localhost:5000${uploadData.filePath}`;
+                } else {
+                    throw new Error(uploadData.error || 'コンテンツファイルのアップロードに失敗しました。');
+                }
+            }
+
+            // 2. Upload background image file if it exists
+            if (bgFile) {
+                const formData = new FormData();
+                formData.append('file', bgFile);
                 const uploadRes = await fetch('http://localhost:5000/api/upload', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
@@ -171,27 +195,26 @@ function ContentModal({ block, on_close, on_submit }) {
                 } else {
                     throw new Error(uploadData.error || '背景画像のアップロードに失敗しました。');
                 }
-            } catch (err) {
-                setError(err.message);
-                setUploading(false);
-                return;
-            } finally {
-                setUploading(false);
             }
+
+            const finalBlockData = {
+                ...block,
+                type,
+                content: finalContent,
+                block_style: type === 'text' || type === 'heading' ? blockStyle : null,
+                text_color: textColor,
+                font_size: fontSize,
+                background_color: backgroundColor,
+                background_image: finalBackgroundImage,
+            };
+    
+            on_submit(finalBlockData);
+
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setUploading(false);
         }
-
-        const finalBlockData = {
-            ...block,
-            type,
-            content,
-            block_style: type === 'text' || type === 'heading' ? blockStyle : null,
-            text_color: textColor,
-            font_size: fontSize,
-            background_color: backgroundColor,
-            background_image: finalBackgroundImage,
-        };
-
-        on_submit(finalBlockData);
     };
 
     return (
@@ -211,8 +234,22 @@ function ContentModal({ block, on_close, on_submit }) {
                     </div>
 
                     <div className="form-group">
-                        <label>内容 (テキスト or 画像/動画のURL)</label>
-                        <textarea value={content} onChange={(e) => setContent(e.target.value)} rows="5" placeholder="テキスト内容、または画像/動画のURLを入力..."/>
+                        <label>内容</label>
+                        {type === 'text' || type === 'heading' ? (
+                            <textarea value={content} onChange={(e) => setContent(e.target.value)} rows="5" placeholder="テキスト内容を入力..."/>
+                        ) : (
+                            <>
+                                <div className="input-method-toggle" style={{ marginBottom: '10px' }}>
+                                    <button type="button" onClick={() => setContentInputMethod('url')} className={contentInputMethod === 'url' ? 'active' : ''}>URL</button>
+                                    <button type="button" onClick={() => setContentInputMethod('upload')} className={contentInputMethod === 'upload' ? 'active' : ''}>アップロード</button>
+                                </div>
+                                {contentInputMethod === 'upload' ? (
+                                    <input type="file" onChange={handleContentFileChange} accept="image/*,video/*" />
+                                ) : (
+                                    <input type="text" className="content-url-input" value={content} onChange={(e) => setContent(e.target.value)} placeholder="画像または動画のURLを入力..." />
+                                )}
+                            </>
+                        )}
                     </div>
 
                     {/* Text Styling */}
@@ -242,17 +279,21 @@ function ContentModal({ block, on_close, on_submit }) {
                     )}
 
                     {/* Background Styling */}
-                    <h4>背景スタイル</h4>
-                    <div className="form-group">
-                        <label>背景色</label>
-                        <div className="color-picker-wrapper" style={{ backgroundColor: backgroundColor }}>
-                          <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
-                        </div>
-                    </div>
-                    <div className="form-group">
-                        <label>背景画像</label>
-                        <input type="file" onChange={handleFileChange} accept="image/*" />
-                    </div>
+                    {(type === 'text' || type === 'heading') && (
+                        <>
+                            <h4>背景スタイル</h4>
+                            <div className="form-group">
+                                <label>背景色</label>
+                                <div className="color-picker-wrapper" style={{ backgroundColor: backgroundColor }}>
+                                  <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>背景画像</label>
+                                <input type="file" onChange={handleBgFileChange} accept="image/*" />
+                            </div>
+                        </>
+                    )}
 
                     {error && <p className="error-message" style={{color: 'red'}}>{error}</p>}
 
