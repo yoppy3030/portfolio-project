@@ -239,7 +239,7 @@
   display: inline-flex;
   gap: 1px;
   margin-left: 5px;
-  flex-wrap: wrap;
+  white-space: nowrap; /* Ensure stars stay on one line */
 }
 
 .star {
