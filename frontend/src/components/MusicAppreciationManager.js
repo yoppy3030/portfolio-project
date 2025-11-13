@@ -202,7 +202,7 @@ function MusicAppreciationManager() {
               {/* ★ ボタン群を追加 */}
               <div className="preference-actions">
                 <button className="btn-secondary-outline" onClick={() => setManagingSongsOf(pref)}>
-                  曲を管理 ({pref.songs ? pref.songs.length : 0})
+                  {t('music_songs_manage_button')} ({pref.songs ? pref.songs.length : 0})
                 </button>
                 <button className="btn-danger-outline" onClick={() => handleDeletePreference(pref.id)} disabled={loading}>
                   {t('music_delete_button')}
