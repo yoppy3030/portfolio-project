@@ -569,4 +569,53 @@
   margin-right: 15px;
 }
 
+/* Song Selection Modal */
+.song-search-bar {
+  margin-bottom: 15px;
+}
 
+.song-search-bar input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.song-selection-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.song-selection-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.song-selection-item:hover {
+  background-color: #f5f5f5;
+}
+
+.song-selection-item .song-info .song-title {
+  font-weight: 600;
+  margin: 0;
+}
+
+.song-selection-item .song-info .song-artist {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0;
+}
+
+.song-selection-item .btn-add-song {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}

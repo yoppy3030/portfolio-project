@@ -77,3 +77,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.hobby-actions {
+  display: flex;
+  gap: 10px;
+}

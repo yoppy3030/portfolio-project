@@ -3,6 +3,61 @@ import './GameLibraryModal.css';
 import debounce from 'lodash.debounce';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
+// 新しいコンポーネント: 登録済み曲から選択するモーダル
+function SelectSongModal({ songs, existingBgms, onSelect, onClose }) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // 既にBGMとして追加されている曲と、検索語でフィルタリング
+  const filteredSongs = songs.filter(song => {
+    const isAlreadyAdded = existingBgms.some(bgm => bgm.url === song.youtube_url && bgm.title === song.song_title);
+    if (isAlreadyAdded) {
+      return false;
+    }
+    if (searchTerm === '') {
+      return true;
+    }
+    return (song.song_title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            song.artist_name?.toLowerCase().includes(searchTerm.toLowerCase()));
+  });
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>曲を選択</h2>
+          <button onClick={onClose} className="close-button"><i className="material-icons">close</i></button>
+        </div>
+        <div className="modal-body">
+          <div className="song-search-bar">
+            <input
+              type="text"
+              placeholder="曲名やアーティスト名で検索..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="song-selection-list">
+            {filteredSongs.length > 0 ? (
+              filteredSongs.map(song => (
+                <div key={song.id} className="song-selection-item" onClick={() => onSelect(song)}>
+                  <div className="song-info">
+                    <p className="song-title">{song.song_title}</p>
+                    <p className="song-artist">{song.artist_name}</p>
+                  </div>
+                  <button className="btn-add-song">追加</button>
+                </div>
+              ))
+            ) : (
+              <p>追加できる曲がありません。</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function GameResult({ game, onAdd, isAdded, translateToJapanese }) {
   // プラットフォーム名を取得（Nintendo Switch, PlayStation, Xbox, PC など）
   const getPlatformNames = (platforms) => {
@@ -64,7 +119,7 @@ function GameResult({ game, onAdd, isAdded, translateToJapanese }) {
   );
 }
 
-function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProvided, dndSnapshot, isOwner, layoutMode }) {
+function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProvided, dndSnapshot, isOwner, layoutMode, allUserSongs }) {
   console.log(`[DEBUG] LibraryItem for game "${game.title}" received allSeries:`, allSeries);
   const [isEditing, setIsEditing] = useState(false);
   const [rating, setRating] = useState(game.rating || null);
@@ -72,6 +127,7 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
   const [playtimeHours, setPlaytimeHours] = useState(game.playtime_hours ? String(game.playtime_hours) : '');
   const [series, setSeries] = useState(game.series || '');
   const [bgms, setBgms] = useState(game.bgms || []);
+  const [showSelectSongModal, setShowSelectSongModal] = useState(false); // ★ 曲選択モーダル用のstate
 
   useEffect(() => {
     setRating(game.rating || null);
@@ -113,6 +169,16 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
 
   const addBgm = () => {
     setBgms([...bgms, { title: '', url: '' }]);
+  };
+
+  // ★ 登録済み曲からBGMを選択して追加するハンドラ
+  const handleSelectSong = (song) => {
+    // 重複チェック
+    const isAlreadyAdded = bgms.some(bgm => bgm.url === song.youtube_url && bgm.title === song.song_title);
+    if (!isAlreadyAdded) {
+      setBgms([...bgms, { title: song.song_title, url: song.youtube_url }]);
+    }
+    setShowSelectSongModal(false); // モーダルを閉じる
   };
 
   const removeBgm = (index) => {
@@ -164,6 +230,16 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
 
   return (
     <div ref={ref} {...draggableProps} style={style} className={className}>
+      {/* ★ 曲選択モーダルの表示 */}
+      {showSelectSongModal && (
+        <SelectSongModal
+          songs={allUserSongs}
+          existingBgms={bgms}
+          onSelect={handleSelectSong}
+          onClose={() => setShowSelectSongModal(false)}
+        />
+      )}
+
       {isDraggable && (
         <div className="drag-handle" {...dragHandleProps}>
           <i className="material-icons">drag_indicator</i>
@@ -193,7 +269,7 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
                 value={playtimeHours}
                 onChange={(e) => {
                   const value = e.target.value;
-                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                  if (value === '' || /^[0-9]*\.?[0-9]*$/.test(value)) {
                     setPlaytimeHours(value);
                   }
                 }}
@@ -212,7 +288,7 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="ゲームの感想を入力..."
-                rows={3}
+                rows={6}
               />
             </div>
             <div className="series-section">
@@ -283,7 +359,15 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
                   )}
                 </Droppable>
               </DragDropContext>
-              <button type="button" onClick={addBgm} className="btn-add-bgm">BGMを追加</button>
+              {/* ★ ボタンを2つにする */}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button type="button" onClick={addBgm} className="btn-add-bgm">
+                  手動で追加
+                </button>
+                <button type="button" onClick={() => setShowSelectSongModal(true)} className="btn-add-bgm-from-library">
+                  登録済み曲から追加
+                </button>
+              </div>
             </div>
 
             <div className="edit-actions">
@@ -385,8 +469,27 @@ function GameLibraryModal({ onClose, isOwner }) {
   });
   const [updateCounter, setUpdateCounter] = useState(0); // 強制再描画用のカウンター
   const [layoutMode, setLayoutMode] = useState('grid'); // 'grid' or 'list'
+  const [allUserSongs, setAllUserSongs] = useState([]); // ★ ユーザーの全曲リスト
 
   const getToken = () => localStorage.getItem('token');
+
+  // ★ ユーザーの全曲を取得する関数
+  const fetchAllUserSongs = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/user-songs', {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAllUserSongs(data.songs);
+      } else {
+        console.error('Failed to fetch user songs:', data.error);
+      }
+    } catch (err) {
+      console.error('Error fetching user songs:', err);
+    }
+  }, []);
+
 
   const fetchMyGames = useCallback(async () => {
     console.log('[DEBUG] fetchMyGames called');
@@ -482,7 +585,8 @@ function GameLibraryModal({ onClose, isOwner }) {
 
   useEffect(() => {
     fetchMyGames();
-  }, [fetchMyGames]);
+    fetchAllUserSongs(); // ★ 曲リストも取得
+  }, [fetchMyGames, fetchAllUserSongs]);
 
   const RAWG_API_KEY = process.env.REACT_APP_RAWG_API_KEY || '';
 
@@ -1293,6 +1397,7 @@ function GameLibraryModal({ onClose, isOwner }) {
                                           isDraggable={false}
                                           isOwner={isOwner}
                                           layoutMode={layoutMode}
+                                          allUserSongs={allUserSongs} // ★ 曲リストを渡す
                                         />
                                       )}
                                     </Draggable>
@@ -1325,6 +1430,7 @@ function GameLibraryModal({ onClose, isOwner }) {
                           dndProvided={provided}
                           dndSnapshot={snapshot}
                           layoutMode={layoutMode}
+                          allUserSongs={allUserSongs} // ★ 曲リストを渡す
                         />
                       )}
                     </Draggable>
@@ -1344,6 +1450,7 @@ function GameLibraryModal({ onClose, isOwner }) {
                   isDraggable={false}
                   isOwner={isOwner}
                   layoutMode={layoutMode}
+                  allUserSongs={allUserSongs} // ★ 曲リストを渡す
                 />
               ))}
             </div>

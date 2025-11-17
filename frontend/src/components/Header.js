@@ -6,12 +6,18 @@ import '../Header.css';
 
 const CATEGORIES = ["dashboard", "learning", "school", "other"];
 
-function Header({ user, onLogout, theme, language, activeTemplate, portfolio }) {
+function Header({ user, onLogout, theme, activeTemplate, portfolio }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [openMenu, setOpenMenu] = useState(null);
   const menuRef = useRef(null);
+
+  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNFNUU3RUIiLz4KPHBhdGggZD0iTTE2IDhDMTguMjA5MSA4IDIwIDkuNzkwODYgMjAgMTJDMjAgMTQuMjA5MSAxOC4yMDkxIDE2IDE2IDE2QzEzLjc5MDkgMTYgMTIgMTQuMjA5MSAxMiAxMkMxMiA5Ljc5MDg2IDEzLjc5MDkgOCAxNiA4WiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNOCAyNEM4IDIwLjY4NjMgMTAuNjg2MyAxOCAxNCAxOEgxOEMyMS4zMTM3IDE4IDI0IDIwLjY4NjMgMjQgMjRWMjZIOFYyNFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+Cg==";
+
+  const userIconUrl = user && user.iconUrl 
+    ? `http://localhost:5000${user.iconUrl}?t=${new Date().getTime()}` 
+    : defaultAvatar;
 
   const handleCategoryClick = (category) => {
     if (openMenu === category) {
@@ -33,8 +39,6 @@ function Header({ user, onLogout, theme, language, activeTemplate, portfolio }) 
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNFNUU3RUIiLz4KPHBhdGggZD0iTTE2IDhDMTguMjA5MSA4IDIwIDkuNzkwODYgMjAgMTJDMjAgMTQuMjA5MSAxOC4yMDkxIDE2IDE2IDE2QzEzLjc5MDkgMTYgMTIgMTQuMjA5MSAxMiAxMkMxMiA5Ljc5MDg2IDEzLjc5MDkgOCAxNiA4WiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNOCAyNEM4IDIwLjY4NjMgMTAuNjg2MyAxOCAxNCAxOEgxOEMyMS4zMTM3IDE4IDI0IDIwLjY4NjMgMjQgMjRWMjZIOFYyNFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+Cg==";
 
   const showBackButton = location.pathname !== '/' && location.pathname !== '/login' && location.pathname !== '/register';
 
@@ -105,7 +109,7 @@ function Header({ user, onLogout, theme, language, activeTemplate, portfolio }) 
             {user ? (
               <div className="user-menu-container">
                 <img
-                  src={user?.iconUrl || defaultAvatar}
+                  src={userIconUrl}
                   alt="icon"
                   className="user-icon"
                   onError={(e) => { e.target.src = defaultAvatar; }}
@@ -113,7 +117,7 @@ function Header({ user, onLogout, theme, language, activeTemplate, portfolio }) 
                 <div className="user-menu-dropdown">
                   <div className="user-info-in-dropdown">
                     <img
-                      src={user?.iconUrl || defaultAvatar}
+                      src={userIconUrl}
                       alt="icon"
                       className="user-icon-dropdown"
                       onError={(e) => { e.target.src = defaultAvatar; }}

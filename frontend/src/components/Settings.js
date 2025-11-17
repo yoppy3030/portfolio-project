@@ -3,7 +3,7 @@ import { withTranslation } from 'react-i18next';
 import HobbiesManager from './HobbiesManager';
 import '../Settings.css';
 
-function Settings({ user, onUserUpdate, onLogout, t, i18n, onLanguageChange, language }) {
+function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, language }) {
   const [activeTab, setActiveTab] = useState('profile');
   
   // Profile state
@@ -50,46 +50,36 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n, onLanguageChange, lan
       return;
     }
 
-    let profileData = { name: username, bio };
-
+    const formData = new FormData();
+    formData.append('name', username);
+    formData.append('bio', bio);
     if (profilePicFile) {
-      const reader = new FileReader();
-      reader.readAsDataURL(profilePicFile);
-      reader.onloadend = async () => {
-        profileData.iconUrl = reader.result;
-        await updateProfile(profileData);
-      };
-      reader.onerror = () => {
-        setMessage(t('settings_message_file_read_error'));
-      };
-    } else {
-      await updateProfile(profileData);
+      formData.append('icon', profilePicFile);
     }
-  };
 
-  const updateProfile = async (profileData) => {
-    const token = localStorage.getItem('token');
     try {
       const response = await fetch('http://localhost:5000/api/profile', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
+          // 'Content-Type' is intentionally omitted. The browser will set it
+          // to 'multipart/form-data' with the correct boundary.
         },
-        body: JSON.stringify(profileData)
+        body: formData
       });
 
       const data = await response.json();
       if (data.success) {
         setMessage(t('settings_message_profile_updated'));
-        onUserUpdate(data.user);
+        onUpdateUser(data.user);
+        setProfilePicFile(null); // Clear the file input after successful upload
       } else {
         setMessage(data.error);
       }
     } catch (error) {
       setMessage(t('settings_message_profile_update_failed'));
     }
-  }
+  };
 
   const handleChangePassword = async () => {
     setMessage('');
@@ -159,7 +149,7 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n, onLanguageChange, lan
         });
         const verifyData = await verifyResponse.json();
         if (verifyData.success) {
-          onUserUpdate(verifyData.user);
+          onUpdateUser(verifyData.user);
         }
       } else {
         setMessage(data.error);
@@ -230,7 +220,7 @@ function Settings({ user, onUserUpdate, onLogout, t, i18n, onLanguageChange, lan
 
       if (data.success) {
         setMessage(t('settings_message_general_updated'));
-        onUserUpdate(data.user);
+        onUpdateUser(data.user);
       } else {
         setMessage(data.error);
       }

@@ -56,6 +56,21 @@ app.use(cors({
 app.use('/uploads', cors()); // Apply CORS for static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Multer設定（ファイルアップロード用）
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    // ファイル名をサニタイズして、安全な文字のみを使用する
+    const sanitizedOriginalName = file.originalname.replace(/[^a-zA-Z0-9-._]/g, '_');
+    // ファイル名の重複を避けるため、タイムスタンプを先頭に追加
+    cb(null, Date.now() + '-' + sanitizedOriginalName);
+  }
+});
+
+const upload = multer({ storage: storage });
+
 // 環境変数から設定を取得
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-development';
 
@@ -340,17 +355,21 @@ app.get('/api/verify-token', authenticateToken, (req, res) => {
   );
 });
 
-// プロフィール更新API
-app.put('/api/profile', authenticateToken, (req, res) => {
+// プロフィール更新API (アイコンアップロード対応)
+app.put('/api/profile', authenticateToken, upload.single('icon'), (req, res) => {
   try {
     const { id } = req.user;
-    const { name, bio, iconUrl } = req.body;
+    const { name, bio } = req.body;
 
     // 更新するフィールドを動的に構築
     const fieldsToUpdate = {};
     if (name) fieldsToUpdate.name = name;
     if (bio) fieldsToUpdate.bio = bio;
-    if (iconUrl) fieldsToUpdate.iconUrl = iconUrl;
+
+    // ファイルがアップロードされた場合、iconUrlを更新
+    if (req.file) {
+      fieldsToUpdate.iconUrl = `/uploads/${req.file.filename}`;
+    }
 
     if (Object.keys(fieldsToUpdate).length === 0) {
       return res.status(400).json({
@@ -725,7 +744,7 @@ app.delete('/api/hobbies/:hobbyId', authenticateToken, (req, res) => {
 //
 // 初期ジャンルデータの挿入例 (要実行)
 // INSERT IGNORE INTO music_genres (name) VALUES
-// ('クラシック'), ('洋楽'), ('J-POP'), ('軍歌'), ('国歌'), ('ロック'), ('ポップ'), ('ジャズ'), ('ヒップホップ'), ('R&B'), ('エレクトロニック'), ('フォーク'), ('カントリー'), ('ブルース'), ('メタル'), ('レゲエ'), ('ソウル'), ('ワールドミュージック'), ('アニメソング'), ('ゲーム音楽');
+// ('クラシック'), ('洋楽'), ('J-POP'), ('軍歌'), ('国歌'), ('ロック'), ('ポップ'), ('ジャズ'), ('ヒップホップ'), ('R&B'), ('エレクトロニック'), ('フォーク'), ('カントリー'), ('ブルース'), ('メタル'), ('レゲエ'), ('ソウル'), ('ワールドミュージック'), ('アニメソング'), ('ゲーム音楽'), ('ボカロ');
 
 app.get('/api/played-games', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
@@ -822,7 +841,7 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
         SELECT id, preference_id, song_title, artist_name, youtube_url 
         FROM favorite_songs 
         WHERE preference_id IN (?)
-        ORDER BY created_at ASC
+        ORDER BY song_order ASC, created_at ASC
       `;
       db.query(query, [preferenceIds], (err, results) => {
         if (err) return reject(err);
@@ -1032,6 +1051,112 @@ app.put('/api/songs/:songId', authenticateToken, async (req, res) => {
         return res.status(404).json({ success: false, error: '曲が見つかりません。' });
     }
     res.status(500).json({ success: false, error: '曲の更新中にサーバーエラーが発生しました。' });
+  }
+});
+
+// 曲の順序を更新するAPI
+app.put('/api/songs/reorder', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+  const { songIds, preferenceId } = req.body;
+
+  if (!songIds || !Array.isArray(songIds) || !preferenceId) {
+    return res.status(400).json({ success: false, error: '無効なリクエストです。' });
+  }
+
+  db.getConnection((err, connection) => {
+    if (err) {
+      console.error('データベース接続エラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+
+    connection.beginTransaction(async (err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ success: false, error: 'トランザクションの開始に失敗しました。' });
+      }
+
+      try {
+        // ユーザーがこの設定を所有しているか確認
+        const [pref] = await new Promise((resolve, reject) => {
+          connection.query(
+            'SELECT id FROM user_music_preferences WHERE id = ? AND user_id = ?',
+            [preferenceId, userId],
+            (err, results) => {
+              if (err) return reject(err);
+              resolve(results);
+            }
+          );
+        });
+
+        if (!pref) {
+          throw { status: 403, message: 'これらの曲を並び替える権限がありません。' };
+        }
+
+        // songIdsをループして順序を更新
+        for (let i = 0; i < songIds.length; i++) {
+          const songId = songIds[i];
+          const order = i;
+          await new Promise((resolve, reject) => {
+            connection.query(
+              'UPDATE favorite_songs SET song_order = ? WHERE id = ? AND preference_id = ?',
+              [order, songId, preferenceId],
+              (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+              }
+            );
+          });
+        }
+
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              throw err;
+            });
+          }
+          connection.release();
+          res.json({ success: true, message: '曲の順序が更新されました。' });
+        });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          if (error.status) {
+            return res.status(error.status).json({ success: false, error: error.message });
+          }
+          console.error('トランザクションエラー:', error);
+          res.status(500).json({ success: false, error: '曲の順序の更新中にデータベースエラーが発生しました。' });
+        });
+      }
+    });
+  });
+});
+
+// ユーザーのお気に入りの曲をすべて取得
+app.get('/api/user-songs', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+
+  try {
+    const query = `
+      SELECT fs.id, fs.song_title, fs.artist_name, fs.youtube_url
+      FROM favorite_songs fs
+      JOIN user_music_preferences ump ON fs.preference_id = ump.id
+      WHERE ump.user_id = ?
+      ORDER BY fs.song_title
+    `;
+    
+    db.query(query, [userId], (err, songs) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'ユーザーの曲の取得中にデータベースエラーが発生しました。' });
+      }
+      res.json({ success: true, songs: songs });
+    });
+
+  } catch (err) {
+    console.error('サーバーエラー:', err);
+    res.status(500).json({ success: false, error: 'ユーザーの曲の取得中にサーバーエラーが発生しました。' });
   }
 });
 
@@ -2403,40 +2528,6 @@ app.post('/api/reset-password', async (req, res) => {
     console.error('サーバーエラー:', error);
     res.status(500).json({ success: false, error: 'サーバーエラーが発生しました。' });
   }
-});
-
-// ファイルアップロードAPI
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    // ファイル名が重複しないようにタイムスタンプと元の拡張子を付与
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
-  fileFilter: function (req, file, cb) {
-    const filetypes = /jpeg|jpg|png|gif|webp/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    if (mimetype && extname) {
-      return cb(null, true);
-    }
-    cb(new Error('Error: File upload only supports the following filetypes - ' + filetypes));
-  }
-});
-
-app.post('/api/upload', authenticateToken, upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, error: 'ファイルがアップロードされませんでした。' });
-  }
-  // Construct the full URL to the file
-  const filePath = `/uploads/${req.file.filename}`;
-  res.json({ success: true, message: 'ファイルがアップロードされました。', filePath: filePath });
 });
 
 // サーバーの起動
