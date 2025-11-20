@@ -13,11 +13,24 @@
   margin-bottom: 2rem;
   border-bottom: 1px solid #eee;
   padding-bottom: 1rem;
+  flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+  gap: 1rem; /* Add some space between items */
 }
 
 .portfolio-header h1 {
   font-size: 2.5rem;
   margin: 0;
+  margin-right: auto; /* Push other items to the right */
+}
+
+.share-button {
+  align-self: center; /* Vertically align with other items in flex container */
+}
+
+.portfolio-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 /* Button Styles */

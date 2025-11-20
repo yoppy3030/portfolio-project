@@ -5,6 +5,7 @@ import RGL, { WidthProvider } from 'react-grid-layout';
 import HobbiesDisplay from './HobbiesDisplay';
 
 import '../Portfolio.css';
+import '../ShareModal.css';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -270,7 +271,6 @@ function EditProjectModal({ project, on_close, on_submit, t }) {
       textColor, 
       font_size: fontSize,
       background_image: finalBackgroundImage,
-      size, 
       tags 
     });
   };
@@ -530,6 +530,51 @@ function EditTextModal({ project, on_close, on_submit, t }) {
   );
 }
 
+function ShareModal({ portfolioId, on_close, t }) {
+  const [copied, setCopied] = useState(false);
+  const shareUrl = `${window.location.origin}/portfolio/${portfolioId}`;
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+    });
+  };
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
+  return (
+    <div className="share-modal-backdrop" onClick={on_close}>
+      <div className="share-modal-content" onClick={(e) => e.stopPropagation()}>
+        <h2>{t('portfolio_share_modal_title')}</h2>
+        <div className="share-url-container">
+          <input
+            type="text"
+            value={shareUrl}
+            readOnly
+            className="share-url-input"
+          />
+          <button onClick={copyToClipboard} className={`copy-button ${copied ? 'copied' : ''}`}>
+            {copied ? t('portfolio_share_copied') : t('portfolio_share_copy')}
+          </button>
+        </div>
+        <div className="share-modal-actions">
+          <button onClick={on_close} className="share-modal-close-button">
+            {t('portfolio_close_button')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const sizeToDimensions = (size) => {
   switch (size) {
     case 'small':
@@ -651,7 +696,7 @@ const addPxIfNeeded = (value) => {
   return value;
 };
 
-export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio, user }) {
+export default function Portfolio({ onTemplateChange, portfolio, setPortfolio, fetchPortfolio, user }) {
   const { portfolioId } = useParams();
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -659,6 +704,7 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
   const [editingProject, setEditingProject] = useState(null);
   const [editingTextBlock, setEditingTextBlock] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const isOwner = user && portfolio && user.id === portfolio.user_id;
 
@@ -782,6 +828,25 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
   };
 
   const handleLayoutChange = useCallback(async (layout) => {
+    // Update frontend state immediately for better UX
+    if (portfolio && setPortfolio) {
+      const updatedProjects = portfolio.projects.map(p => {
+        const layoutItem = layout.find(l => l.i === p.id.toString());
+        if (layoutItem) {
+          return {
+            ...p,
+            layout_x: layoutItem.x,
+            layout_y: layoutItem.y,
+            layout_w: layoutItem.w,
+            layout_h: layoutItem.h,
+          };
+        }
+        return p;
+      });
+      setPortfolio({ ...portfolio, projects: updatedProjects });
+    }
+
+    // Save the new layout to the backend
     const token = localStorage.getItem('token');
     try {
       await fetch(`http://localhost:5000/api/portfolios/${portfolioId}/layout`, {
@@ -795,9 +860,10 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
     } catch (err) {
       console.error('Failed to save layout:', err);
       alert(t('portfolio_alert_layout_save_failed'));
+      // Re-fetch to revert to the last saved state in case of an error
       fetchPortfolio();
     }
-  }, [portfolioId, fetchPortfolio, t]);
+  }, [portfolio, setPortfolio, portfolioId, fetchPortfolio, t]);
 
   const handleDeletePortfolio = async () => {
     if (!window.confirm(t('portfolio_confirm_delete_portfolio'))) {
@@ -854,6 +920,7 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
                 onChange={() => setIsEditMode(!isEditMode)}
               />
             </div>
+            <button className="btn-secondary share-button" onClick={() => setShowShareModal(true)}>{t('portfolio_share_button')}</button>
             {isEditMode && (
               <div className="portfolio-header-actions">
                 <button className="btn-primary" onClick={() => setShowAddModal(true)}>{t('portfolio_add_new_project')}</button>
@@ -871,6 +938,7 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
       {showAddTextModal && <AddTextModal on_close={() => setShowAddTextModal(false)} on_submit={handleAddNewProject} t={t} />}
       {editingProject && <EditProjectModal project={editingProject} on_close={() => setEditingProject(null)} on_submit={handleUpdateProject} t={t} />}
       {editingTextBlock && <EditTextModal project={editingTextBlock} on_close={() => setEditingTextBlock(null)} on_submit={(updated) => { handleUpdateProject(updated); setEditingTextBlock(null); }} t={t} />}
+      {showShareModal && <ShareModal portfolioId={portfolio.id} on_close={() => setShowShareModal(false)} t={t} />}
 
       {portfolio.projects && portfolio.projects.length > 0 ? (
         <GridLayout
@@ -878,7 +946,8 @@ export default function Portfolio({ onTemplateChange, portfolio, fetchPortfolio,
           layout={generateLayout()}
           cols={12}
           rowHeight={100}
-          onLayoutChange={handleLayoutChange}
+          onResizeStop={handleLayoutChange}
+          onDragStop={handleLayoutChange}
           isDraggable={isOwner && isEditMode}
           isResizable={isOwner && isEditMode}
           compactType={null}

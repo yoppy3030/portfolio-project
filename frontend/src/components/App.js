@@ -13,6 +13,7 @@ import Footer from "./Footer";
 import PortfolioBuilder from "./PortfolioBuilder";
 import Portfolio from "./Portfolio";
 import ProjectPage from "./ProjectPage";
+import Tutorial from "./Tutorial";
 import "../App.css";
 
 // Main logic moved to a child component of <Router>
@@ -180,8 +181,9 @@ function AppContent() {
         <Route path="/Welcome" element={<Welcome theme={user?.theme} />} />
         <Route path="/settings" element={<Settings user={user} onUpdateUser={handleUserUpdate} onLogout={handleLogout} onLanguageChange={handleLanguageChange} language={language} />} />
         <Route path="/faq" element={<FAQ />} />
+        <Route path="/tutorial" element={<Tutorial />} />
         <Route path="/portfolio-builder" element={<PortfolioBuilder theme={user?.theme} />} />
-        <Route path="/portfolio/:portfolioId" element={<Portfolio onTemplateChange={handleTemplateChange} portfolio={portfolio} fetchPortfolio={fetchPortfolio} user={user} />} />
+        <Route path="/portfolio/:portfolioId" element={<Portfolio onTemplateChange={handleTemplateChange} portfolio={portfolio} setPortfolio={setPortfolio} fetchPortfolio={fetchPortfolio} user={user} />} />
         <Route path="/portfolio/:portfolioId/project/:projectId" element={<ProjectPage user={user} />} />
       </Routes>
       <Footer theme={user?.theme} activeTemplate={activeTemplate} />
