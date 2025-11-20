@@ -278,6 +278,12 @@ input:checked + .slider:before {
   border-radius: 4px;
 }
 
+body.dark-theme .hobby-item {
+  background-color: #37474F;
+  border-color: #546E7A;
+  color: #CFD8DC;
+}
+
 .hobby-actions {
   display: flex;
   gap: 10px;

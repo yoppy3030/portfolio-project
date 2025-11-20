@@ -368,3 +368,13 @@
   color: #FFFFFF;
 }
 
+.header.dark-theme .header-nav .header-nav-item {
+  background-color: #444;
+  border-color: #666;
+  color: #f1f1f1;
+}
+
+.header.dark-theme .header-nav .header-nav-item:hover {
+  background-color: #555;
+}
+

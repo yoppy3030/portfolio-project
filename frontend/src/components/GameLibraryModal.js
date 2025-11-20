@@ -784,21 +784,22 @@ function GameLibraryModal({ onClose, isOwner }) {
 
   // 日本語キーワードを英語に変換（部分マッチ）
   const translateJapaneseKeyword = (keyword) => {
-    const lowerKeyword = keyword.toLowerCase();
-    
-    // 完全一致
+    // 完全一致を優先
     if (japaneseToEnglishMapping[keyword]) {
       return japaneseToEnglishMapping[keyword];
     }
-    
-    // 部分一致（キーワードに日本語ゲーム名が含まれている場合）
-    for (const [jp, en] of Object.entries(japaneseToEnglishMapping)) {
-      if (keyword.includes(jp) || jp.includes(keyword)) {
-        return en;
+
+    const lowerKeyword = keyword.toLowerCase();
+
+    // 長い略語から先にチェックするようにソート
+    const sortedKeys = Object.keys(japaneseToEnglishMapping).sort((a, b) => b.length - a.length);
+
+    for (const jp of sortedKeys) {
+      if (lowerKeyword.includes(jp.toLowerCase())) {
+        return japaneseToEnglishMapping[jp];
       }
     }
-    
-    // 翻訳できない場合は元のキーワードを返す
+
     return keyword;
   };
 
@@ -1288,7 +1289,6 @@ function GameLibraryModal({ onClose, isOwner }) {
                   <option value="rating">評価順（高い順）</option>
                   <option value="playtime">プレイ時間順（多い順）</option>
                   <option value="title">タイトル順（あいうえお順）</option>
-                  <option value="custom">自由に並び替え</option>
                 </select>
 
                 <label htmlFor="library-platform-filter" style={{ fontSize: '0.9rem', color: '#666' }}>機種:</label>

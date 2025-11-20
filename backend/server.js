@@ -8,7 +8,6 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const helmet = require('helmet'); // セキュリティヘッダー用
 const rateLimit = require('express-rate-limit'); // レート制限用
-const bodyParser = require('body-parser'); // body-parserをインポート
 const path = require('path');
 const multer = require('multer');
 
@@ -43,8 +42,8 @@ const loginLimiter = rateLimit({
   }
 });
 
-app.use(bodyParser.json({ limit: '10mb' })); // express.json()の代わりにbodyParser.json()を使用
-app.use(bodyParser.urlencoded({ extended: true })); // urlencodedを追加
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(cors({
   origin: [process.env.FRONTEND_URL, 'http://localhost:3000', 'http://localhost:5001'].filter(Boolean),
@@ -613,7 +612,7 @@ app.put('/api/general-settings', authenticateToken, (req, res) => {
           res.json({
             success: true,
             message: '一般設定が更新されました',
-            user: results[0]
+            user: { ...results[0] }
           });
         });
       }
@@ -625,6 +624,18 @@ app.put('/api/general-settings', authenticateToken, (req, res) => {
       error: 'サーバーエラーが発生しました'
     });
   }
+});
+
+// File upload API
+app.post('/api/upload', authenticateToken, upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, error: 'ファイルがアップロードされませんでした。' });
+  }
+
+  // Construct the file path that the client can use
+  const filePath = `/uploads/${req.file.filename}`;
+
+  res.json({ success: true, filePath: filePath });
 });
 
 // --- 趣味(Hobbies)関連API ---

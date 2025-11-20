@@ -178,7 +178,7 @@ function AppContent() {
         <Route path="/login" element={<LoginForm onLogin={handleLogin} theme={user?.theme} />} />
         <Route path="/password-reset" element={<PasswordReset theme={user?.theme} />} />
         <Route path="/Welcome" element={<Welcome theme={user?.theme} />} />
-        <Route path="/settings" element={<Settings user={user} onUserUpdate={handleUserUpdate} onLogout={handleLogout} onLanguageChange={handleLanguageChange} language={language} />} />
+        <Route path="/settings" element={<Settings user={user} onUpdateUser={handleUserUpdate} onLogout={handleLogout} onLanguageChange={handleLanguageChange} language={language} />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/portfolio-builder" element={<PortfolioBuilder theme={user?.theme} />} />
         <Route path="/portfolio/:portfolioId" element={<Portfolio onTemplateChange={handleTemplateChange} portfolio={portfolio} fetchPortfolio={fetchPortfolio} user={user} />} />
