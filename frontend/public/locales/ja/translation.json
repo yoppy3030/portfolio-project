@@ -117,6 +117,8 @@
   "music_songs_confirm_delete": "この曲を削除しますか？",
   "music_songs_alert_delete_failed": "曲の削除に失敗しました。",
   "music_songs_alert_update_failed": "曲の更新に失敗しました。",
+  "music_songs_alert_reorder_failed": "曲の並び替えの保存に失敗しました。",
+  "music_songs_alert_reorder_error": "曲の並び替え中にエラーが発生しました。",
   "settings_delete_account_title": "アカウントの削除",
   "settings_delete_account_warning": "アカウントを削除すると、すべてのデータが永久に失われます。この操作は元に戻せません。",
   "settings_delete_password_label": "確認のためパスワードを入力してください",

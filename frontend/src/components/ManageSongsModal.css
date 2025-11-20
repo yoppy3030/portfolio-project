@@ -70,6 +70,8 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 8px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .song-list.is-empty {
@@ -184,18 +186,34 @@
 /* New styles for song item display and actions */
 .song-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 8px;
   padding: 10px 12px;
   border-radius: 6px;
   transition: background-color 0.2s;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.song-item > * {
+  flex-shrink: 0;
+}
+
+.song-item .drag-handle {
+  flex-shrink: 0;
+}
+
+.song-item.editing {
+  align-items: flex-start;
 }
 
 .song-display {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-grow: 1;
+  flex: 1;
+  min-width: 0;
 }
 
 .song-link-icon {
@@ -203,6 +221,7 @@
   font-size: 1.2rem;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 .song-link-icon:hover {
   color: #dc2626;
@@ -212,6 +231,29 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.song-item.editing .song-actions {
+  align-items: flex-start;
+}
+
+.edit-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.edit-actions button {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
 }
 
 .btn-icon {
@@ -239,17 +281,44 @@
 .song-edit-form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  flex-grow: 1;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
   margin-right: 10px;
+  padding: 12px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.edit-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edit-form-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .song-edit-form input {
   width: 100%;
-  padding: 6px 8px;
+  padding: 8px 12px;
   border: 1px solid #d1d5db;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: white;
+}
+
+.song-edit-form input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .btn-primary-small {
@@ -262,6 +331,8 @@
   cursor: pointer;
   transition: background-color 0.2s;
   font-size: 0.875rem; /* Smaller font size */
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .btn-primary-small:hover {
@@ -283,9 +354,62 @@
   cursor: pointer;
   transition: background-color 0.2s;
   font-size: 0.875rem; /* Smaller font size */
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .btn-secondary-small:hover {
   background-color: #d1d5db;
+}
+
+/* Drag and Drop Styles */
+.song-item .drag-handle {
+  cursor: grab;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+  flex-shrink: 0;
+  min-width: 28px;
+  width: 28px;
+  height: 28px;
+  margin-right: 0;
+  z-index: 10;
+  position: relative;
+  order: -1; /* Ensure drag handle is always first */
+}
+
+.song-item .drag-handle .material-icons {
+  font-size: 20px;
+  line-height: 1;
+  display: block;
+  color: inherit;
+  user-select: none;
+  pointer-events: none;
+}
+
+.song-item .drag-handle:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.song-item .drag-handle:active {
+  cursor: grabbing;
+  background-color: #e5e7eb;
+}
+
+.song-item.is-dragging {
+  background-color: #eff6ff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  border: 2px solid #3b82f6;
+  opacity: 0.9;
+}
+
+.song-item.is-dragging .drag-handle {
+  color: #3b82f6;
 }
 

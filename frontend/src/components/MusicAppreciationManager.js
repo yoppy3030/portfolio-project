@@ -45,7 +45,7 @@ function MusicAppreciationManager() {
     if (!token) {
       setError(t('settings_message_not_logged_in'));
       setLoading(false);
-      return;
+      return [];
     }
     try {
       const response = await fetch('http://localhost:5000/api/user-music-preferences', {
@@ -56,11 +56,14 @@ function MusicAppreciationManager() {
       const data = await response.json();
       if (data.success) {
         setPreferences(data.preferences);
+        return data.preferences;
       } else {
         setError(data.error || t('music_alert_fetch_preferences_failed'));
+        return [];
       }
     } catch (err) {
       setError(t('music_alert_server_error'));
+      return [];
     } finally {
       setLoading(false);
     }
@@ -220,9 +223,21 @@ function MusicAppreciationManager() {
         <ManageSongsModal 
           preference={managingSongsOf}
           onClose={() => setManagingSongsOf(null)}
-          onUpdate={() => {
-            setManagingSongsOf(null); // モーダルを閉じる
-            fetchPreferences();     // 最新の情報を再取得
+          onUpdate={async (closeModal = true) => {
+            // Always fetch latest preferences
+            const updatedPrefs = await fetchPreferences();
+            
+            if (closeModal) {
+              setManagingSongsOf(null); // モーダルを閉じる
+            } else {
+              // Keep modal open and update the preference data
+              if (updatedPrefs && updatedPrefs.length > 0 && managingSongsOf) {
+                const updatedPref = updatedPrefs.find(p => p.id === managingSongsOf.id);
+                if (updatedPref) {
+                  setManagingSongsOf(updatedPref);
+                }
+              }
+            }
           }}
         />
       )}

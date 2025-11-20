@@ -847,6 +847,53 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
 
     // 2. 関連するお気に入りの曲をすべて取得
     const preferenceIds = preferences.map(p => p.id);
+    
+    // First, initialize song_order for songs that don't have it set
+    for (const prefId of preferenceIds) {
+      const songsToInit = await new Promise((resolve, reject) => {
+        db.query(
+          'SELECT id FROM favorite_songs WHERE preference_id = ? AND song_order IS NULL ORDER BY created_at ASC',
+          [prefId],
+          (err, results) => {
+            if (err) return reject(err);
+            resolve(results);
+          }
+        );
+      });
+      
+      if (songsToInit.length > 0) {
+        // Get the current max order for this preference
+        const maxOrderResult = await new Promise((resolve, reject) => {
+          db.query(
+            'SELECT COALESCE(MAX(song_order), -1) AS max_order FROM favorite_songs WHERE preference_id = ?',
+            [prefId],
+            (err, results) => {
+              if (err) return reject(err);
+              resolve(results);
+            }
+          );
+        });
+        
+        let nextOrder = (maxOrderResult[0]?.max_order ?? -1) + 1;
+        
+        // Update each song with NULL order
+        for (const song of songsToInit) {
+          await new Promise((resolve, reject) => {
+            db.query(
+              'UPDATE favorite_songs SET song_order = ? WHERE id = ?',
+              [nextOrder, song.id],
+              (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+              }
+            );
+          });
+          nextOrder++;
+        }
+      }
+    }
+    
+    // Now fetch all songs with proper ordering
     const songs = await new Promise((resolve, reject) => {
       const query = `
         SELECT id, preference_id, song_title, artist_name, youtube_url 
@@ -943,12 +990,27 @@ app.post('/api/music-preferences/:preferenceId/songs', authenticateToken, async 
       return res.status(403).json({ success: false, error: 'この設定に曲を追加する権限がありません。' });
     }
 
+    // Get the maximum song_order for this preference to set the new song's order
+    const maxOrderResult = await new Promise((resolve, reject) => {
+      db.query(
+        'SELECT COALESCE(MAX(song_order), -1) AS max_order FROM favorite_songs WHERE preference_id = ?',
+        [preferenceId],
+        (err, results) => {
+          if (err) return reject(err);
+          resolve(results);
+        }
+      );
+    });
+
+    const nextOrder = (maxOrderResult[0]?.max_order ?? -1) + 1;
+
     // Insert the new song
     const newSong = {
       preference_id: preferenceId,
       song_title,
       artist_name: artist_name || null,
       youtube_url: youtube_url || null,
+      song_order: nextOrder,
     };
 
     const result = await new Promise((resolve, reject) => {
@@ -1010,6 +1072,106 @@ app.delete('/api/songs/:songId', authenticateToken, async (req, res) => {
   }
 });
 
+// 曲の順序を更新するAPI（:songIdより前に定義する必要がある）
+app.put('/api/songs/reorder', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+  const { songIds, preferenceId } = req.body;
+
+  console.log('Reorder request received:', { songIds, preferenceId, userId, body: req.body });
+
+  // Validate request
+  if (!songIds || !Array.isArray(songIds)) {
+    console.error('Invalid songIds:', songIds, 'Type:', typeof songIds);
+    return res.status(400).json({ success: false, error: 'songIdsは配列である必要があります。' });
+  }
+
+  if (!preferenceId) {
+    console.error('Missing preferenceId. Received:', req.body);
+    return res.status(400).json({ success: false, error: 'preferenceIdが必要です。' });
+  }
+
+  if (songIds.length === 0) {
+    return res.status(400).json({ success: false, error: 'songIdsが空です。' });
+  }
+
+  db.getConnection((err, connection) => {
+    if (err) {
+      console.error('データベース接続エラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+
+    connection.beginTransaction(async (err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ success: false, error: 'トランザクションの開始に失敗しました。' });
+      }
+
+      try {
+        // ユーザーがこの設定を所有しているか確認
+        const [pref] = await new Promise((resolve, reject) => {
+          connection.query(
+            'SELECT id FROM user_music_preferences WHERE id = ? AND user_id = ?',
+            [preferenceId, userId],
+            (err, results) => {
+              if (err) return reject(err);
+              resolve(results);
+            }
+          );
+        });
+
+        if (!pref) {
+          throw { status: 403, message: 'これらの曲を並び替える権限がありません。' };
+        }
+
+        // songIdsをループして順序を更新
+        // songIdsが文字列の場合は数値に変換
+        for (let i = 0; i < songIds.length; i++) {
+          const songId = parseInt(songIds[i], 10);
+          const order = i;
+          
+          if (isNaN(songId)) {
+            throw { status: 400, message: `無効なsongId: ${songIds[i]}` };
+          }
+          
+          await new Promise((resolve, reject) => {
+            connection.query(
+              'UPDATE favorite_songs SET song_order = ? WHERE id = ? AND preference_id = ?',
+              [order, songId, preferenceId],
+              (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+              }
+            );
+          });
+        }
+
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              console.error('コミットエラー:', err);
+              res.status(500).json({ success: false, error: `曲の順序の更新中にデータベースエラーが発生しました: ${err.message}` });
+            });
+          }
+          connection.release();
+          console.log('Reorder successful:', { songIds, preferenceId });
+          res.json({ success: true, message: '曲の順序が更新されました。' });
+        });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          if (error.status) {
+            return res.status(error.status).json({ success: false, error: error.message });
+          }
+          console.error('トランザクションエラー:', error);
+          res.status(500).json({ success: false, error: '曲の順序の更新中にデータベースエラーが発生しました。' });
+        });
+      }
+    });
+  });
+});
+
 // Update a favorite song
 app.put('/api/songs/:songId', authenticateToken, async (req, res) => {
   const { songId } = req.params;
@@ -1063,85 +1225,6 @@ app.put('/api/songs/:songId', authenticateToken, async (req, res) => {
     }
     res.status(500).json({ success: false, error: '曲の更新中にサーバーエラーが発生しました。' });
   }
-});
-
-// 曲の順序を更新するAPI
-app.put('/api/songs/reorder', authenticateToken, async (req, res) => {
-  const { id: userId } = req.user;
-  const { songIds, preferenceId } = req.body;
-
-  if (!songIds || !Array.isArray(songIds) || !preferenceId) {
-    return res.status(400).json({ success: false, error: '無効なリクエストです。' });
-  }
-
-  db.getConnection((err, connection) => {
-    if (err) {
-      console.error('データベース接続エラー:', err);
-      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
-    }
-
-    connection.beginTransaction(async (err) => {
-      if (err) {
-        connection.release();
-        return res.status(500).json({ success: false, error: 'トランザクションの開始に失敗しました。' });
-      }
-
-      try {
-        // ユーザーがこの設定を所有しているか確認
-        const [pref] = await new Promise((resolve, reject) => {
-          connection.query(
-            'SELECT id FROM user_music_preferences WHERE id = ? AND user_id = ?',
-            [preferenceId, userId],
-            (err, results) => {
-              if (err) return reject(err);
-              resolve(results);
-            }
-          );
-        });
-
-        if (!pref) {
-          throw { status: 403, message: 'これらの曲を並び替える権限がありません。' };
-        }
-
-        // songIdsをループして順序を更新
-        for (let i = 0; i < songIds.length; i++) {
-          const songId = songIds[i];
-          const order = i;
-          await new Promise((resolve, reject) => {
-            connection.query(
-              'UPDATE favorite_songs SET song_order = ? WHERE id = ? AND preference_id = ?',
-              [order, songId, preferenceId],
-              (err, result) => {
-                if (err) return reject(err);
-                resolve(result);
-              }
-            );
-          });
-        }
-
-        connection.commit((err) => {
-          if (err) {
-            return connection.rollback(() => {
-              connection.release();
-              throw err;
-            });
-          }
-          connection.release();
-          res.json({ success: true, message: '曲の順序が更新されました。' });
-        });
-
-      } catch (error) {
-        connection.rollback(() => {
-          connection.release();
-          if (error.status) {
-            return res.status(error.status).json({ success: false, error: error.message });
-          }
-          console.error('トランザクションエラー:', error);
-          res.status(500).json({ success: false, error: '曲の順序の更新中にデータベースエラーが発生しました。' });
-        });
-      }
-    });
-  });
 });
 
 // ユーザーのお気に入りの曲をすべて取得
