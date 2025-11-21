@@ -142,7 +142,7 @@
   "hobbies_alert_delete_failed": "Failed to delete hobby.",
   "hobbies_title": "Manage Hobbies",
   "hobbies_label_add_new": "Add New Hobby",
-  "hobbies_placeholder_example": "e.g., Watching Movies",
+  "hobbies_placeholder_example": "e.g., games, reading, music, movies",
   "hobbies_adding": "Adding...",
   "hobbies_add_button": "Add",
   "hobbies_current_hobbies": "Current Hobbies",
