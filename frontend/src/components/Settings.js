@@ -312,6 +312,34 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
                 <select id="language" value={language} onChange={(e) => onLanguageChange(e.target.value)}>
                   <option value="ja">日本語</option>
                   <option value="en">English</option>
+                  <option value="zh-CN">简体中文</option>
+                  <option value="zh-TW">繁體中文</option>
+                  <option value="ko">한국어</option>
+                  <option value="es">Español</option>
+                  <option value="fr">Français</option>
+                  <option value="de">Deutsch</option>
+                  <option value="it">Italiano</option>
+                  <option value="pt">Português</option>
+                  <option value="ru">Русский</option>
+                  <option value="ar">العربية</option>
+                  <option value="th">ไทย</option>
+                  <option value="vi">Tiếng Việt</option>
+                  <option value="id">Bahasa Indonesia</option>
+                  <option value="hi">हिन्दी</option>
+                  <option value="tr">Türkçe</option>
+                  <option value="nl">Nederlands</option>
+                  <option value="sv">Svenska</option>
+                  <option value="no">Norsk</option>
+                  <option value="da">Dansk</option>
+                  <option value="fi">Suomi</option>
+                  <option value="pl">Polski</option>
+                  <option value="cs">Čeština</option>
+                  <option value="hu">Magyar</option>
+                  <option value="ro">Română</option>
+                  <option value="el">Ελληνικά</option>
+                  <option value="he">עברית</option>
+                  <option value="ms">Bahasa Melayu</option>
+                  <option value="tl">Tagalog</option>
                 </select>
               </div>
               <div className="form-group">
