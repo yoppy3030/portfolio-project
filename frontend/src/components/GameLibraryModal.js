@@ -1159,7 +1159,7 @@ function GameLibraryModal({ onClose, isOwner }) {
   console.log('[DEBUG] GameLibraryModal Render. Current sortOrder:', sortOrder);
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content game-library-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>ゲームライブラリを編集</h2>
           <button onClick={onClose} className="close-button"><i className="material-icons">close</i></button>

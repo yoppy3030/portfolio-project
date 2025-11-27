@@ -1453,6 +1453,315 @@ app.delete('/api/played-games/:playedGameId', authenticateToken, (req, res) => {
   });
 });
 
+// --- 読書(Reading)関連API ---
+
+// 読書関連テーブルのSQLスキーマ (要実行)
+// CREATE TABLE reading_authors (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   user_id INT NOT NULL,
+//   name VARCHAR(255) NOT NULL,
+//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+//   UNIQUE KEY user_author (user_id, name)
+// );
+//
+// CREATE TABLE reading_books (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   user_id INT NOT NULL,
+//   author_id INT NOT NULL,
+//   type VARCHAR(50) NOT NULL,
+//   genre VARCHAR(100),
+//   title VARCHAR(255) NOT NULL,
+//   image_url VARCHAR(2083),
+//   comment TEXT,
+//   rating INT,
+//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+//   FOREIGN KEY (author_id) REFERENCES reading_authors(id) ON DELETE CASCADE
+// );
+
+// ユーザーの登録作家リストを取得
+app.get('/api/reading/authors', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+
+  db.query('SELECT id, name FROM reading_authors WHERE user_id = ? ORDER BY name', [userId], (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '作家リストの取得中にデータベースエラーが発生しました。' });
+    }
+    res.json({ success: true, authors: results });
+  });
+});
+
+// 新しい作家を追加
+app.post('/api/reading/authors', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { name } = req.body;
+
+  if (!name || name.trim() === '') {
+    return res.status(400).json({ success: false, error: '作家名は必須です。' });
+  }
+
+  db.query('INSERT INTO reading_authors (user_id, name) VALUES (?, ?)', [userId, name.trim()], (err, result) => {
+    if (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ success: false, error: 'その作家は既に追加されています。' });
+      }
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '作家の追加中にデータベースエラーが発生しました。' });
+    }
+    res.status(201).json({ success: true, message: '作家が追加されました。', author: { id: result.insertId, name: name.trim() } });
+  });
+});
+
+// 作家を削除
+app.delete('/api/reading/authors/:authorId', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { authorId } = req.params;
+
+  // Note: Deleting an author will cascade and delete all their books due to FOREIGN KEY constraints.
+  db.query('DELETE FROM reading_authors WHERE id = ? AND user_id = ?', [authorId, userId], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '作家の削除中にデータベースエラーが発生しました。' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: '作家が見つからないか、削除する権限がありません。' });
+    }
+    res.json({ success: true, message: '作家が削除されました。' });
+  });
+});
+
+// ユーザーの登録書籍リストを取得
+app.get('/api/reading/books', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { author_id } = req.query;
+
+  let query = `
+    SELECT b.*, a.name as author_name 
+    FROM reading_books b
+    JOIN reading_authors a ON b.author_id = a.id
+    WHERE b.user_id = ?
+  `;
+  const params = [userId];
+
+  if (author_id) {
+    query += ' AND b.author_id = ?';
+    params.push(author_id);
+  }
+
+  query += ' ORDER BY b.display_order ASC, b.created_at DESC';
+
+  db.query(query, params, (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '書籍リストの取得中にデータベースエラーが発生しました。' });
+    }
+    res.json({ success: true, books: results });
+  });
+});
+
+// 新しい本を追加
+app.post('/api/reading/books', authenticateToken, upload.single('image'), (req, res) => {
+  const { id: userId } = req.user;
+  const { author_id, type, genre, title, comment, rating } = req.body;
+
+  if (!author_id || !type || !title) {
+    return res.status(400).json({ success: false, error: '作家、種類、タイトルは必須です。' });
+  }
+
+  db.getConnection((err, connection) => {
+    if (err) {
+      console.error('データベース接続エラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+
+    connection.beginTransaction(async (err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ success: false, error: 'トランザクションの開始に失敗しました。' });
+      }
+
+      try {
+        // Get the maximum display_order for this user/author to set the new book's order
+        const maxOrderResult = await new Promise((resolve, reject) => {
+          connection.query(
+            'SELECT COALESCE(MAX(display_order), -1) AS max_order FROM reading_books WHERE user_id = ? AND author_id = ?',
+            [userId, author_id],
+            (err, results) => {
+              if (err) return reject(err);
+              resolve(results);
+            }
+          );
+        });
+
+        const nextOrder = (maxOrderResult[0]?.max_order ?? -1) + 1;
+
+        const newBook = {
+          user_id: userId,
+          author_id,
+          type,
+          genre,
+          title,
+          comment,
+          rating,
+          image_url: req.file ? `/uploads/${req.file.filename}` : null,
+          display_order: nextOrder
+        };
+
+        const result = await new Promise((resolve, reject) => {
+          connection.query('INSERT INTO reading_books SET ?', newBook, (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
+          });
+        });
+
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              console.error('コミットエラー:', err);
+              res.status(500).json({ success: false, error: `書籍の追加中にデータベースエラーが発生しました: ${err.message}` });
+            });
+          }
+          connection.release();
+          res.status(201).json({ success: true, message: '本が追加されました。', book: { id: result.insertId, ...newBook } });
+        });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          console.error('トランザクションエラー:', error);
+          res.status(500).json({ success: false, error: '書籍の追加中にデータベースエラーが発生しました。' });
+        });
+      }
+    });
+  });
+});
+
+// 書籍の順序を更新
+app.put('/api/reading/books/reorder', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+  console.log('Received reorder request body:', req.body);
+  const { books: orderedBooksWithOrder } = req.body; // orderedBooksWithOrderは { id, display_order } オブジェクトの配列
+  console.log('orderedBooksWithOrder after destructuring:', orderedBooksWithOrder);
+
+  if (!orderedBooksWithOrder || !Array.isArray(orderedBooksWithOrder) || orderedBooksWithOrder.length === 0) {
+    return res.status(400).json({ success: false, error: '並び替える本のIDと順序のリストが必要です。' });
+  }
+
+  db.getConnection((err, connection) => {
+    if (err) {
+      console.error('データベース接続エラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+
+    connection.beginTransaction(async (err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ success: false, error: 'トランザクションの開始に失敗しました。' });
+      }
+
+      try {
+        for (let i = 0; i < orderedBooksWithOrder.length; i++) {
+          const { id: bookId, display_order: newDisplayOrder } = orderedBooksWithOrder[i];
+
+          if (bookId === undefined || newDisplayOrder === undefined) {
+            throw { status: 400, message: `無効な書籍データが提供されました: ${JSON.stringify(orderedBooksWithOrder[i])}` };
+          }
+
+          await new Promise((resolve, reject) => {
+            connection.query(
+              'UPDATE reading_books SET display_order = ? WHERE id = ? AND user_id = ?',
+              [newDisplayOrder, bookId, userId],
+              (err, result) => {
+                if (err) return reject(err);
+                if (result.affectedRows === 0) {
+                  // ユーザーが所有していない本を更新しようとした場合、または本IDが存在しない場合
+                  return reject({ status: 403, message: `本ID ${bookId} の更新権限がありません、または本が見つかりません。` });
+                }
+                resolve(result);
+              }
+            );
+          });
+        }
+
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              console.error('コミットエラー:', err);
+              res.status(500).json({ success: false, error: `書籍の順序の更新中にデータベースエラーが発生しました: ${err.message}` });
+            });
+          }
+          connection.release();
+          res.json({ success: true, message: '書籍の順序が更新されました。' });
+        });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          if (error.status) {
+            return res.status(error.status).json({ success: false, error: error.message });
+          }
+          console.error('トランザクションエラー:', error);
+          res.status(500).json({ success: false, error: '書籍の順序の更新中にデータベースエラーが発生しました。' });
+        });
+      }
+    });
+  });
+});
+
+// 本の情報を更新
+app.put('/api/reading/books/:bookId', authenticateToken, upload.single('image'), (req, res) => {
+  const { id: userId } = req.user;
+  const { bookId } = req.params;
+  const { author_id, type, genre, title, comment, rating } = req.body;
+
+  const fieldsToUpdate = {};
+  if (author_id) fieldsToUpdate.author_id = author_id;
+  if (type) fieldsToUpdate.type = type;
+  if (genre) fieldsToUpdate.genre = genre;
+  if (title) fieldsToUpdate.title = title;
+  if (comment) fieldsToUpdate.comment = comment;
+  if (rating) fieldsToUpdate.rating = rating;
+  if (req.file) fieldsToUpdate.image_url = `/uploads/${req.file.filename}`;
+
+  if (Object.keys(fieldsToUpdate).length === 0) {
+    return res.status(400).json({ success: false, error: '更新するフィールドがありません。' });
+  }
+
+  db.query('UPDATE reading_books SET ? WHERE id = ? AND user_id = ?', [fieldsToUpdate, bookId, userId], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '書籍の更新中にデータベースエラーが発生しました。' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: '書籍が見つからないか、更新する権限がありません。' });
+    }
+    res.json({ success: true, message: '本の内容が更新されました。' });
+  });
+});
+
+// 本を削除
+app.delete('/api/reading/books/:bookId', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { bookId } = req.params;
+
+  db.query('DELETE FROM reading_books WHERE id = ? AND user_id = ?', [bookId, userId], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '書籍の削除中にデータベースエラーが発生しました。' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: '書籍が見つからないか、削除する権限がありません。' });
+    }
+    res.json({ success: true, message: '本が削除されました。' });
+  });
+});
+
+
+
 
 
 // 新規ポートフォリオ作成API

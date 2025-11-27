@@ -47,7 +47,7 @@ export default function LoginForm(props) {
       if (data.success) {
         // 親コンポーネントにログイン成功を通知（トークンも含む）
         if (props.onLogin) {
-          props.onLogin(data.user, data.token);
+          props.onLogin(data.user, data.token, form.autoLogin);
         }
         
         // フォームをリセット

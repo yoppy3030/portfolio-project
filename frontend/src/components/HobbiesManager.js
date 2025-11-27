@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import MusicAppreciationManager from './MusicAppreciationManager';
 import GameLibraryModal from './GameLibraryModal'; // GameLibraryModalをインポート
+import ReadingHobbyModal from './ReadingHobbyModal'; // ReadingHobbyModalをインポート
 import './HobbiesDisplay.css';
 
 function HobbiesManager({ isOwner }) {
@@ -10,7 +11,8 @@ function HobbiesManager({ isOwner }) {
   const [newHobby, setNewHobby] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showGameLibrary, setShowGameLibrary] = useState(false); // モーダル表示用のstate
+  const [showGameLibrary, setShowGameLibrary] = useState(false); // ゲーム用モーダル表示用のstate
+  const [showReadingModal, setShowReadingModal] = useState(false); // 読書用モーダル表示用のstate
 
   const fetchHobbies = useCallback(async () => {
     setLoading(true);
@@ -126,6 +128,11 @@ function HobbiesManager({ isOwner }) {
                       {t('hobbies_edit_play_records')}
                     </button>
                   )}
+                  {hobby.name === '読書' && (
+                    <button onClick={() => setShowReadingModal(true)} className="btn-secondary-outline">
+                      本を管理
+                    </button>
+                  )}
                   <button onClick={() => handleDeleteHobby(hobby.id)} className="btn-danger-outline">
                     {t('hobbies_delete_button')}
                   </button>
@@ -151,6 +158,14 @@ function HobbiesManager({ isOwner }) {
         <GameLibraryModal 
           isOwner={true}
           onClose={() => setShowGameLibrary(false)} 
+        />
+      )}
+
+      {/* 読書管理モーダルの表示 */}
+      {showReadingModal && (
+        <ReadingHobbyModal
+          isOwner={isOwner}
+          onClose={() => setShowReadingModal(false)}
         />
       )}
     </div>

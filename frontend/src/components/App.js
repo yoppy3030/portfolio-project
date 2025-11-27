@@ -95,7 +95,7 @@ function AppContent() {
 
   // Restore login state from JWT token on page load
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (token) {
       fetch('http://localhost:5000/api/verify-token', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -110,11 +110,13 @@ function AppContent() {
           setLanguage(userLang);
         } else {
           localStorage.removeItem('token');
+          sessionStorage.removeItem('token');
         }
       })
       .catch(error => {
         console.error('Token verification error:', error);
         localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
       })
       .finally(() => {
         setIsLoading(false);
@@ -139,8 +141,12 @@ function AppContent() {
     }
   }, [user]);
 
-  const handleLogin = (userData, token) => {
-    localStorage.setItem('token', token);
+  const handleLogin = (userData, token, autoLogin) => {
+    if (autoLogin) {
+      localStorage.setItem('token', token);
+    } else {
+      sessionStorage.setItem('token', token);
+    }
     setUser(userData);
     navigate('/');
   };
@@ -148,6 +154,7 @@ function AppContent() {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     navigate('/');
   };
 
