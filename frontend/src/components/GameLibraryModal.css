@@ -12,19 +12,20 @@
   z-index: 1050;
 }
 
-.game-library-modal-content {
+.modal-backdrop .game-library-modal-content {
   background: white;
   padding: 20px;
   border-radius: 8px;
-  width: 98%; /* さらに幅を広げる */
-  max-width: 1400px; /* 最大幅をさらに大きくする */
-  max-height: 98vh; /* 高さをさらに広げる */
+  width: 90%;
+  max-width: 600px; /* 大幅に縮小 */
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow-y: auto; /* 追加 */
+  position: relative; /* Add this line */
 }
 
-.modal-header {
+.game-library-modal-content .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -33,35 +34,27 @@
   margin-bottom: 20px;
 }
 
-.modal-header h2 {
+.game-library-modal-content .modal-header h2 {
   margin: 0;
 }
 
-.close-button {
-  background: #dc3545; /* Red background */
-  color: white;
+.game-library-modal-content .close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
   border: none;
-  border-radius: 50%; /* Circular button */
-  width: 30px;
-  height: 30px;
-  font-size: 1.2rem; /* Adjust font size for icon */
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  font-size: 1.8rem;
   cursor: pointer;
-  transition: background-color 0.2s;
-  position: absolute; /* Position absolutely within modal-content */
-  top: 10px;
-  right: 10px;
-  z-index: 10; /* Ensure it's above other content */
+  color: #555;
+  padding: 5px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
 }
 
-.close-button:hover {
-  background-color: #c82333; /* Darker red on hover */
-}
-
-.close-button .material-icons {
-  font-size: 20px; /* Adjust icon size */
+.game-library-modal-content .close-button:hover {
+  background-color: #f0f0f0;
+  color: #333;
 }
 
 .modal-body {

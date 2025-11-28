@@ -1161,8 +1161,8 @@ function GameLibraryModal({ onClose, isOwner }) {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-content game-library-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>ゲームライブラリを編集</h2>
-          <button onClick={onClose} className="close-button"><i className="material-icons">close</i></button>
+          <h2>ゲームライブラリを管理</h2>
+          <button onClick={onClose} className="close-button">&times;</button>
         </div>
         <div className="modal-body">
           {error && <p className="error-message">{error}</p>}
