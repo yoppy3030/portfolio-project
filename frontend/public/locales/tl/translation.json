@@ -152,6 +152,8 @@
   "hobbies_tab_general": "Pangkalahatang Mga Libangan",
   "hobbies_tab_game_records": "Mga Record ng Laro",
   "hobbies_tab_music_appreciation": "Pagpapahalaga sa Musika",
+  "hobbies.readingHobbyName": "Pagbabasa",
+  "hobbies.manageReadingButton": "Pamahalaan ang mga Aklat",
   "music_title": "Pagpapahalaga sa Musika",
   "music_alert_fetch_genres_failed": "Nabigo sa pagkuha ng mga genre ng musika.",
   "music_alert_server_error": "Nabigo ang komunikasyon sa server.",

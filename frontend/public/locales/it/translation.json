@@ -152,6 +152,8 @@
   "hobbies_tab_general": "Hobby Generali",
   "hobbies_tab_game_records": "Registrazioni di Giochi",
   "hobbies_tab_music_appreciation": "Apprezzamento Musicale",
+  "hobbies.readingHobbyName": "Lettura",
+  "hobbies.manageReadingButton": "Gestisci libri",
   "music_title": "Apprezzamento Musicale",
   "music_alert_fetch_genres_failed": "Errore nel recupero dei generi musicali.",
   "music_alert_server_error": "Errore nella comunicazione con il server.",

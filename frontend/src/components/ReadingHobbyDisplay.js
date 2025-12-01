@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import './ReadingHobbyDisplay.css';
 
 function ReadingHobbyDisplay() {
+  const { t } = useTranslation();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const fetchBooks = useCallback(async () => {
     setLoading(true);
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setLoading(false);
-      setError('ログインしていません。');
+      setError(t('readingHobby.display.notLoggedIn'));
       return;
     }
 
@@ -23,21 +25,21 @@ function ReadingHobbyDisplay() {
       if (data.success) {
         setBooks(data.books);
       } else {
-        setError(data.error || '本のデータの取得に失敗しました。');
+        setError(data.error || t('readingHobby.display.fetchBooksError'));
       }
     } catch (err) {
-      setError('サーバーとの通信に失敗しました。');
+      setError(t('readingHobby.display.serverConnectionError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchBooks();
   }, [fetchBooks]);
 
   if (loading) {
-    return <p>読書データを読み込み中...</p>;
+    return <p>{t('readingHobby.display.loading')}</p>;
   }
 
   if (error) {
@@ -59,7 +61,7 @@ function ReadingHobbyDisplay() {
                 <h5 className="book-card-title">{book.title}</h5>
                 <p className="book-card-author">{book.author_name}</p>
                 {book.rating && (
-                  <p className="book-card-rating">評価: {'★'.repeat(book.rating)}{'☆'.repeat(10 - book.rating)}</p>
+                  <p className="book-card-rating">{t('readingHobby.display.ratingLabel')}{'★'.repeat(book.rating)}{'☆'.repeat(10 - book.rating)}</p>
                 )}
                 <p className="book-card-comment">{book.comment}</p>
               </div>
@@ -67,7 +69,7 @@ function ReadingHobbyDisplay() {
           ))}
         </div>
       ) : (
-        <p>登録されている本はありません。</p>
+        <p>{t('readingHobby.display.noBooks')}</p>
       )}
     </div>
   );

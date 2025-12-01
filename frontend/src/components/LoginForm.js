@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../LoginForm.css";
 
 export default function LoginForm(props) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({ email: "", password: "", autoLogin: false });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -47,14 +48,13 @@ export default function LoginForm(props) {
       if (data.success) {
         // 親コンポーネントにログイン成功を通知（トークンも含む）
         if (props.onLogin) {
-          props.onLogin(data.user, data.token, form.autoLogin);
+          const redirectTo = location.state?.from?.pathname || '/welcome';
+          props.onLogin(data.user, data.token, form.autoLogin, redirectTo);
         }
         
         // フォームをリセット
         setForm({ email: "", password: "", autoLogin: false });
         
-        // React Routerでナビゲーション（ページリロードなし）
-        navigate('/Welcome');
       } else {
         alert(`エラー: ${data.error || "不明なエラーが発生しました"}`);
       }

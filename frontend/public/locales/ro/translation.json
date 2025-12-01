@@ -152,6 +152,8 @@
   "hobbies_tab_general": "Hobby-uri Generale",
   "hobbies_tab_game_records": "Înregistrări Jocuri",
   "hobbies_tab_music_appreciation": "Apreciere Muzică",
+  "hobbies.readingHobbyName": "Citit",
+  "hobbies.manageReadingButton": "Gestionați Cărțile",
   "music_title": "Apreciere Muzică",
   "music_alert_fetch_genres_failed": "Nu s-au putut prelua genurile muzicale.",
   "music_alert_server_error": "Comunicarea cu serverul a eșuat.",

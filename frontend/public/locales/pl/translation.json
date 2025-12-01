@@ -152,6 +152,8 @@
   "hobbies_tab_general": "Ogólne Hobby",
   "hobbies_tab_game_records": "Rekordy Gier",
   "hobbies_tab_music_appreciation": "Docenianie Muzyki",
+  "hobbies.readingHobbyName": "Czytanie",
+  "hobbies.manageReadingButton": "Zarządzaj książkami",
   "music_title": "Docenianie Muzyki",
   "music_alert_fetch_genres_failed": "Nie udało się pobrać gatunków muzycznych.",
   "music_alert_server_error": "Komunikacja z serwerem nie powiodła się.",

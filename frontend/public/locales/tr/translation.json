@@ -152,6 +152,8 @@
   "hobbies_tab_general": "Genel Hobiler",
   "hobbies_tab_game_records": "Oyun Kayıtları",
   "hobbies_tab_music_appreciation": "Müzik Takdiri",
+  "hobbies.readingHobbyName": "Okuma",
+  "hobbies.manageReadingButton": "Kitapları Yönet",
   "music_title": "Müzik Takdiri",
   "music_alert_fetch_genres_failed": "Müzik türleri alınamadı.",
   "music_alert_server_error": "Sunucu iletişimi başarısız oldu.",

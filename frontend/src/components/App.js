@@ -141,14 +141,14 @@ function AppContent() {
     }
   }, [user]);
 
-  const handleLogin = (userData, token, autoLogin) => {
+  const handleLogin = (userData, token, autoLogin, redirectTo) => {
     if (autoLogin) {
       localStorage.setItem('token', token);
     } else {
       sessionStorage.setItem('token', token);
     }
     setUser(userData);
-    navigate('/');
+    navigate(redirectTo || '/welcome');
   };
 
   const handleLogout = () => {

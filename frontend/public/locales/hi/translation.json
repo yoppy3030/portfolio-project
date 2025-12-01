@@ -152,6 +152,8 @@
   "hobbies_tab_general": "सामान्य शौक",
   "hobbies_tab_game_records": "गेम रिकॉर्ड",
   "hobbies_tab_music_appreciation": "संगीत प्रशंसा",
+  "hobbies.readingHobbyName": "पढ़ना",
+  "hobbies.manageReadingButton": "किताबें प्रबंधित करें",
   "music_title": "संगीत प्रशंसा",
   "music_alert_fetch_genres_failed": "संगीत शैलियां प्राप्त करने में विफल।",
   "music_alert_server_error": "सर्वर संचार विफल।",

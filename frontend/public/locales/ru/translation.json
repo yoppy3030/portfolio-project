@@ -152,6 +152,8 @@
   "hobbies_tab_general": "Общие хобби",
   "hobbies_tab_game_records": "Записи игр",
   "hobbies_tab_music_appreciation": "Музыкальное наслаждение",
+  "hobbies.readingHobbyName": "Чтение",
+  "hobbies.manageReadingButton": "Управление книгами",
   "music_title": "Музыкальное наслаждение",
   "music_alert_fetch_genres_failed": "Ошибка получения музыкальных жанров.",
   "music_alert_server_error": "Ошибка связи с сервером.",

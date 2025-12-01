@@ -152,6 +152,8 @@
   "hobbies_tab_general": "Allmänna Hobbies",
   "hobbies_tab_game_records": "Spelrekord",
   "hobbies_tab_music_appreciation": "Musikuppskattning",
+  "hobbies.readingHobbyName": "Läsning",
+  "hobbies.manageReadingButton": "Hantera böcker",
   "music_title": "Musikuppskattning",
   "music_alert_fetch_genres_failed": "Misslyckades med att hämta musikgenrer.",
   "music_alert_server_error": "Serverkommunikation misslyckades.",

@@ -130,7 +130,7 @@ function HobbiesManager({ isOwner }) {
                   )}
                   {hobby.name === '読書' && (
                     <button onClick={() => setShowReadingModal(true)} className="btn-secondary-outline">
-                      本を管理
+                      {t('hobbies.manageReadingButton')}
                     </button>
                   )}
                   <button onClick={() => handleDeleteHobby(hobby.id)} className="btn-danger-outline">

@@ -152,6 +152,8 @@
   "hobbies_tab_general": "งานอดิเรกทั่วไป",
   "hobbies_tab_game_records": "บันทึกเกม",
   "hobbies_tab_music_appreciation": "การชื่นชมดนตรี",
+  "hobbies.readingHobbyName": "การอ่าน",
+  "hobbies.manageReadingButton": "จัดการหนังสือ",
   "music_title": "การชื่นชมดนตรี",
   "music_alert_fetch_genres_failed": "ดึงประเภทดนตรีไม่สำเร็จ",
   "music_alert_server_error": "การสื่อสารกับเซิร์ฟเวอร์ล้มเหลว",

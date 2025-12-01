@@ -152,6 +152,8 @@
   "hobbies_tab_general": "Sở thích Chung",
   "hobbies_tab_game_records": "Bản ghi Trò chơi",
   "hobbies_tab_music_appreciation": "Đánh giá Âm nhạc",
+  "hobbies.readingHobbyName": "Đọc sách",
+  "hobbies.manageReadingButton": "Quản lý Sách",
   "music_title": "Đánh giá Âm nhạc",
   "music_alert_fetch_genres_failed": "Không thể tải thể loại âm nhạc.",
   "music_alert_server_error": "Giao tiếp với máy chủ thất bại.",

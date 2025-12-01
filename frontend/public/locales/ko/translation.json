@@ -152,6 +152,8 @@
   "hobbies_tab_general": "일반 취미",
   "hobbies_tab_game_records": "게임 기록",
   "hobbies_tab_music_appreciation": "음악 감상",
+  "hobbies.readingHobbyName": "독서",
+  "hobbies.manageReadingButton": "책 관리",
   "music_title": "음악 감상",
   "music_alert_fetch_genres_failed": "음악 장르 가져오기 실패.",
   "music_alert_server_error": "서버 통신 실패.",

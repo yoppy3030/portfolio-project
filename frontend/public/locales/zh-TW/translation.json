@@ -152,6 +152,8 @@
   "hobbies_tab_general": "一般愛好",
   "hobbies_tab_game_records": "遊戲記錄",
   "hobbies_tab_music_appreciation": "音樂欣賞",
+  "hobbies.readingHobbyName": "閱讀",
+  "hobbies.manageReadingButton": "管理書籍",
   "music_title": "音樂欣賞",
   "music_alert_fetch_genres_failed": "取得音樂類型失敗。",
   "music_alert_server_error": "伺服器通訊失敗。",

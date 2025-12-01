@@ -152,6 +152,8 @@
   "hobbies_tab_general": "Generelle Hobbyer",
   "hobbies_tab_game_records": "Spillrekorder",
   "hobbies_tab_music_appreciation": "Musikkappresiasjon",
+  "hobbies.readingHobbyName": "Lesing",
+  "hobbies.manageReadingButton": "Administrer bøker",
   "music_title": "Musikkappresiasjon",
   "music_alert_fetch_genres_failed": "Kunne ikke hente musikkgenrer.",
   "music_alert_server_error": "Serverkommunikasjon mislyktes.",

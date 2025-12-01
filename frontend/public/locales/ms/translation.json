@@ -152,6 +152,8 @@
   "hobbies_tab_general": "Hobi Umum",
   "hobbies_tab_game_records": "Rekod Permainan",
   "hobbies_tab_music_appreciation": "Penghargaan Muzik",
+  "hobbies.readingHobbyName": "Membaca",
+  "hobbies.manageReadingButton": "Urus Buku",
   "music_title": "Penghargaan Muzik",
   "music_alert_fetch_genres_failed": "Gagal mengambil genre muzik.",
   "music_alert_server_error": "Komunikasi pelayan gagal.",

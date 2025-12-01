@@ -152,6 +152,8 @@
   "hobbies_tab_general": "Obecné Koníčky",
   "hobbies_tab_game_records": "Záznamy Her",
   "hobbies_tab_music_appreciation": "Oceňování Hudby",
+  "hobbies.readingHobbyName": "Čtení",
+  "hobbies.manageReadingButton": "Spravovat knihy",
   "music_title": "Oceňování Hudby",
   "music_alert_fetch_genres_failed": "Nepodařilo se načíst hudební žánry.",
   "music_alert_server_error": "Komunikace se serverem selhala.",
@@ -203,7 +205,7 @@
       "q1": "Co mohu dělat s touto službou?",
       "a1": "Tato služba je nástroj, který vám umožňuje vytvářet vlastní originální portfolio pomocí intuitivních operací. Můžete atraktivně shrnout své dovednosti, práce a kariéru a použít to pro hledání práce a sebeuvádění.",
       "q2": "Jak začít?",
-      "a2": "Nejprve vytvořte účet ze <a href='/register'>stránky registrace</a>. Po registraci můžete okamžitě začít vytvářet své portfolio."
+      "a2": "Nejprve vytvořte účet ze <a href='/register'>stránky registrace<\/a>. Po registraci můžete okamžitě začít vytvářet své portfolio."
     },
     "account": {
       "title": "O Vašem Účtu",
@@ -212,11 +214,11 @@
       "q2": "Nemohu se přihlásit.",
       "a2": "Vaše e-mailová adresa nebo heslo může být nesprávné. Zkontrolujte prosím velikost písmen a zkuste to znovu. Pokud se stále nemůžete přihlásit, zkuste resetovat heslo.",
       "q3": "Zapomněl jsem své heslo.",
-      "a3": "Resetujte prosím své heslo ze <a href='/password-reset'>stránky resetování hesla</a> zadáním registrované e-mailové adresy.",
+      "a3": "Resetujte prosím své heslo ze <a href='/password-reset'>stránky resetování hesla<\/a> zadáním registrované e-mailové adresy.",
       "q4": "Chci změnit informace o účtu (jméno, ikona atd.).",
       "a4": "Po přihlášení vyberte prosím 'Nastavení' z menu účtu v pravém horním rohu obrazovky. Můžete změnit své uživatelské jméno, biografii, obrázek ikony atd. na obrazovce nastavení profilu.",
       "q5": "Chci smazat svůj účet.",
-      "a5": "Můžete smazat svůj účet z karty nastavení účtu na stránce 'Nastavení'. <strong>Poznámka: Po smazání účtu budou všechna data, včetně vytvořeného portfolia, trvale smazána a nelze je obnovit.</strong>"
+      "a5": "Můžete smazat svůj účet z karty nastavení účtu na stránce 'Nastavení'. <strong>Poznámka: Po smazání účtu budou všechna data, včetně vytvořeného portfolia, trvale smazána a nelze je obnovit.<\/strong>"
     },
     "portfolio": {
       "title": "Vytváření a Úpravy Portfolií",

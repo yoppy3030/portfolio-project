@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import './ReadingHobbyModal.css';
 
@@ -37,32 +38,15 @@ const StarInput = ({ rating, setRating }) => {
   );
 };
 
-
-const bookTypes = [
-  "小説",
-  "ライトノベル",
-  "漫画",
-  "エッセイ",
-  "ノンフィクション",
-  "詩集",
-  "伝記",
-  "教科書",
-  "参考書",
-  "ビジネス書",
-  "自己啓発書",
-  "テクニカル書",
-  "パンフレット",
-  "ライフスタイル本（料理本、旅行本など）",
-  "学術書",
-  "カタログ",
-  "マンガ雑誌",
-  "雑誌（一般誌、専門誌）",
-  "事典・辞典",
-  "写真集",
-  "その他"
+const bookTypeKeys = [
+  "novel", "lightNovel", "manga", "essay", "nonFiction", "poetry", "biography",
+  "textbook", "referenceBook", "businessBook", "selfHelpBook", "technicalBook",
+  "pamphlet", "lifestyleBook", "academicBook", "catalog", "mangaMagazine",
+  "magazine", "encyclopedia", "photoBook", "other"
 ];
 
 function ReadingHobbyModal({ onClose, isOwner }) {
+  const { t } = useTranslation();
   const [authors, setAuthors] = useState([]);
   const [books, setBooks] = useState([]);
   const [selectedAuthorId, setSelectedAuthorId] = useState(null);
@@ -71,7 +55,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
   const [error, setError] = useState('');
   const [newAuthorName, setNewAuthorName] = useState('');
   const [newBookData, setNewBookData] = useState({
-    type: '小説',
+    type: 'novel',
     genre: '',
     title: '',
     comment: '',
@@ -81,7 +65,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
   const [editingBookId, setEditingBookId] = useState(null);
   const [editBookData, setEditBookData] = useState(null);
 
-  const getToken = () => localStorage.getItem('token');
+  const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
 
   const fetchAuthors = useCallback(async () => {
     if (!isOwner) return;
@@ -94,14 +78,14 @@ function ReadingHobbyModal({ onClose, isOwner }) {
       if (data.success) {
         setAuthors(data.authors);
       } else {
-        setError(data.error || '作家リストの取得に失敗しました。');
+        setError(data.error || t('readingHobby.modal.fetchAuthorsError'));
       }
     } catch (err) {
-      setError('サーバーとの通信に失敗しました。');
+      setError(t('readingHobby.modal.serverConnectionError'));
     } finally {
       setLoading(false);
     }
-  }, [isOwner]);
+  }, [isOwner, t]);
 
   useEffect(() => {
     fetchAuthors();
@@ -119,17 +103,16 @@ function ReadingHobbyModal({ onClose, isOwner }) {
       });
       const data = await response.json();
       if (data.success) {
-        // Assuming the backend returns books sorted by display_order
         setBooks(data.books);
       } else {
-        setError(data.error || '書籍リストの取得に失敗しました。');
+        setError(data.error || t('readingHobby.modal.fetchBooksError'));
       }
     } catch (err) {
-      setError('サーバーとの通信に失敗しました。');
+      setError(t('readingHobby.modal.serverConnectionError'));
     } finally {
       setBooksLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchBooks(selectedAuthorId);
@@ -152,15 +135,15 @@ function ReadingHobbyModal({ onClose, isOwner }) {
         setNewAuthorName('');
         fetchAuthors();
       } else {
-        setError(data.error || '作家の追加に失敗しました。');
+        setError(data.error || t('readingHobby.modal.addAuthorError'));
       }
     } catch (err) {
-      setError('サーバーとの通信に失敗しました。');
+      setError(t('readingHobby.modal.serverConnectionError'));
     }
   };
 
   const handleDeleteAuthor = async (authorId) => {
-    if (!window.confirm('この作家を削除しますか？ この作家に関連するすべての本も削除されます。')) return;
+    if (!window.confirm(t('readingHobby.modal.confirmDeleteAuthor'))) return;
     setError('');
     try {
       const response = await fetch(`http://localhost:5000/api/reading/authors/${authorId}`, {
@@ -174,10 +157,10 @@ function ReadingHobbyModal({ onClose, isOwner }) {
         }
         fetchAuthors();
       } else {
-        setError(data.error || '作家の削除に失敗しました。');
+        setError(data.error || t('readingHobby.modal.deleteAuthorError'));
       }
     } catch (err) {
-      setError('サーバーとの通信に失敗しました。');
+      setError(t('readingHobby.modal.serverConnectionError'));
     }
   };
 
@@ -196,7 +179,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
 
   const handleAddBook = async () => {
     if (!selectedAuthorId || !newBookData.title || !newBookData.type) {
-      setError('作家が選択されていないか、タイトルや種類が入力されていません。');
+      setError(t('readingHobby.modal.addBookValidationError'));
       return;
     }
     setError('');
@@ -221,17 +204,17 @@ function ReadingHobbyModal({ onClose, isOwner }) {
       const data = await response.json();
       if (data.success) {
         fetchBooks(selectedAuthorId);
-        setNewBookData({ type: '小説', genre: '', title: '', comment: '', rating: 0, image: null });
+        setNewBookData({ type: 'novel', genre: '', title: '', comment: '', rating: 0, image: null });
       } else {
-        setError(data.error || '本の追加に失敗しました。');
+        setError(data.error || t('readingHobby.modal.addBookError'));
       }
     } catch (err) {
-      setError('サーバーとの通信に失敗しました。');
+      setError(t('readingHobby.modal.serverConnectionError'));
     }
   };
 
   const handleDeleteBook = async (bookId) => {
-    if (!window.confirm('この本を削除しますか？')) return;
+    if (!window.confirm(t('readingHobby.modal.confirmDeleteBook'))) return;
     setError('');
     try {
       const response = await fetch(`http://localhost:5000/api/reading/books/${bookId}`, {
@@ -242,10 +225,10 @@ function ReadingHobbyModal({ onClose, isOwner }) {
       if (data.success) {
         fetchBooks(selectedAuthorId);
       } else {
-        setError(data.error || '本の削除に失敗しました。');
+        setError(data.error || t('readingHobby.modal.deleteBookError'));
       }
     } catch (err) {
-      setError('サーバーとの通信に失敗しました。');
+      setError(t('readingHobby.modal.serverConnectionError'));
     }
   };
 
@@ -274,7 +257,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
 
   const handleUpdateBook = async (bookId) => {
     if (!editBookData.title || !editBookData.type) {
-      setError('タイトルや種類は必須です。');
+      setError(t('readingHobby.modal.updateBookValidationError'));
       return;
     }
     setError('');
@@ -295,10 +278,10 @@ function ReadingHobbyModal({ onClose, isOwner }) {
         fetchBooks(selectedAuthorId);
         handleCancelEdit();
       } else {
-        setError(data.error || '本の更新に失敗しました。');
+        setError(data.error || t('readingHobby.modal.updateBookError'));
       }
     } catch (err) {
-      setError('サーバーとの通信に失敗しました。');
+      setError(t('readingHobby.modal.serverConnectionError'));
     }
   };
 
@@ -314,12 +297,11 @@ function ReadingHobbyModal({ onClose, isOwner }) {
       });
       const data = await response.json();
       if (!data.success) {
-        setError(data.error || '順序の更新に失敗しました。');
-        // Optionally revert the state change
+        setError(data.error || t('readingHobby.modal.reorderError'));
         fetchBooks(selectedAuthorId);
       }
     } catch (err) {
-      setError('サーバーとの通信に失敗しました。');
+      setError(t('readingHobby.modal.serverConnectionError'));
       fetchBooks(selectedAuthorId);
     }
   };
@@ -327,7 +309,6 @@ function ReadingHobbyModal({ onClose, isOwner }) {
   const handleOnDragEnd = (result) => {
     if (!result.destination) return;
 
-    console.log('Books before reorder:', books);
     const items = Array.from(books);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
@@ -337,8 +318,6 @@ function ReadingHobbyModal({ onClose, isOwner }) {
       display_order: index,
     }));
 
-    console.log('Books after reorder (frontend state):', updatedBooks);
-
     setBooks(updatedBooks);
     updateBookOrder(updatedBooks);
   };
@@ -347,7 +326,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
     <div className="reading-hobby-modal-backdrop" onClick={onClose}>
       <div className="modal-content reading-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>読書記録を管理</h2>
+          <h2>{t('readingHobby.modal.title')}</h2>
           <button onClick={onClose} className="close-button">&times;</button>
         </div>
         <div className="modal-body">
@@ -355,18 +334,18 @@ function ReadingHobbyModal({ onClose, isOwner }) {
           
           <div className="reading-hobby-manager">
             <div className="author-management-section">
-              <h4>作家の管理</h4>
+              <h4>{t('readingHobby.modal.authorManagementTitle')}</h4>
               <div className="add-author-form">
                 <input
                   type="text"
                   value={newAuthorName}
                   onChange={(e) => setNewAuthorName(e.target.value)}
-                  placeholder="新しい作家名"
+                  placeholder={t('readingHobby.modal.newAuthorPlaceholder')}
                 />
-                <button onClick={handleAddAuthor}>作家を追加</button>
+                <button onClick={handleAddAuthor}>{t('readingHobby.modal.addAuthorButton')}</button>
               </div>
               <div className="author-list">
-                {loading ? <p>読み込み中...</p> : (
+                {loading ? <p>{t('readingHobby.modal.loading')}</p> : (
                   authors.map(author => (
                     <div 
                       key={author.id} 
@@ -374,33 +353,33 @@ function ReadingHobbyModal({ onClose, isOwner }) {
                       onClick={() => setSelectedAuthorId(author.id)}
                     >
                       <span>{author.name}</span>
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteAuthor(author.id); }} className="btn-danger-outline">削除</button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteAuthor(author.id); }} className="btn-danger-outline">{t('readingHobby.modal.deleteButton')}</button>
                     </div>
                   ))
                 )}
               </div>
             </div>
             <div className="book-management-section">
-              <h4>本の管理</h4>
+              <h4>{t('readingHobby.modal.bookManagementTitle')}</h4>
               {selectedAuthorId ? (
                 <>
                   <div className="add-book-form">
-                    <h5>新しい本を追加</h5>
+                    <h5>{t('readingHobby.modal.addBookTitle')}</h5>
                     <select name="type" value={newBookData.type} onChange={handleNewBookChange}>
-                      {bookTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                      {bookTypeKeys.map(key => <option key={key} value={key}>{t(`readingHobby.bookTypes.${key}`)}</option>)}
                     </select>
-                    <input type="text" name="title" placeholder="タイトル" value={newBookData.title} onChange={handleNewBookChange} />
-                    <input type="text" name="genre" placeholder="ジャンル (例: SF, ミステリー)" value={newBookData.genre} onChange={handleNewBookChange} />
+                    <input type="text" name="title" placeholder={t('readingHobby.modal.bookTitlePlaceholder')} value={newBookData.title} onChange={handleNewBookChange} />
+                    <input type="text" name="genre" placeholder={t('readingHobby.modal.bookGenrePlaceholder')} value={newBookData.genre} onChange={handleNewBookChange} />
                     <div className="rating-input-container">
-                      <label>評価:</label>
+                      <label>{t('readingHobby.modal.ratingLabel')}</label>
                       <StarInput rating={newBookData.rating} setRating={setNewBookRating} />
                     </div>
-                    <textarea name="comment" placeholder="コメント" value={newBookData.comment} onChange={handleNewBookChange}></textarea>
+                    <textarea name="comment" placeholder={t('readingHobby.modal.commentPlaceholder')} value={newBookData.comment} onChange={handleNewBookChange}></textarea>
                     <input type="file" name="image" onChange={handleImageChange} />
-                    <button onClick={handleAddBook}>追加</button>
+                    <button onClick={handleAddBook}>{t('readingHobby.modal.addButton')}</button>
                   </div>
                   <hr />
-                  {booksLoading ? <p>本を読み込み中...</p> : (
+                  {booksLoading ? <p>{t('readingHobby.modal.loadingBooks')}</p> : (
                     <DragDropContext onDragEnd={handleOnDragEnd}>
                       <Droppable droppableId="books">
                         {(provided) => (
@@ -416,21 +395,21 @@ function ReadingHobbyModal({ onClose, isOwner }) {
                                   >
                                     {editingBookId === book.id ? (
                                       <div className="edit-book-form">
-                                        <h5>本を編集</h5>
+                                        <h5>{t('readingHobby.modal.editBookTitle')}</h5>
                                         <select name="type" value={editBookData.type} onChange={handleEditBookChange}>
-                                          {bookTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                                          {bookTypeKeys.map(key => <option key={key} value={key}>{t(`readingHobby.bookTypes.${key}`)}</option>)}
                                         </select>
-                                        <input type="text" name="title" placeholder="タイトル" value={editBookData.title} onChange={handleEditBookChange} />
-                                        <input type="text" name="genre" placeholder="ジャンル" value={editBookData.genre} onChange={handleEditBookChange} />
+                                        <input type="text" name="title" placeholder={t('readingHobby.modal.bookTitlePlaceholder')} value={editBookData.title} onChange={handleEditBookChange} />
+                                        <input type="text" name="genre" placeholder={t('readingHobby.modal.bookGenrePlaceholder')} value={editBookData.genre} onChange={handleEditBookChange} />
                                         <div className="rating-input-container">
-                                          <label>評価:</label>
+                                          <label>{t('readingHobby.modal.ratingLabel')}</label>
                                           <StarInput rating={editBookData.rating} setRating={setEditBookRating} />
                                         </div>
-                                        <textarea name="comment" placeholder="コメント" value={editBookData.comment} onChange={handleEditBookChange}></textarea>
+                                        <textarea name="comment" placeholder={t('readingHobby.modal.commentPlaceholder')} value={editBookData.comment} onChange={handleEditBookChange}></textarea>
                                         <input type="file" name="image" onChange={handleEditImageChange} />
                                         <div className="edit-actions">
-                                          <button onClick={() => handleUpdateBook(book.id)}>保存</button>
-                                          <button onClick={handleCancelEdit}>キャンセル</button>
+                                          <button onClick={() => handleUpdateBook(book.id)}>{t('readingHobby.modal.saveButton')}</button>
+                                          <button onClick={handleCancelEdit}>{t('readingHobby.modal.cancelButton')}</button>
                                         </div>
                                       </div>
                                     ) : (
@@ -438,17 +417,17 @@ function ReadingHobbyModal({ onClose, isOwner }) {
                                         {book.image_url && <img src={`http://localhost:5000${book.image_url}`} alt={book.title} />}
                                         <div className="book-info">
                                           <h5>{book.title}</h5>
-                                          <p>種類: {book.type}</p>
-                                          <p>ジャンル: {book.genre}</p>
+                                          <p>{t('readingHobby.modal.typeLabel')} {t(`readingHobby.bookTypes.${book.type}`)}</p>
+                                          <p>{t('readingHobby.modal.genreLabel')} {book.genre}</p>
                                           <div className="rating-display">
-                                            <span>評価: </span>
-                                            {book.rating ? <StarRating rating={book.rating} /> : '未評価'}
+                                            <span>{t('readingHobby.modal.ratingLabel')} </span>
+                                            {book.rating ? <StarRating rating={book.rating} /> : t('readingHobby.modal.notRated')}
                                           </div>
                                           <p>{book.comment}</p>
                                         </div>
                                         <div className="book-actions">
-                                          <button className="btn-secondary-outline" onClick={() => handleStartEdit(book)}>編集</button>
-                                          <button className="btn-danger-outline" onClick={() => handleDeleteBook(book.id)}>削除</button>
+                                          <button className="btn-secondary-outline" onClick={() => handleStartEdit(book)}>{t('readingHobby.modal.editButton')}</button>
+                                          <button className="btn-danger-outline" onClick={() => handleDeleteBook(book.id)}>{t('readingHobby.modal.deleteButton')}</button>
                                         </div>
                                       </div>
                                     )}
@@ -464,7 +443,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
                   )}
                 </>
               ) : (
-                <p>作家を選択すると、ここに本が表示されます。</p>
+                <p>{t('readingHobby.modal.selectAuthorPrompt')}</p>
               )}
             </div>
           </div>

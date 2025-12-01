@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import '../PortfolioBuilder.css';
 import modernTemplate from '../assets/modern-template.svg';
 import classicTemplate from '../assets/classic-template.svg';
@@ -9,33 +9,37 @@ import minimalistTemplate from '../assets/minimalist-template.svg';
 export default function PortfolioBuilder({ theme }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [portfolioTitle, setPortfolioTitle] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-      return; // Stop execution if not logged in
-    }
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    // if (!token) {
+    //   navigate('/login');
+    //   return; // Stop execution if not logged in
+    // }
 
     const checkForExistingPortfolio = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/user/portfolio', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
+      // Token should be checked here for this specific action
+      if (token) {
+        try {
+          const response = await fetch('http://localhost:5000/api/user/portfolio', {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            // Portfolio exists, redirect to it
-            navigate(`/portfolio/${data.portfolioId}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              // Portfolio exists, redirect to it
+              navigate(`/portfolio/${data.portfolioId}`);
+            }
+            // If !data.success or response is 404, do nothing and show the builder.
           }
-          // If !data.success or response is 404, do nothing and show the builder.
+        } catch (error) {
+          console.error('Error checking for existing portfolio:', error);
+          // If there's an error, just proceed to show the builder page.
         }
-      } catch (error) {
-        console.error('Error checking for existing portfolio:', error);
-        // If there's an error, just proceed to show the builder page.
       }
     };
 
@@ -43,6 +47,13 @@ export default function PortfolioBuilder({ theme }) {
   }, [navigate]);
 
   const handleCreatePortfolio = async () => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (!token) {
+      // Redirect to login page if not logged in, passing current location
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+
     if (!portfolioTitle) {
       alert(t('portfolio_title_required'));
       return;
@@ -51,8 +62,6 @@ export default function PortfolioBuilder({ theme }) {
       alert(t('template_selection_required'));
       return;
     }
-
-    const token = localStorage.getItem('token');
 
     try {
       const response = await fetch('http://localhost:5000/api/portfolios', {

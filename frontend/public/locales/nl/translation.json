@@ -152,6 +152,8 @@
   "hobbies_tab_general": "Algemene Hobby's",
   "hobbies_tab_game_records": "Spelrecords",
   "hobbies_tab_music_appreciation": "Muziek Appreciatie",
+  "hobbies.readingHobbyName": "Lezen",
+  "hobbies.manageReadingButton": "Boeken beheren",
   "music_title": "Muziek Appreciatie",
   "music_alert_fetch_genres_failed": "Muziekgenres ophalen mislukt.",
   "music_alert_server_error": "Servercommunicatie mislukt.",
