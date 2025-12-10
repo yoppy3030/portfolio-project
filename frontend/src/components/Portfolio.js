@@ -64,7 +64,7 @@ function AddProjectModal({ on_close, on_submit, t }) {
       setUploading(true);
       const formData = new FormData();
       formData.append('file', bgFile);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       try {
         const uploadRes = await fetch('http://localhost:5000/api/upload', {
           method: 'POST',
@@ -236,7 +236,7 @@ function EditProjectModal({ project, on_close, on_submit, t }) {
       setUploading(true);
       const formData = new FormData();
       formData.append('file', bgFile);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       try {
         const uploadRes = await fetch('http://localhost:5000/api/upload', {
           method: 'POST',
@@ -441,7 +441,7 @@ function EditTextModal({ project, on_close, on_submit, t }) {
       setUploading(true);
       const formData = new FormData();
       formData.append('file', bgFile);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       try {
         const uploadRes = await fetch('http://localhost:5000/api/upload', {
           method: 'POST',
@@ -732,7 +732,7 @@ export default function Portfolio({ onTemplateChange, portfolio, setPortfolio, f
   }, [portfolio]);
 
   const handleAddNewProject = async (projectData) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     const { w, h } = sizeToDimensions(projectData.size);
     const projectDataWithLayout = { ...projectData, layout_w: w, layout_h: h };
 
@@ -768,7 +768,7 @@ export default function Portfolio({ onTemplateChange, portfolio, setPortfolio, f
   };
 
   const handleUpdateProject = async (updatedData) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     const projectId = updatedData.id;
     if (!projectId) {
       alert(t('portfolio_alert_missing_id'));
@@ -806,7 +806,7 @@ export default function Portfolio({ onTemplateChange, portfolio, setPortfolio, f
       return;
     }
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     try {
       const response = await fetch(`http://localhost:5000/api/portfolios/${portfolioId}/projects/${projectId}`, {
         method: 'DELETE',
@@ -847,7 +847,7 @@ export default function Portfolio({ onTemplateChange, portfolio, setPortfolio, f
     }
 
     // Save the new layout to the backend
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     try {
       await fetch(`http://localhost:5000/api/portfolios/${portfolioId}/layout`, {
         method: 'PUT',
@@ -870,7 +870,7 @@ export default function Portfolio({ onTemplateChange, portfolio, setPortfolio, f
       return;
     }
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     try {
       const response = await fetch(`http://localhost:5000/api/portfolios/${portfolioId}`, {
         method: 'DELETE',
