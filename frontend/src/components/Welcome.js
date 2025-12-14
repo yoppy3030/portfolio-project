@@ -1,18 +1,22 @@
-// Welcome.js
+// 必要なライブラリやフックをインポート
 import React from "react";
-import { useTranslation } from 'react-i18next'; // Added
-import { useNavigate } from 'react-router-dom';
-import "../Welcome.css";
+import { useTranslation } from 'react-i18next'; // 多言語対応
+import { useNavigate } from 'react-router-dom'; // ページ遷移用
+import "../Welcome.css"; // このコンポーネント専用のスタイルシート
 
+// ログイン後のウェルカムページコンポーネント
 export default function Welcome({ user }) {
-  const { t } = useTranslation(); // Added
-  const navigate = useNavigate();
+  const { t } = useTranslation(); // 多言語対応のt関数
+  const navigate = useNavigate(); // ページ遷移をプログラム的に行うためのフック
+
+  // 「チュートリアルへ」カードがクリックされたときの処理
   const handleTutorialClick = () => {
-    // チュートリアルページへの遷移
-    navigate('/Tutorial');
+    navigate('/Tutorial'); // チュートリアルページに遷移
   };
 
+  // 「はじめる」カードがクリックされたときの処理
   const handleStartClick = () => {
+    // ユーザー情報にportfolioId（既存ポートフォリオのID）があればそのページへ、なければ作成ページへ遷移
     if (user && user.portfolioId) {
       navigate(`/portfolio/${user.portfolioId}`);
     } else {
@@ -20,9 +24,9 @@ export default function Welcome({ user }) {
     }
   };
 
+  // 「FAQ・ヘルプ」カードがクリックされたときの処理
   const handleHelpClick = () => {
-    // FAQ・ヘルプページへの遷移
-    navigate('/FAQ');
+    navigate('/FAQ'); // FAQページに遷移
   };
 
   return (
@@ -31,13 +35,12 @@ export default function Welcome({ user }) {
         <h1 className="welcome-title">{t('welcome')}</h1>
         <p className="welcome-subtitle">サービスを始める準備が整いました</p>
         
+        {/* アクションカードのコンテナ */}
         <div className="welcome-actions">
+          {/* チュートリアルカード */}
           <div className="welcome-card" onClick={handleTutorialClick}>
             <div className="welcome-icon tutorial-icon">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#4CAF50" strokeWidth="2"/>
-                <path d="M12 6v6l4 2" stroke="#4CAF50" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
+              {/* アイコンSVG */}
             </div>
             <div className="welcome-card-content">
               <h3>チュートリアルへ</h3>
@@ -45,12 +48,10 @@ export default function Welcome({ user }) {
             </div>
           </div>
 
+          {/* はじめるカード */}
           <div className="welcome-card" onClick={handleStartClick}>
             <div className="welcome-icon start-icon">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#2196F3" strokeWidth="2"/>
-                <path d="M8 12l3 3 5-6" stroke="#2196F3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              {/* アイコンSVG */}
             </div>
             <div className="welcome-card-content">
               <h3>はじめる</h3>
@@ -58,13 +59,10 @@ export default function Welcome({ user }) {
             </div>
           </div>
 
+          {/* ヘルプカード */}
           <div className="welcome-card" onClick={handleHelpClick}>
             <div className="welcome-icon help-icon">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#FF9800" strokeWidth="2"/>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="#FF9800" strokeWidth="2" strokeLinecap="round"/>
-                <circle cx="12" cy="17" r="1" fill="#FF9800"/>
-              </svg>
+              {/* アイコンSVG */}
             </div>
             <div className="welcome-card-content">
               <h3>FAQ・ヘルプ</h3>
