@@ -1,7 +1,28 @@
+/**
+ * ゲームライブラリ管理モーダル
+ * 
+ * 【役割】
+ * ユーザーがプレイしたゲームを検索して追加したり、評価や感想を記録したりする画面です。
+ * RAWG APIという外部サービスを使ってゲーム情報を検索します。
+ * 
+ * 【主な機能】
+ * 1. ゲーム検索 (RAWG API)
+ *    - キーワード入力によるリアルタイム検索（日本語からの自動翻訳付き）
+ *    - プラットフォーム（Switch, PS5など）による絞り込み
+ *    - ページネーション（さらに読み込む）
+ * 
+ * 2. マイライブラリ管理
+ *    - 登録済みゲームの評価（★1〜10）、プレイ時間、感想の編集
+ *    - シリーズごとのグループ表示とフォルダ開閉
+ *    - ドラッグ＆ドロップによる自由な並び替え（カスタム並び替え）
+ *    - BGM（YouTubeなどのURL）の登録と管理
+ * 
+ * 3. データの並び替えとフィルタリング
+ *    - 追加順、評価順、プレイ時間順、タイトル順、カスタム順
+ *    - ライブラリ内でのプラットフォーム・ジャンル絞り込み
+ */
+
 // Reactとその機能（フック）をインポートします
-// useState: 変数（状態）を管理する
-// useEffect: 画面表示後やデータの変化時に処理を行う
-// useCallback, useMemo: 処理を記憶してパフォーマンスを向上させる
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './GameLibraryModal.css';
 // lodash.debounce: 入力が終わるまで処理を待つための便利な道具（検索処理などで使用）
@@ -489,56 +510,46 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
  * APIからのデータ取得、検索、並び替え、シリーズごとのグループ化などを管理
  */
 function GameLibraryModal({ onClose, isOwner }) {
-  // --- アプリケーションの状態管理 (State) ---
+  // --- 1. ライブラリの状態 (My Library) ---
+  const [myGames, setMyGames] = useState([]); // 自分のライブラリにある全ゲーム
+  const [loading, setLoading] = useState(false); // 読み込み中フラグ
+  const [error, setError] = useState(''); // エラーメッセージ
 
-  // 自分のライブラリにあるゲームのリスト。配列として管理します。
-  const [myGames, setMyGames] = useState([]);
+  // --- 2. 検索機能の状態 (Search) ---
+  const [searchResults, setSearchResults] = useState([]); // 検索で見つかったゲーム
+  const [searchTerm, setSearchTerm] = useState(''); // 検索窓の入力値
+  const [searchLoading, setSearchLoading] = useState(false); // 検索中フラグ
+  const [selectedPlatform, setSelectedPlatform] = useState(''); // 検索時のプラットフォーム絞り込みID
+  const [currentPage, setCurrentPage] = useState(1); // 検索結果の現在のページ
+  const [hasMoreResults, setHasMoreResults] = useState(false); // まだ次の検索結果があるか
+  const [loadingMore, setLoadingMore] = useState(false); // 「さらに読み込む」ボタンの実行中フラグ
 
-  // 検索した結果のゲームリスト
-  const [searchResults, setSearchResults] = useState([]);
-
-  // 検索ボックスに入力されたキーワード
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // 処理中かどうかを管理するフラグ（trueならローディング画面を表示）
-  // loading: メインの読み込み, searchLoading: 検索時の読み込み, loadingMore: 追加読み込み
-  const [loading, setLoading] = useState(false);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-
-  // エラーが発生したときのメッセージを保存。空文字ならエラーなし。
-  const [error, setError] = useState('');
-
-  // 検索時に絞り込むプラットフォーム（機種）のID
-  const [selectedPlatform, setSelectedPlatform] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMoreResults, setHasMoreResults] = useState(false);
-  const [searchResultsRef, setSearchResultsRef] = useState(null);
+  // --- 3. 表示・並び替えの状態 (View Options) ---
   const [sortOrder, setSortOrder] = useState(() => {
+    // 設定をブラウザ(localStorage)に保存しておくことで、次回開いたときも同じ順序にする
     try {
       const savedSortOrder = localStorage.getItem('sortOrderState');
       return savedSortOrder ? JSON.parse(savedSortOrder) : 'added';
     } catch (error) {
-      console.error('Failed to parse sortOrderState from localStorage', error);
       return 'added';
     }
-  }); // 並び替え順序: 'added', 'rating', 'playtime', 'title', 'custom'
-  const [isCustomOrder, setIsCustomOrder] = useState(false);
-  const [selectedLibraryPlatform, setSelectedLibraryPlatform] = useState(''); // マイライブラリのプラットフォーム絞り込み
-  const [selectedLibraryGenre, setSelectedLibraryGenre] = useState(''); // マイライブラリのジャンル絞り込み
-  const [selectedSeriesForAdd, setSelectedSeriesForAdd] = useState(''); // 検索結果からゲームを追加する際のシリーズ名
-  const [expandedSeries, setExpandedSeries] = useState(() => { // シリーズフォルダの開閉状態 { "シリーズ名": true/false }
+  });
+  const [isCustomOrder, setIsCustomOrder] = useState(false); // ユーザーが手動で並び替えた状態か
+  const [selectedLibraryPlatform, setSelectedLibraryPlatform] = useState(''); // ライブラリ内のプラットフォーム絞り込み
+  const [selectedLibraryGenre, setSelectedLibraryGenre] = useState(''); // ライブラリ内のジャンル絞り込み
+  const [layoutMode, setLayoutMode] = useState('grid'); // 画面レイアウト（タイル or リスト）
+
+  // --- 4. シリーズ・BGM関連の状態 ---
+  const [expandedSeries, setExpandedSeries] = useState(() => {
+    // どのシリーズフォルダが開いているかを保存しておく
     try {
       const savedState = localStorage.getItem('expandedSeriesState');
       return savedState ? JSON.parse(savedState) : {};
     } catch (error) {
-      console.error('Failed to parse expandedSeriesState from localStorage', error);
       return {};
     }
   });
-  const [updateCounter, setUpdateCounter] = useState(0); // 強制再描画用のカウンター
-  const [layoutMode, setLayoutMode] = useState('grid'); // 'grid' or 'list'
-  const [allUserSongs, setAllUserSongs] = useState([]); // ★ ユーザーの全曲リスト
+  const [allUserSongs, setAllUserSongs] = useState([]); // BGMとして選べる全曲のリスト
 
   const getToken = () => localStorage.getItem('token');
 

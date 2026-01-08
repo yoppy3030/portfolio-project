@@ -1,7 +1,15 @@
+/**
+ * 音楽鑑賞・管理コンポーネント (所有者用)
+ * 
+ * 【役割】
+ * ユーザーが自分の好きな音楽ジャンルやアーティストを登録・編集・削除するための画面です。
+ * アーティストごとに「曲リスト」を管理するためのモーダル呼び出し機能も含みます。
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import '../Settings.css'; // スタイルを共有
 import ManageSongsModal from './ManageSongsModal'; // 曲管理のためのモーダルコンポーネント
+import './MusicAppreciationManager.css'; // このコンポーネント専用のスタイル
 
 function MusicAppreciationManager() {
   // --- ステート（状態変数）の定義 ---

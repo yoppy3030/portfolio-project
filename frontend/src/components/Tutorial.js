@@ -1,4 +1,11 @@
-// frontend/src/components/Tutorial.js
+/**
+ * チュートリアル画面コンポーネント
+ * 
+ * 【役割】
+ * 初めて利用するユーザーに対して、アプリの基本的な使い方や機能（ポートフォリオの作り方、趣味の登録方法など）を
+ * ステップ・バイ・ステップで紹介するガイド画面です。
+ */
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../Tutorial.css';

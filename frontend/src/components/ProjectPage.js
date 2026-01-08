@@ -1,8 +1,28 @@
+/**
+ * プロジェクト詳細ページ（作品詳細）
+ * 
+ * 【役割】
+ * ポートフォリオ内の「カード」をクリックしたときに表示される、作品の詳しい内容（記事形式）を表示・保存する画面です。
+ * テキストだけでなく、見出し、画像、動画などの「コンテンツブロック」を組み合わせて構成されます。
+ * 
+ * 【主な機能】
+ * 1. 記事作成（ブロックエディタ形式）
+ *    - テキスト、画像（URL・アップロード）、動画のブロックを自由に追加
+ *    - ブロックごとの文字サイズ、色、背景設定
+ *    - ドラッグ＆ドロップによる自由な配置（react-grid-layout）
+ * 
+ * 2. 自動目次生成 (TableOfContents)
+ *    - ブロック内の見出し(h1-h3)を自動で抽出し、スムーズスクロール付きの目次を作成
+ * 
+ * 3. 編集モード制御
+ *    - 所有者（制作者）のみが編集可能。一般閲覧者は表示のみ。
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import '../ProjectPage.css';
-import '../Portfolio.css'; // Corrected path
+import '../Portfolio.css';
 
 const GridLayout = WidthProvider(RGL);
 
@@ -342,19 +362,18 @@ function ContentModal({ block, on_close, on_submit }) {
 
 
 // メインのプロジェクト詳細ページコンポーネント
-// メインのプロジェクト詳細ページコンポーネント
 export default function ProjectPage({ user }) {
-  // URLパラメータ (:projectId) からプロジェクトIDを取得
+  // ブラウザのURLから、表示すべきプロジェクトのID（例: /project/5 の 5 部分）を取得
   const { projectId } = useParams();
 
-  // --- ステート（状態変数） ---
-  const [project, setProject] = useState(null); // プロジェクトデータ
-  const [isLoading, setIsLoading] = useState(true); // データの読み込み中フラグ
-  const [isEditMode, setIsEditMode] = useState(false); // 編集モードかどうか
-  const [editingBlock, setEditingBlock] = useState(null); // 現在編集中・追加中のブロックデータ（nullならモーダル非表示）
+  // --- 状態管理 (State) ---
+  const [project, setProject] = useState(null); // サーバーから読み込んだプロジェクトの全データ
+  const [isLoading, setIsLoading] = useState(true); // データを読み込み中かどうか（グルグル表示などに使う）
+  const [isEditMode, setIsEditMode] = useState(false); // 「編集する」ボタンが押された状態か
+  const [editingBlock, setEditingBlock] = useState(null); // モーダルで「編集・追加」中のブロックデータ
 
-  // 現在のログインユーザーがこのプロジェクトの作成者（所有者）か判定
-  // 所有者のみ編集が可能
+  // このプロジェクトを作った本人（user.id === project.user_id）であれば
+  // 「編集ボタン」や「削除ボタン」を表示して良い（isOwner = true）とする
   const isOwner = user && project && user.id === project.user_id;
 
   // プロジェクトデータをサーバーから取得する関数

@@ -1,4 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
+/**
+ * FAQ（よくある質問）画面コンポーネント
+ * 
+ * 【役割】
+ * ユーザーがアプリの使い方や困った時の解決策を確認するための画面です。
+ * 質問（Question）と回答（Answer）をアコーディオン形式（クリックで展開）で表示します。
+ */
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import '../FAQ.css';

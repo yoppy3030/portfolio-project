@@ -1,3 +1,28 @@
+/**
+ * ポートフォリオ画面メインコンポーネント
+ * 
+ * 【役割】
+ * ユーザー独自のポートフォリオ（作品集）をグリッド形式で表示・編集する画面です。
+ * 自分のスキルや作品、趣味などを「カード」として自由に配置できます。
+ * 
+ * 【主な機能】
+ * 1. グリッドレイアウト (react-grid-layout)
+ *    - カードの自由な移動、サイズ変更、並び替え
+ *    - レイアウトの自動保存機能
+ * 
+ * 2. プロジェクト（カード）管理
+ *    - 作品情報の追加（タイトル、説明、タグ、背景色、画像アップロード）
+ *    - テキストのみのブロック（メモや連絡先など）の作成
+ *    - 既存カードの編集と削除
+ * 
+ * 3. 共有・公開設定
+ *    - ポートフォリオの公開/非公開の切り替え
+ *    - 共有用URLの発行（ShareModal）
+ * 
+ * 4. 閲覧モード
+ *    - 所有者（編集可能）と一般閲覧者（表示のみ）の制御
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -780,24 +805,25 @@ const addPxIfNeeded = (value) => {
 // ★ メインのポートフォリオ表示コンポーネント
 // ポートフォリオのグリッドレイアウト、プロジェクトの追加・編集・削除、共有などの機能を提供します
 export default function Portfolio({ onTemplateChange, portfolio, setPortfolio, fetchPortfolio, user }) {
-  // URLパラメータ (:portfolioId) からポートフォリオIDを取得
+  // URLパラメータ（例: /portfolio/123 の 123 部分）からポートフォリオIDを取得
   const { portfolioId } = useParams();
-  const navigate = useNavigate(); // ページ遷移用フック
+  const navigate = useNavigate(); // プログラムで画面を移動させるためのツール
 
-  // --- ステート（状態変数） ---
-  const [showAddModal, setShowAddModal] = useState(false); // プロジェクト追加モーダルの表示/非表示
-  const [showAddTextModal, setShowAddTextModal] = useState(false); // テキスト追加モーダルの表示/非表示
-  const [editingProject, setEditingProject] = useState(null); // 現在編集中のプロジェクトデータ（nullなら編集なし）
-  const [editingTextBlock, setEditingTextBlock] = useState(null); // 現在編集中のテキストブロックデータ
-  const [isEditMode, setIsEditMode] = useState(false); // 編集モードが有効かどうか（所有者のみ切り替え可能）
-  const [showShareModal, setShowShareModal] = useState(false); // 共有モーダルの表示/非表示
-  const [isPublic, setIsPublic] = useState(false); // 公開設定のステート
+  // --- 画面表示用の状態管理 (State) ---
+  const [showAddModal, setShowAddModal] = useState(false); // 「作品追加」画面を表示するか
+  const [showAddTextModal, setShowAddTextModal] = useState(false); // 「テキスト追加」画面を表示するか
+  const [editingProject, setEditingProject] = useState(null); // 現在編集中の作品データ（ある時は編集画面が出る）
+  const [editingTextBlock, setEditingTextBlock] = useState(null); // 現在編集中のテキストブロック
+  const [isEditMode, setIsEditMode] = useState(false); // 「レイアウト編集モード」がONかどうか
+  const [showShareModal, setShowShareModal] = useState(false); // 「共有リンク」ボタンが押されたか
+  const [isPublic, setIsPublic] = useState(false); // ポートフォリオ全体が「公開」されているか
 
-  // 現在のログインユーザーが、このポートフォリオの作成者（所有者）であるかどうかを判定
-  // 編集ボタンなどの表示制御に使用します
+  // 【重要】ログインしている自分（user.id）と
+  // このポートフォリオの持ち主（portfolio.user_id）が同じなら
+  // 「自分がオーナー（持ち主）」として、編集ボタンなどを表示します。
   const isOwner = user && portfolio && user.id === portfolio.user_id;
 
-  const { t } = useTranslation(); // 翻訳フック
+  const { t } = useTranslation(); // 言語切り替えのためのツール
 
   // --- useEffect (副作用フック) ---
   // ポートフォリオデータや所有権が変更された時の処理

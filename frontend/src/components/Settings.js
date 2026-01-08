@@ -1,3 +1,32 @@
+/**
+ * ユーザー設定画面のメインコンポーネント
+ * 
+ * 【役割】
+ * ユーザーのプロフィール、趣味、アカウントセキュリティ、通知設定、バックアップなどの
+ * 全てのユーザー設定を一元管理する画面です。
+ * 
+ * 【主な機能】
+ * 1. プロフィール編集
+ *    - ユーザー名、自己紹介の変更
+ *    - プロフィール画像のアップロード
+ * 
+ * 2. 趣味（Hobbies）管理
+ *    - ゲーム、読書、音楽などの嗜好データの管理（HobbiesManagerを呼び出し）
+ * 
+ * 3. アカウントセキュリティ
+ *    - パスワードの変更
+ *    - アカウントの完全削除
+ * 
+ * 4. 通知設定
+ *    - メール通知、新機能、メンテナンス情報の受け取り設定
+ * 
+ * 5. 一般設定
+ *    - 言語設定（i18n）、テーマ設定（ライト/ダーク）
+ * 
+ * 6. データバックアップ
+ *    - ゲーム、読書、音楽データのJSONエクスポート/インポート
+ */
+
 import React, { useState, useEffect } from 'react';
 import { withTranslation } from 'react-i18next';
 import HobbiesManager from './HobbiesManager';
@@ -5,55 +34,63 @@ import '../Settings.css';
 
 // ユーザー設定画面のメインコンポーネント
 function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, language }) {
-  // 現在表示しているタブのID（profile, hobbies, account, notifications, general）
+  // --- 画面表示用の状態管理 (State) ---
+  // activeTab: 現在右側に表示している設定カテゴリー（profile, hobbies, accountなど）
   const [activeTab, setActiveTab] = useState('profile');
 
-  // --- プロフィール設定のステート ---
-  const [username, setUsername] = useState(''); // ユーザー名
-  const [bio, setBio] = useState(''); // 自己紹介
-  const [profilePicFile, setProfilePicFile] = useState(null); // プロフィール画像ファイル
+  // --- 1. プロフィール設定用の状態 ---
+  const [username, setUsername] = useState(''); // 画面上のユーザー名
+  const [bio, setBio] = useState(''); // 画面上の自己紹介文
+  const [profilePicFile, setProfilePicFile] = useState(null); // アップロード待ちの画像ファイル
 
-  // --- アカウント設定のステート ---
-  const [currentPassword, setCurrentPassword] = useState(''); // 現在のパスワード
+  // --- 2. アカウント設定用の状態 ---
+  const [currentPassword, setCurrentPassword] = useState(''); // 現在のパスワード（確認用）
   const [newPassword, setNewPassword] = useState(''); // 新しいパスワード
 
-  // --- 通知設定のステート ---
-  const [emailNotifications, setEmailNotifications] = useState(true); // メール通知
-  const [featureAnnouncements, setFeatureAnnouncements] = useState(true); // 新機能のお知らせ
-  const [maintenanceInfo, setMaintenanceInfo] = useState(true); // メンテナンス情報
+  // --- 3. 通知設定用の状態 ---
+  const [emailNotifications, setEmailNotifications] = useState(true); // 全体通知を許可するか
+  const [featureAnnouncements, setFeatureAnnouncements] = useState(true); // 新機能情報を受け取るか
+  const [maintenanceInfo, setMaintenanceInfo] = useState(true); // メンテナンス情報を受け取るか
 
-  // --- 一般設定のステート ---
-  const [theme, setTheme] = useState('light'); // テーマ（ライト/ダーク）
-  const [deletePassword, setDeletePassword] = useState(''); // アカウント削除時の確認用パスワード
+  // --- 4. 一般設定用の状態 ---
+  const [theme, setTheme] = useState('light'); // ライト/ダークテーマの選択状態
+  const [deletePassword, setDeletePassword] = useState(''); // アカウント削除時の最終確認用パスワード
 
-  // 画面に表示するメッセージ（成功/エラー）
+  // サーバーとの通信結果（「保存しました」やエラー）を表示するためのテキスト
   const [message, setMessage] = useState('');
 
-  // ユーザー情報が渡されたら（ログイン時など）、ステートに初期値をセット
+  // ユーザーがログインして「user」プロパティが変わったら、現在の値を入力欄に埋める
   useEffect(() => {
     if (user) {
       setUsername(user.name || '');
       setBio(user.bio || '');
-      setEmailNotifications(user.email_notifications === 1 ? true : false); // 1ならtrue, 0ならfalse
+      // データベースの数値(1/0)をJavaScriptの真偽値(true/false)に変換してセット
+      setEmailNotifications(user.email_notifications === 1 ? true : false);
       setFeatureAnnouncements(user.feature_announcements === 1 ? true : false);
       setMaintenanceInfo(user.maintenance_info === 1 ? true : false);
       setTheme(user.theme || 'light');
     }
   }, [user]);
 
+  /**
+   * ファイルが選択されたときに、ファイルの中身を状態に保存する
+   */
   const handleFileChange = (e) => {
     setProfilePicFile(e.target.files[0]);
   };
 
-  // プロフィール情報の保存処理
+  /**
+   * プロフィール情報（名前、自己紹介、アイコン）を保存する処理
+   */
   const handleProfileSave = async () => {
     setMessage('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setMessage(t('settings_message_not_logged_in'));
       return;
     }
 
+    // 文字だけでなくファイルも送るため「FormData」という形式を使います
     const formData = new FormData();
     formData.append('name', username);
     formData.append('bio', bio);
@@ -66,7 +103,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
-          // FormDataを送る際は Content-Type ヘッダーを自動設定させるため省略
+          // FormDataを送る際は Content-Type を書くとエラーになるので省略します
         },
         body: formData
       });
@@ -74,8 +111,8 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       const data = await response.json();
       if (data.success) {
         setMessage(t('settings_message_profile_updated'));
-        onUpdateUser(data.user); // 親コンポーネント（App.js）のユーザー情報を更新
-        setProfilePicFile(null); // ファイル入力をクリア
+        onUpdateUser(data.user); // 全体（App.js）のユーザー情報を新しいものに差し替える
+        setProfilePicFile(null); // ファイル入力を完了したのでクリア
       } else {
         setMessage(data.error);
       }
@@ -84,15 +121,18 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
 
-  // パスワード変更処理
+  /**
+   * パスワードを変更する処理
+   */
   const handleChangePassword = async () => {
     setMessage('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setMessage(t('settings_message_not_logged_in'));
       return;
     }
 
+    // 最低限のバリデーション
     if (newPassword.length < 8) {
       setMessage(t('settings_message_password_too_short'));
       return;
@@ -111,6 +151,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       const data = await response.json();
       if (data.success) {
         setMessage(t('settings_message_password_changed'));
+        // 成功したら入力欄を空にする
         setCurrentPassword('');
         setNewPassword('');
       } else {
@@ -121,10 +162,12 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
 
-  // 通知設定の保存処理
+  /**
+   * 通知設定（メール、新機能、メンテナンス）を保存する処理
+   */
   const handleNotificationSave = async () => {
     setMessage('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setMessage(t('settings_message_not_logged_in'));
       return;
@@ -149,7 +192,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       const data = await response.json();
       if (data.success) {
         setMessage(t('settings_message_notifications_updated'));
-        // ユーザー情報を最新化するためにトークン検証APIを呼ぶ
+        // 最新のユーザー情報を再取得してアプリ全体に反映
         const verifyResponse = await fetch('http://localhost:5000/api/verify-token', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -165,14 +208,16 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
 
-  // アカウント削除処理
+  /**
+   * アカウントを完全に削除する処理（戻せないので確認ダイアログを出します）
+   */
   const handleDeleteAccount = async () => {
     setMessage('');
     if (!window.confirm(t('settings_confirm_delete_account'))) {
-      return;
+      return; // キャンセルされたら何もしない
     }
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setMessage(t('settings_message_not_logged_in'));
       return;
@@ -191,7 +236,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       const data = await response.json();
       if (data.success) {
         alert(t('settings_message_account_deleted'));
-        onLogout(); // ログアウト処理
+        onLogout(); // ログインできないようにログアウトさせる
       } else {
         setMessage(data.error);
       }
@@ -200,10 +245,12 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
 
-  // 一般設定（言語・テーマ）の保存処理
+  /**
+   * 一般設定（言語、テーマ）をサーバーに保存する処理
+   */
   const handleGeneralSave = async () => {
     setMessage('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setMessage(t('settings_message_not_logged_in'));
       return;

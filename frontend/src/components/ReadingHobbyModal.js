@@ -1,11 +1,25 @@
-// Reactの基本的な機能（フック）をインポート
-// useState: データを保存する
-// useEffect: 画面が表示されたタイミングで処理を実行する
-// useCallback: 関数を無駄に作らないようにする（パフォーマンス対策）
+/**
+ * 読書記録管理モーダル
+ * 
+ * 【役割】
+ * 好きな著者と、その著者の作品（本、マンガ、雑誌など）を記録・管理する画面です。
+ * 
+ * 【主な機能】
+ * 1. 著者管理
+ *    - 新しい著者の追加、既存著者のリスト表示
+ *    - 著者の削除（関連する本も削除されます）
+ * 
+ * 2. 本の登録と編集
+ *    - 著者の作品を追加（タイトル、種類、ジャンル、評価、感想）
+ *    - 本の表紙画像のアップロード
+ *    - 登録済み作品の編集と削除
+ * 
+ * 3. 並び替え
+ *    - ドラッグ＆ドロップによる作品の表示順序の入れ替え（DBに保存されます）
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
-// 多言語対応（日本語・英語の切り替えなど）のためのフック
 import { useTranslation } from 'react-i18next';
-// ドラッグ＆ドロップで並び替えをするためのライブラリ
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import './ReadingHobbyModal.css';
 
