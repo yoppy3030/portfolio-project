@@ -131,7 +131,9 @@ function Header({ user, onLogout, theme, activeTemplate, portfolio }) {
                     <span>{user?.name}</span>
                   </div>
                   <Link to="/settings" className="user-menu-item">{t('header_settings')}</Link>
-                  <Link to="/admin" className="user-menu-item">管理者パネル</Link>
+                  {user?.email === 'test.example3030@gmail.com' && (
+                    <Link to="/admin" className="user-menu-item">管理者パネル</Link>
+                  )}
                   <button onClick={onLogout} className="user-menu-item">{t('header_logout')}</button>
                 </div>
               </div>

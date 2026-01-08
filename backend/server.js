@@ -178,10 +178,11 @@ const cleanupExpiredCodes = () => {
 // 定期的に期限切れの認証コードを削除（1時間ごと）
 setInterval(cleanupExpiredCodes, 60 * 60 * 1000);
 
-// 新規ユーザー登録API
-app.post('/api/register', async (req, res) => {
+// 新規ユーザー登録API（アイコンアップロード対応）
+app.post('/api/register', upload.single('icon'), async (req, res) => {
   try {
-    const { name, email, password, iconUrl, bio } = req.body;
+    const { name, email, password, bio } = req.body;
+    const iconUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     // 入力データの検証
     if (!name || !email || !password) {

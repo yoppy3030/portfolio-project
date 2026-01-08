@@ -26,7 +26,7 @@ export default function RegisterForm({ theme }) {
   const EyeClosed = (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
       <ellipse cx="12" cy="12" rx="7" ry="5.5" stroke="#bbb" strokeWidth="2" />
-      <line x1="5" y1="19" x2="19" y2="5" stroke="#bbb" strokeWidth="2"/>
+      <line x1="5" y1="19" x2="19" y2="5" stroke="#bbb" strokeWidth="2" />
       <circle cx="12" cy="12" r="2.3" fill="#bbb" />
     </svg>
   );
@@ -34,15 +34,11 @@ export default function RegisterForm({ theme }) {
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     if (type === "file" && files[0]) {
-      // ファイルをBase64に変換
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setForm(f => ({
-          ...f,
-          [name]: event.target.result
-        }));
-      };
-      reader.readAsDataURL(files[0]);
+      // ファイルオブジェクトをそのまま保存
+      setForm(f => ({
+        ...f,
+        [name]: files[0]
+      }));
     } else {
       setForm(f => ({
         ...f,
@@ -52,7 +48,7 @@ export default function RegisterForm({ theme }) {
   };
 
   // 登録ボタン押下時
-    const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // バリデーション
@@ -67,21 +63,26 @@ export default function RegisterForm({ theme }) {
     }
 
     try {
+      // FormDataを使ってファイルアップロード
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('email', form.email);
+      formData.append('password', form.password);
+      if (form.icon) {
+        formData.append('icon', form.icon);
+      }
+      if (form.profile) {
+        formData.append('bio', form.profile);
+      }
+
       // サーバ通信
       const res = await fetch("http://localhost:5000/api/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          password: form.password,
-          iconUrl: form.icon, // Base64エンコードされたアイコン
-          bio: form.profile
-        })
+        body: formData // FormDataを送信（Content-Typeは自動設定される）
       });
 
       const data = await res.json();
-      
+
       if (data.success) {
         alert("登録完了しました！ログインページに移動します。");
         // ログインページに移動
