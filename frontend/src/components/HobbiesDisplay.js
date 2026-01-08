@@ -1,26 +1,8 @@
-/**
- * 趣味・関心事表示コンポーネント (閲覧用)
- * 
- * 【役割】
- * ポートフォリオページにて、ユーザーの趣味項目を一覧表示します。
- * 各項目（ゲーム、音楽、読書など）をクリックすると、詳細なデータや専用ビューを展開します。
- * 
- * 【主な機能】
- * 1. データ取得
- *    - 一般的な趣味、ゲーム登録数、音楽設定数、読書記録数を一括取得
- * 
- * 2. フィルタリング表示
- *    - 選択された趣味カテゴリ（タグ）に応じて、下部に詳細コンポーネントを表示
- * 
- * 3. モーダル連携
- *    - ゲームライブラリなどを閲覧・操作するためのモーダル呼び出し
- */
-
 import React, { useState, useEffect, useCallback } from 'react';
 import './HobbiesDisplay.css';
 import GameLibraryModal from './GameLibraryModal';
 import MusicAppreciationDisplay from './MusicAppreciationDisplay';
-import ReadingHobbyDisplay from './ReadingHobbyDisplay';
+import ReadingHobbyDisplay from './ReadingHobbyDisplay'; // 新規作成するコンポーネント
 
 // ポートフォリオページで趣味・関心事を表示するコンポーネント
 function HobbiesDisplay({ isOwner, portfolioId }) {

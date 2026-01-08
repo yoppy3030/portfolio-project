@@ -1,46 +1,28 @@
-// Reactの基本機能をインポート
 import React, { useState } from "react";
-// ページ遷移用のフック
 import { useNavigate } from "react-router-dom";
-// スタイルシート
 import "../RegisterForm.css";
 
-/**
- * 新規ユーザー登録フォームコンポーネント
- * 
- * ユーザー名、メールアドレス、パスワード、アイコン画像、自己紹介を入力して
- * 新しいアカウントを作成します。
- * 
- * @param {string} theme - 現在のテーマ（light/dark）
- */
 export default function RegisterForm({ theme }) {
-  // ページ遷移用の関数
   const navigate = useNavigate();
-
-  // フォームの入力内容を管理する状態
   const [form, setForm] = useState({
-    name: "",           // ユーザー名
-    email: "",          // メールアドレス
-    password: "",       // パスワード
-    password2: "",      // パスワード確認用
-    icon: null,         // アイコン画像ファイル
-    profile: "",        // 自己紹介
-    agree: false,       // 利用規約への同意
+    name: "",
+    email: "",
+    password: "",
+    password2: "",
+    icon: null,
+    profile: "",
+    agree: false,
   });
-
-  // パスワード表示/非表示の状態
   const [showPassword, setShowPassword] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
 
-  // パスワード表示用の目のアイコン（開いた目）
+  // 目のアイコン
   const EyeOpen = (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
       <ellipse cx="12" cy="12" rx="7" ry="5.5" stroke="#2196F3" strokeWidth="2" />
       <circle cx="12" cy="12" r="2.3" fill="#2196F3" />
     </svg>
   );
-
-  // パスワード非表示用の目のアイコン（閉じた目）
   const EyeClosed = (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
       <ellipse cx="12" cy="12" rx="7" ry="5.5" stroke="#bbb" strokeWidth="2" />
@@ -49,21 +31,15 @@ export default function RegisterForm({ theme }) {
     </svg>
   );
 
-  /**
-   * フォームの入力値が変更されたときの処理
-   * ファイル選択、チェックボックス、テキスト入力に対応
-   */
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
-
     if (type === "file" && files[0]) {
-      // ファイル選択の場合: Fileオブジェクトを保存
+      // ファイルオブジェクトをそのまま保存
       setForm(f => ({
         ...f,
         [name]: files[0]
       }));
     } else {
-      // テキスト入力やチェックボックスの場合
       setForm(f => ({
         ...f,
         [name]: type === "checkbox" ? checked : value,
@@ -71,50 +47,45 @@ export default function RegisterForm({ theme }) {
     }
   };
 
-  /**
-   * 登録ボタンが押されたときの処理
-   * バリデーション後、サーバーに登録リクエストを送信
-   */
+  // 登録ボタン押下時
   const handleSubmit = async (e) => {
-    e.preventDefault(); // ページリロードを防止
+    e.preventDefault();
 
-    // パスワード一致チェック
+    // バリデーション
     if (form.password !== form.password2) {
       alert("パスワードが一致しません");
       return;
     }
 
-    // 利用規約同意チェック
     if (!form.agree) {
       alert("利用規約・プライバシーポリシーへの同意が必要です");
       return;
     }
 
     try {
-      // FormDataを作成（ファイルアップロード対応）
+      // FormDataを使ってファイルアップロード
       const formData = new FormData();
       formData.append('name', form.name);
       formData.append('email', form.email);
       formData.append('password', form.password);
-
       if (form.icon) {
         formData.append('icon', form.icon);
       }
-
       if (form.profile) {
         formData.append('bio', form.profile);
       }
 
-      // サーバーに登録リクエストを送信
+      // サーバ通信
       const res = await fetch("http://localhost:5000/api/register", {
         method: "POST",
-        body: formData
+        body: formData // FormDataを送信（Content-Typeは自動設定される）
       });
 
       const data = await res.json();
 
       if (data.success) {
         alert("登録完了しました！ログインページに移動します。");
+        // ログインページに移動
         navigate('/login');
       } else {
         alert(`エラー: ${data.error || "不明なエラーが発生しました"}`);
@@ -130,8 +101,6 @@ export default function RegisterForm({ theme }) {
       <div className="register-form-wrapper">
         <form className="register-form" onSubmit={handleSubmit}>
           <h2>新規登録</h2>
-
-          {/* ユーザー名入力欄 */}
           <div className="input-row">
             <label htmlFor="name">ユーザー名</label>
             <input
@@ -143,8 +112,6 @@ export default function RegisterForm({ theme }) {
               required
             />
           </div>
-
-          {/* メールアドレス入力欄 */}
           <div className="input-row">
             <label htmlFor="email">メールアドレス</label>
             <input
@@ -156,8 +123,6 @@ export default function RegisterForm({ theme }) {
               required
             />
           </div>
-
-          {/* パスワード入力欄 */}
           <div className="input-row">
             <label htmlFor="password">パスワード</label>
             <div className="pw-input-wrapper">
@@ -181,8 +146,6 @@ export default function RegisterForm({ theme }) {
               </button>
             </div>
           </div>
-
-          {/* パスワード確認入力欄 */}
           <div className="input-row">
             <label htmlFor="password2">パスワード再入力</label>
             <div className="pw-input-wrapper">
@@ -206,8 +169,6 @@ export default function RegisterForm({ theme }) {
               </button>
             </div>
           </div>
-
-          {/* アイコン画像選択欄 */}
           <div className="input-row">
             <label htmlFor="icon">アイコン画像</label>
             <input
@@ -218,8 +179,6 @@ export default function RegisterForm({ theme }) {
               onChange={handleChange}
             />
           </div>
-
-          {/* 自己紹介入力欄 */}
           <div className="input-row">
             <label htmlFor="profile">自己紹介</label>
             <input
@@ -230,8 +189,6 @@ export default function RegisterForm({ theme }) {
               onChange={handleChange}
             />
           </div>
-
-          {/* 利用規約同意チェックボックス */}
           <div className="checkbox-label">
             <input
               id="agree"
@@ -243,8 +200,6 @@ export default function RegisterForm({ theme }) {
             />
             <label htmlFor="agree">利用規約・プライバシーポリシーに同意する（必須）</label>
           </div>
-
-          {/* ボタンエリア */}
           <div className="form-actions">
             <button type="submit">登録</button>
             <button type="button" onClick={() => window.history.back()}>戻る</button>

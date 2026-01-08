@@ -1,11 +1,3 @@
-/**
- * 読書記録・表示コンポーネント
- * 
- * 【役割】
- * ポートフォリオ上で、好きな著者とその作品（本）を
- * リストや画像付きで閲覧することを目的としたコンポーネントです。
- */
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import './ReadingHobbyDisplay.css';

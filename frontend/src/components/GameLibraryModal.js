@@ -1,29 +1,9 @@
-/**
- * ゲームライブラリ管理モーダル
- * 
- * 【役割】
- * ユーザーがプレイしたゲームを検索して追加したり、評価や感想を記録したりする画面です。
- * RAWG APIという外部サービスを使ってゲーム情報を検索します。
- * 
- * 【主な機能】
- * 1. ゲーム検索 (RAWG API)
- *    - キーワード入力によるリアルタイム検索（日本語からの自動翻訳付き）
- *    - プラットフォーム（Switch, PS5など）による絞り込み
- *    - ページネーション（さらに読み込む）
- * 
- * 2. マイライブラリ管理
- *    - 登録済みゲームの評価（★1〜10）、プレイ時間、感想の編集
- *    - シリーズごとのグループ表示とフォルダ開閉
- *    - ドラッグ＆ドロップによる自由な並び替え（カスタム並び替え）
- *    - BGM（YouTubeなどのURL）の登録と管理
- * 
- * 3. データの並び替えとフィルタリング
- *    - 追加順、評価順、プレイ時間順、タイトル順、カスタム順
- *    - ライブラリ内でのプラットフォーム・ジャンル絞り込み
- */
-
 // Reactとその機能（フック）をインポートします
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+// useState: 変数（状態）を管理する
+// useEffect: 画面表示後やデータの変化時に処理を行う
+// useCallback, useMemo: 処理を記憶してパフォーマンスを向上させる
+// useRef: DOM要素への参照を保持する
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import './GameLibraryModal.css';
 // lodash.debounce: 入力が終わるまで処理を待つための便利な道具（検索処理などで使用）
 import debounce from 'lodash.debounce';
@@ -510,46 +490,62 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
  * APIからのデータ取得、検索、並び替え、シリーズごとのグループ化などを管理
  */
 function GameLibraryModal({ onClose, isOwner }) {
-  // --- 1. ライブラリの状態 (My Library) ---
-  const [myGames, setMyGames] = useState([]); // 自分のライブラリにある全ゲーム
-  const [loading, setLoading] = useState(false); // 読み込み中フラグ
-  const [error, setError] = useState(''); // エラーメッセージ
+  // --- アプリケーションの状態管理 (State) ---
 
-  // --- 2. 検索機能の状態 (Search) ---
-  const [searchResults, setSearchResults] = useState([]); // 検索で見つかったゲーム
-  const [searchTerm, setSearchTerm] = useState(''); // 検索窓の入力値
-  const [searchLoading, setSearchLoading] = useState(false); // 検索中フラグ
-  const [selectedPlatform, setSelectedPlatform] = useState(''); // 検索時のプラットフォーム絞り込みID
-  const [currentPage, setCurrentPage] = useState(1); // 検索結果の現在のページ
-  const [hasMoreResults, setHasMoreResults] = useState(false); // まだ次の検索結果があるか
-  const [loadingMore, setLoadingMore] = useState(false); // 「さらに読み込む」ボタンの実行中フラグ
+  // 自分のライブラリにあるゲームのリスト。配列として管理します。
+  const [myGames, setMyGames] = useState([]);
 
-  // --- 3. 表示・並び替えの状態 (View Options) ---
+  // 検索した結果のゲームリスト
+  const [searchResults, setSearchResults] = useState([]);
+
+  // 検索ボックスに入力されたキーワード
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // 処理中かどうかを管理するフラグ（trueならローディング画面を表示）
+  // loading: メインの読み込み, searchLoading: 検索時の読み込み, loadingMore: 追加読み込み
+  const [loading, setLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // エラーが発生したときのメッセージを保存。空文字ならエラーなし。
+  const [error, setError] = useState('');
+
+  // 検索時に絞り込むプラットフォーム（機種）のID
+  const [selectedPlatform, setSelectedPlatform] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreResults, setHasMoreResults] = useState(false);
+  const [searchResultsRef, setSearchResultsRef] = useState(null);
   const [sortOrder, setSortOrder] = useState(() => {
-    // 設定をブラウザ(localStorage)に保存しておくことで、次回開いたときも同じ順序にする
     try {
       const savedSortOrder = localStorage.getItem('sortOrderState');
       return savedSortOrder ? JSON.parse(savedSortOrder) : 'added';
     } catch (error) {
+      console.error('Failed to parse sortOrderState from localStorage', error);
       return 'added';
     }
-  });
-  const [isCustomOrder, setIsCustomOrder] = useState(false); // ユーザーが手動で並び替えた状態か
-  const [selectedLibraryPlatform, setSelectedLibraryPlatform] = useState(''); // ライブラリ内のプラットフォーム絞り込み
-  const [selectedLibraryGenre, setSelectedLibraryGenre] = useState(''); // ライブラリ内のジャンル絞り込み
-  const [layoutMode, setLayoutMode] = useState('grid'); // 画面レイアウト（タイル or リスト）
-
-  // --- 4. シリーズ・BGM関連の状態 ---
-  const [expandedSeries, setExpandedSeries] = useState(() => {
-    // どのシリーズフォルダが開いているかを保存しておく
+  }); // 並び替え順序: 'added', 'rating', 'playtime', 'title', 'custom'
+  const [isCustomOrder, setIsCustomOrder] = useState(false);
+  const [selectedLibraryPlatform, setSelectedLibraryPlatform] = useState(''); // マイライブラリのプラットフォーム絞り込み
+  const [selectedLibraryGenre, setSelectedLibraryGenre] = useState(''); // マイライブラリのジャンル絞り込み
+  const [selectedSeriesForAdd, setSelectedSeriesForAdd] = useState(''); // 検索結果からゲームを追加する際のシリーズ名
+  const [expandedSeries, setExpandedSeries] = useState(() => { // シリーズフォルダの開閉状態 { "シリーズ名": true/false }
     try {
       const savedState = localStorage.getItem('expandedSeriesState');
       return savedState ? JSON.parse(savedState) : {};
     } catch (error) {
+      console.error('Failed to parse expandedSeriesState from localStorage', error);
       return {};
     }
   });
-  const [allUserSongs, setAllUserSongs] = useState([]); // BGMとして選べる全曲のリスト
+  const [updateCounter, setUpdateCounter] = useState(0); // 強制再描画用のカウンター
+  const [layoutMode, setLayoutMode] = useState('grid'); // 'grid' or 'list'
+  const [allUserSongs, setAllUserSongs] = useState([]); // ★ ユーザーの全曲リスト
+  const [showManualAdd, setShowManualAdd] = useState(false); // 手動追加フォームの表示/非表示
+  const [manualTitle, setManualTitle] = useState(''); // 手動追加用のタイトル
+  const [manualImageUrl, setManualImageUrl] = useState(''); // 手動追加用の画像URL
+  const [manualSeries, setManualSeries] = useState(''); // 手動追加用のシリーズ名
+  const [manualImageFile, setManualImageFile] = useState(null); // ローカルファイル選択用
+  const fileInputRef = useRef(null); // ファイル入力要素への参照
 
   const getToken = () => localStorage.getItem('token');
 
@@ -1233,6 +1229,108 @@ function GameLibraryModal({ onClose, isOwner }) {
     }
   };
 
+  // ローカルファイルを読み込んでBase64に変換する関数
+  const handleImageFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      setManualImageFile(null);
+      setManualImageUrl('');
+      return;
+    }
+
+    // 画像ファイルかチェック
+    if (!file.type.startsWith('image/')) {
+      setError('画像ファイルを選択してください。');
+      setManualImageFile(null);
+      setManualImageUrl('');
+      return;
+    }
+
+    // ファイルサイズチェック（10MB以下、Base64エンコード後は約13MBになるため余裕を持たせる）
+    if (file.size > 10 * 1024 * 1024) {
+      setError('画像ファイルのサイズは10MB以下にしてください。');
+      setManualImageFile(null);
+      setManualImageUrl('');
+      return;
+    }
+
+    setManualImageFile(file);
+    setError('');
+
+    // FileReaderでBase64エンコード
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setManualImageUrl(reader.result); // Base64データURL
+    };
+    reader.onerror = () => {
+      setError('画像の読み込みに失敗しました。');
+      setManualImageFile(null);
+      setManualImageUrl('');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 手動でゲームを追加するハンドラ
+  const handleManualAddGame = async () => {
+    if (!manualTitle.trim()) {
+      setError('タイトルを入力してください。');
+      return;
+    }
+
+    // Base64データのサイズチェック（約10MB以下に制限）
+    if (manualImageUrl && manualImageUrl.startsWith('data:')) {
+      const base64Data = manualImageUrl.split(',')[1] || '';
+      const base64Size = base64Data.length;
+      // Base64文字列のサイズをバイト数に変換（約4/3倍）
+      const estimatedBytes = (base64Size * 3) / 4;
+      const maxSize = 10 * 1024 * 1024; // 10MB
+
+      if (estimatedBytes > maxSize) {
+        setError(`画像ファイルが大きすぎます（約${(estimatedBytes / 1024 / 1024).toFixed(2)}MB）。10MB以下の画像を選択してください。`);
+        return;
+      }
+    }
+
+    try {
+      // 手動追加用の一意なゲームIDを生成（RAWGの数値IDと被らないようにプレフィックスを付ける）
+      const manualGameId = `manual-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+
+      const response = await fetch('http://localhost:5000/api/played-games', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify({
+          game_api_id: manualGameId, // 手動追加の場合は独自のIDを付与
+          title: manualTitle.trim(),
+          image_url: manualImageUrl.trim() || null,
+          platforms: null,
+          genres: null,
+          series: manualSeries.trim() !== '' ? manualSeries.trim() : null,
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        // フォームをリセット
+        setManualTitle('');
+        setManualImageUrl('');
+        setManualSeries('');
+        setManualImageFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        setShowManualAdd(false);
+        setError('');
+        fetchMyGames(); // ライブラリを再取得（更新）
+      } else {
+        setError(data.error || 'ゲームの追加に失敗しました。');
+      }
+    } catch (err) {
+      setError('サーバーとの通信に失敗しました。');
+    }
+  };
+
   const handleRemoveGame = async (playedGameId) => {
     try {
       const response = await fetch(`http://localhost:5000/api/played-games/${playedGameId}`, {
@@ -1362,11 +1460,47 @@ function GameLibraryModal({ onClose, isOwner }) {
           {error && <p className="error-message">{error}</p>}
 
           <div className="game-search-section">
-            <h4>ゲームを検索して追加</h4>
-            <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '10px' }}>
-              💡 検索のヒント: 日本語名（例: ゼルダ、マリオ）や英語名（例: Zelda, Mario, Pokemon）で検索できます
-            </p>
-            <div className="search-controls"> {/* New div for controls */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h4 style={{ margin: 0 }}>ゲームを追加</h4>
+              <div style={{ display: 'flex', gap: '5px' }}>
+                <button
+                  onClick={() => setShowManualAdd(false)}
+                  className={`tab-button ${!showManualAdd ? 'active' : ''}`}
+                  style={{
+                    padding: '8px 16px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px 0 0 4px',
+                    background: showManualAdd ? 'white' : '#007bff',
+                    color: showManualAdd ? '#333' : 'white',
+                    cursor: 'pointer',
+                    borderRight: 'none'
+                  }}
+                >
+                  検索
+                </button>
+                <button
+                  onClick={() => setShowManualAdd(true)}
+                  className={`tab-button ${showManualAdd ? 'active' : ''}`}
+                  style={{
+                    padding: '8px 16px',
+                    border: '1px solid #ddd',
+                    borderRadius: '0 4px 4px 0',
+                    background: showManualAdd ? '#007bff' : 'white',
+                    color: showManualAdd ? 'white' : '#333',
+                    cursor: 'pointer'
+                  }}
+                >
+                  手動追加
+                </button>
+              </div>
+            </div>
+
+            {!showManualAdd ? (
+              <>
+                <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '10px' }}>
+                  💡 検索のヒント: 日本語名（例: ゼルダ、マリオ）や英語名（例: Zelda, Mario, Pokemon）で検索できます
+                </p>
+                <div className="search-controls"> {/* New div for controls */}
               <input
                 type="text"
                 placeholder="ゲームのタイトルを入力... (例: ゼルダの伝説、Mario, Pokemon)"
@@ -1457,6 +1591,185 @@ function GameLibraryModal({ onClose, isOwner }) {
                     すべての結果を表示しました
                   </p>
                 )}
+              </div>
+            )}
+          </>
+            ) : (
+              <div className="manual-add-form">
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', color: '#666', fontWeight: '500' }}>
+                    タイトル <span style={{ color: '#dc3545' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={manualTitle}
+                    onChange={(e) => setManualTitle(e.target.value)}
+                    placeholder="例: ゼルダの伝説 ブレス オブ ザ ワイルド"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '0.9rem',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', color: '#666', fontWeight: '500' }}>
+                    画像（任意）
+                  </label>
+                  <div style={{ marginBottom: '10px' }}>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileChange}
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '0.9rem',
+                        boxSizing: 'border-box',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <small style={{ display: 'block', marginTop: '5px', color: '#999', fontSize: '0.85rem' }}>
+                      ローカルファイルから画像を選択（10MB以下、JPG/PNG/GIF等）
+                    </small>
+                  </div>
+                  <div style={{ marginTop: '10px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', color: '#666', fontWeight: '500' }}>
+                      または画像URLを入力
+                    </label>
+                    <input
+                      type="url"
+                      value={manualImageFile ? '' : manualImageUrl}
+                      onChange={(e) => {
+                        if (!manualImageFile) {
+                          setManualImageUrl(e.target.value);
+                        }
+                      }}
+                      disabled={!!manualImageFile}
+                      placeholder="例: https://example.com/image.jpg"
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '0.9rem',
+                        boxSizing: 'border-box',
+                        backgroundColor: manualImageFile ? '#f5f5f5' : 'white',
+                        cursor: manualImageFile ? 'not-allowed' : 'text'
+                      }}
+                    />
+                    {manualImageFile && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setManualImageFile(null);
+                          setManualImageUrl('');
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                        }}
+                        style={{
+                          marginTop: '5px',
+                          padding: '5px 10px',
+                          fontSize: '0.85rem',
+                          background: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ファイル選択を解除
+                      </button>
+                    )}
+                  </div>
+                  {(manualImageUrl || manualImageFile) && (
+                    <div style={{ marginTop: '10px' }}>
+                      <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '5px' }}>プレビュー:</p>
+                      <img
+                        src={manualImageUrl}
+                        alt="プレビュー"
+                        style={{
+                          maxWidth: '200px',
+                          maxHeight: '150px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          objectFit: 'cover'
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', color: '#666', fontWeight: '500' }}>
+                    シリーズ名（任意）
+                  </label>
+                  <input
+                    type="text"
+                    value={manualSeries}
+                    onChange={(e) => setManualSeries(e.target.value)}
+                    placeholder="例: ゼルダの伝説"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '0.9rem',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => {
+                      setShowManualAdd(false);
+                      setManualTitle('');
+                      setManualImageUrl('');
+                      setManualSeries('');
+                      setManualImageFile(null);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                      setError('');
+                    }}
+                    style={{
+                      padding: '10px 20px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      background: 'white',
+                      color: '#333',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={handleManualAddGame}
+                    disabled={!manualTitle.trim()}
+                    style={{
+                      padding: '10px 20px',
+                      border: 'none',
+                      borderRadius: '4px',
+                      background: manualTitle.trim() ? '#28a745' : '#ccc',
+                      color: 'white',
+                      cursor: manualTitle.trim() ? 'pointer' : 'not-allowed',
+                      fontSize: '0.9rem',
+                      fontWeight: '500'
+                    }}
+                  >
+                    追加
+                  </button>
+                </div>
               </div>
             )}
           </div>

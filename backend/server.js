@@ -759,6 +759,9 @@ app.delete('/api/hobbies/:hobbyId', authenticateToken, (req, res) => {
 // 
 // プレイ時間カラムを追加する場合（テーブルが既に存在する場合）:
 // ALTER TABLE played_games ADD COLUMN playtime_hours DECIMAL(10, 2);
+//
+// image_urlカラムをMEDIUMTEXT型に変更する場合（Base64画像データを保存するため、最大16MBまで保存可能）:
+// ALTER TABLE played_games MODIFY COLUMN image_url MEDIUMTEXT;
 
 // --- 音楽鑑賞(Music Appreciation)関連API ---
 
@@ -1286,8 +1289,8 @@ app.post('/api/played-games', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
   const { game_api_id, title, image_url, platforms, genres, series, bgms } = req.body;
 
-  if (!game_api_id || !title) {
-    return res.status(400).json({ success: false, error: 'ゲームIDとタイトルは必須です。' });
+  if (!title) {
+    return res.status(400).json({ success: false, error: 'タイトルは必須です。' });
   }
   if (bgms !== undefined && !Array.isArray(bgms)) {
     return res.status(400).json({ success: false, error: 'BGMは配列である必要があります。' });

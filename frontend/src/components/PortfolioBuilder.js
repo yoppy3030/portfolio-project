@@ -1,11 +1,3 @@
-/**
- * ポートフォリオ・ビルダーコンポーネント
- * 
- * 【役割】
- * 新しいポートフォリオを作成したり、テンプレートから生成したりするための
- * 管理画面や初期設定を行うコンポーネントです。
- */
-
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';

@@ -1,15 +1,6 @@
-/**
- * 音楽鑑賞・表示コンポーネント
- * 
- * 【役割】
- * ユーザーが登録した好きなアーティストや曲のリストを
- * ポートフォリオ上で閲覧・再生（YouTubeリンク）するための画面です。
- */
-
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { FaYoutube, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import React, { useState, useEffect, useCallback } from 'react';
 import './MusicAppreciationDisplay.css';
+import { FaYoutube } from 'react-icons/fa';
 
 // 曲リストを表示する新しいコンポーネント
 // 曲リストを表示するコンポーネント

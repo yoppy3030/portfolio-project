@@ -671,3 +671,37 @@
   border-radius: 4px;
   cursor: pointer;
 }
+
+/* Manual Add Form Styles */
+.manual-add-form {
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  border: 1px solid #eee;
+}
+
+.manual-add-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.manual-add-form input[type="text"],
+.manual-add-form input[type="url"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.tab-button {
+  transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+  opacity: 0.9;
+}

@@ -1,11 +1,3 @@
-/**
- * パスワードリセット画面コンポーネント
- * 
- * 【役割】
- * パスワードを忘れたユーザーが、新しいパスワードを設定するための画面です。
- * メールなどで送られたトークンを検証し、安全にパスワードを更新する機能を提供します。
- */
-
 import React, { useState } from "react";
 import "../PasswordReset.css";
 
@@ -29,7 +21,7 @@ export default function PasswordReset() {
   const EyeClosed = (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
       <ellipse cx="12" cy="12" rx="7" ry="5.5" stroke="#bbb" strokeWidth="2" />
-      <line x1="5" y1="19" x2="19" y2="5" stroke="#bbb" strokeWidth="2" />
+      <line x1="5" y1="19" x2="19" y2="5" stroke="#bbb" strokeWidth="2"/>
       <circle cx="12" cy="12" r="2.3" fill="#bbb" />
     </svg>
   );
@@ -111,7 +103,7 @@ export default function PasswordReset() {
               required
             />
           </div>
-
+          
           <div className="send-code-section">
             <button type="button" className="send-code-btn" onClick={handleSendCode}>
               認証コード送信

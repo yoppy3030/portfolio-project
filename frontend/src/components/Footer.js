@@ -1,23 +1,15 @@
-/**
- * フッターコンポーネント
- * 
- * 【役割】
- * 画面の下部に常に表示される領域です。
- * Copyright情報、SNSリンク、お問い合わせへの導線などを提供します。
- */
-
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import './Footer.css';
+import { useTranslation } from 'react-i18next';
+import '../Footer.css';
 
 function Footer({ theme, activeTemplate }) {
-  const { t } = useTranslation();
-  const currentTheme = theme || 'light';
-  const currentYear = new Date().getFullYear();
+    const { t } = useTranslation();
+    const currentTheme = theme || 'light';
+    const currentYear = new Date().getFullYear();
 
-  return (
-    <footer className={`footer ${currentTheme}-theme ${activeTemplate ? activeTemplate + '-template' : ''}`}>
+    return (
+        <footer className={`footer ${currentTheme}-theme ${activeTemplate ? activeTemplate + '-template' : ''}`}>
       <div className="footer-container">
         <div className="footer-section">
           <h4>My Portfolio Builder</h4>
