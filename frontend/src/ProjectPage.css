@@ -39,13 +39,18 @@
 }
 
 .project-actions button {
-    padding: 0.8rem 1.2rem; /* ボタンのサイズを少し大きく */
-    border: none;
-    cursor: pointer;
-    border-radius: 5px; /* 角を少し丸く */
-    font-weight: 600; /* 文字を少し太く */
-    transition: all 0.3s ease; /* スムーズなトランジション */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* わずかな影 */
+  padding: 0.8rem 1.2rem;
+  /* ボタンのサイズを少し大きく */
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  /* 角を少し丸く */
+  font-weight: 600;
+  /* 文字を少し太く */
+  transition: all 0.3s ease;
+  /* スムーズなトランジション */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* わずかな影 */
 }
 
 .project-actions .btn-primary {
@@ -55,8 +60,10 @@
 
 .project-actions .btn-primary:hover {
   background-color: #0056b3;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* ホバー時の影を濃く */
-  transform: translateY(-2px); /* 少し上に移動 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  /* ホバー時の影を濃く */
+  transform: translateY(-2px);
+  /* 少し上に移動 */
 }
 
 .project-actions .btn-secondary {
@@ -67,8 +74,10 @@
 
 .project-actions .btn-secondary:hover {
   background-color: #e0e0e0;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* ホバー時の影を濃く */
-  transform: translateY(-2px); /* 少し上に移動 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  /* ホバー時の影を濃く */
+  transform: translateY(-2px);
+  /* 少し上に移動 */
 }
 
 
@@ -81,9 +90,10 @@
 .grid-item {
   background: #fff;
   border: 1px solid #ddd;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border-radius: 4px;
-  overflow: hidden; /* Important for content blocks */
+  overflow: hidden;
+  /* Important for content blocks */
 }
 
 .content-block {
@@ -93,7 +103,8 @@
   padding: 10px;
   box-sizing: border-box;
   overflow: auto;
-  min-height: 40px; /* Ensure minimum height for actions */
+  min-height: 40px;
+  /* Ensure minimum height for actions */
 }
 
 .block-actions {
@@ -101,11 +112,13 @@
   top: 5px;
   right: 5px;
   z-index: 10;
-  display: none; /* Hide by default */
+  display: none;
+  /* Hide by default */
 }
 
 .content-block:hover .block-actions {
-  display: flex; /* Show on hover */
+  display: flex;
+  /* Show on hover */
   gap: 5px;
 }
 
@@ -119,7 +132,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .block-actions button:hover {
@@ -240,13 +253,15 @@
 
 /* Adjust textarea inside editor */
 .text-block textarea {
-  height: calc(100% - 40px); /* Adjust based on toolbar height */
+  height: calc(100% - 40px);
+  /* Adjust based on toolbar height */
 }
 
 /* Main container for editor and TOC */
 .project-editor-container {
   display: flex;
-  flex-direction: row-reverse; /* TOC on the right */
+  flex-direction: row-reverse;
+  /* TOC on the right */
   align-items: flex-start;
 }
 
@@ -291,7 +306,7 @@
 }
 
 .toc-sidebar li:last-child a {
-    border-bottom: none;
+  border-bottom: none;
 }
 
 .toc-sidebar li a:hover {
@@ -344,13 +359,22 @@
   border-radius: 4px;
   padding: 5px;
   display: inline-block;
-  vertical-align: middle; /* Align with labels */
+  vertical-align: middle;
+  /* Align with labels */
 }
 
 .color-picker-wrapper input[type="color"] {
-  width: 50px; /* Adjust width as needed */
+  width: 50px;
+  /* Adjust width as needed */
   height: 30px;
   border: none;
   padding: 0;
   cursor: pointer;
+}
+
+/* Project Page Controls */
+.project-page-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }

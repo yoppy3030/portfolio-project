@@ -1077,9 +1077,10 @@ export default function Portfolio({ onTemplateChange, portfolio, setPortfolio, f
               <span>{t('portfolio_edit_mode')}</span>
             </div>
 
-            <button className="btn-secondary share-button" onClick={() => setShowShareModal(true)}>
+            <div className={`edit-mode-toggle`} onClick={() => setShowShareModal(true)}>
               <i className="material-icons">share</i>
-            </button>
+              <span>{t('portfolio_share_button')}</span>
+            </div>
 
             {isEditMode && (
               <div className="portfolio-header-actions">
