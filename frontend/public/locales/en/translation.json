@@ -334,5 +334,19 @@
       "q2": "I have a problem that is not resolved. / I want to send feedback or requests.",
       "a2": "We apologize for the inconvenience. Please contact our support desk at {{email}} with a detailed description of the situation. We also welcome your opinions and requests for service improvement."
     }
-  }
+  },
+  "settings_backups_button": "Backups",
+  "settings_backups_title": "Data Backups",
+  "settings_backup_games_title": "Game Library",
+  "settings_backup_games_desc": "Backup your played games and BGM data.",
+  "settings_backup_reading_title": "Reading Log",
+  "settings_backup_reading_desc": "Backup your registered authors and book data.",
+  "settings_backup_music_title": "Music Appreciation",
+  "settings_backup_music_desc": "Backup your music preferences and favorite songs.",
+  "settings_backup_export_button": "Export",
+  "settings_backup_import_button": "Import",
+  "settings_backup_export_success": "Export completed successfully.",
+  "settings_backup_export_error": "Export failed: ",
+  "settings_backup_import_error": "Import failed: ",
+  "settings_backup_import_invalid": "Invalid file format."
 }

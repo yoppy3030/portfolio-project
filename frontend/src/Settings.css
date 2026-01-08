@@ -381,3 +381,60 @@ body.dark-theme .music-preference-item {
   color: white;
 }
 
+
+/* Backup UI */
+.backup-section {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #e9ecef;
+}
+
+body.dark-theme .backup-section {
+  background-color: #37474F;
+  border-color: #546E7A;
+}
+
+.backup-section h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #0D47A1;
+}
+
+body.dark-theme .backup-section h4 {
+  color: #CFD8DC;
+}
+
+.backup-section p {
+  margin-bottom: 15px;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+body.dark-theme .backup-section p {
+  color: #B0BEC5;
+}
+
+.backup-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.import-button {
+  display: inline-block;
+  padding: 10px 15px;
+  background-color: #28a745;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.import-button:hover {
+  background-color: #218838;
+}
+
+/* Adjust export button to match style if needed, but default button style is blue */

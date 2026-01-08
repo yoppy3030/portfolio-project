@@ -339,5 +339,19 @@
       "q2": "解決しない問題があります。 / 意見や要望を送りたいです。",
       "a2": "ご不便をおかけして申し訳ありません。お手数ですが、具体的な状況を添えて、サポート窓口（{{email}}）までご連絡ください。サービス改善のためのご意見・ご要望もお待ちしております。"
     }
-  }
+  },
+  "settings_backups_button": "バックアップ",
+  "settings_backups_title": "データのバックアップ",
+  "settings_backup_games_title": "ゲームライブラリ",
+  "settings_backup_games_desc": "プレイ済みゲームとBGMデータを保存します。",
+  "settings_backup_reading_title": "読書記録",
+  "settings_backup_reading_desc": "登録作家と書籍データを保存します。",
+  "settings_backup_music_title": "音楽鑑賞",
+  "settings_backup_music_desc": "音楽の好みとお気に入りの曲データを保存します。",
+  "settings_backup_export_button": "エクスポート",
+  "settings_backup_import_button": "インポート",
+  "settings_backup_export_success": "エクスポートが完了しました。",
+  "settings_backup_export_error": "エクスポートに失敗しました: ",
+  "settings_backup_import_error": "インポートに失敗しました: ",
+  "settings_backup_import_invalid": "無効なファイル形式です。"
 }

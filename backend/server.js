@@ -159,9 +159,9 @@ app.post('/api/register', async (req, res) => {
 
     // 入力データの検証
     if (!name || !email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        error: '必須フィールドが不足しています' 
+      return res.status(400).json({
+        success: false,
+        error: '必須フィールドが不足しています'
       });
     }
 
@@ -192,9 +192,9 @@ app.post('/api/register', async (req, res) => {
       (err, results) => {
         if (err) {
           console.error('データベースエラー:', err);
-          return res.status(500).json({ 
-            success: false, 
-            error: 'データベースエラーが発生しました' 
+          return res.status(500).json({
+            success: false,
+            error: 'データベースエラーが発生しました'
           });
         }
 
@@ -206,7 +206,7 @@ app.post('/api/register', async (req, res) => {
         }
 
         // usersテーブルへINSERT
-                let columns = ['name', 'email', 'password_hash'];
+        let columns = ['name', 'email', 'password_hash'];
         let placeholders = ['?', '?', '?'];
         let values = [name, email, hash];
 
@@ -228,15 +228,15 @@ app.post('/api/register', async (req, res) => {
           (err, result) => {
             if (err) {
               console.error('データベースエラー:', err);
-              return res.status(500).json({ 
-                success: false, 
-                error: 'データベースエラーが発生しました' 
+              return res.status(500).json({
+                success: false,
+                error: 'データベースエラーが発生しました'
               });
             }
-            res.json({ 
-              success: true, 
+            res.json({
+              success: true,
               message: 'ユーザー登録が完了しました',
-              userId: result.insertId 
+              userId: result.insertId
             });
           }
         );
@@ -244,9 +244,9 @@ app.post('/api/register', async (req, res) => {
     );
   } catch (error) {
     console.error('サーバーエラー:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'サーバーエラーが発生しました' 
+    res.status(500).json({
+      success: false,
+      error: 'サーバーエラーが発生しました'
     });
   }
 });
@@ -257,48 +257,48 @@ app.post('/api/login', loginLimiter, async (req, res) => {
     const { email, password, autoLogin } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'メールアドレスとパスワードを入力してください' 
+      return res.status(400).json({
+        success: false,
+        error: 'メールアドレスとパスワードを入力してください'
       });
     }
 
-        db.query(
+    db.query(
       'SELECT id, name, email, password_hash, bio, iconUrl, email_notifications, feature_announcements, maintenance_info, language, theme FROM users WHERE email = ? OR name = ?',
       [email, email],
       async (err, results) => {
         if (err) {
           console.error('データベースエラー:', err);
-          return res.status(500).json({ 
-            success: false, 
-            error: 'データベースエラーが発生しました' 
+          return res.status(500).json({
+            success: false,
+            error: 'データベースエラーが発生しました'
           });
         }
 
         if (results.length === 0) {
-          return res.status(401).json({ 
-            success: false, 
-            error: 'メールアドレスまたはパスワードが正しくありません' 
+          return res.status(401).json({
+            success: false,
+            error: 'メールアドレスまたはパスワードが正しくありません'
           });
         }
 
         const user = results[0];
         const isValidPassword = await bcrypt.compare(password, user.password_hash);
-        
+
         if (!isValidPassword) {
-          return res.status(401).json({ 
-            success: false, 
-            error: 'メールアドレスまたはパスワードが正しくありません' 
+          return res.status(401).json({
+            success: false,
+            error: 'メールアドレスまたはパスワードが正しくありません'
           });
         }
 
         // JWTトークンを生成
         const tokenExpiry = autoLogin ? '30d' : '1d';
         const token = jwt.sign(
-          { 
-            id: user.id, 
+          {
+            id: user.id,
             email: user.email,
-            name: user.name 
+            name: user.name
           },
           JWT_SECRET,
           { expiresIn: tokenExpiry }
@@ -307,8 +307,8 @@ app.post('/api/login', loginLimiter, async (req, res) => {
         // パスワードハッシュを削除してからユーザー情報を返す
         delete user.password_hash;
 
-        res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           message: 'ログインしました',
           token: token,
           user: user
@@ -317,37 +317,37 @@ app.post('/api/login', loginLimiter, async (req, res) => {
     );
   } catch (error) {
     console.error('サーバーエラー:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'サーバーエラーが発生しました' 
+    res.status(500).json({
+      success: false,
+      error: 'サーバーエラーが発生しました'
     });
   }
 });
 
 // トークン検証API
 app.get('/api/verify-token', authenticateToken, (req, res) => {
-    db.query(
+  db.query(
     'SELECT id, name, email, bio, iconUrl, email_notifications, feature_announcements, maintenance_info, language, theme FROM users WHERE id = ?',
     [req.user.id],
     (err, results) => {
       if (err) {
         console.error('データベースエラー:', err);
-        return res.status(500).json({ 
-          success: false, 
-          error: 'データベースエラーが発生しました' 
+        return res.status(500).json({
+          success: false,
+          error: 'データベースエラーが発生しました'
         });
       }
 
       if (results.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          error: 'ユーザーが見つかりません' 
+        return res.status(404).json({
+          success: false,
+          error: 'ユーザーが見つかりません'
         });
       }
 
       const user = results[0];
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         user: user
       });
     }
@@ -383,16 +383,16 @@ app.put('/api/profile', authenticateToken, upload.single('icon'), (req, res) => 
       (err, result) => {
         if (err) {
           console.error('データベースエラー:', err);
-          return res.status(500).json({ 
-            success: false, 
-            error: 'データベースエラーが発生しました' 
+          return res.status(500).json({
+            success: false,
+            error: 'データベースエラーが発生しました'
           });
         }
 
         if (result.affectedRows === 0) {
-          return res.status(404).json({ 
-            success: false, 
-            error: 'ユーザーが見つかりません' 
+          return res.status(404).json({
+            success: false,
+            error: 'ユーザーが見つかりません'
           });
         }
 
@@ -400,19 +400,19 @@ app.put('/api/profile', authenticateToken, upload.single('icon'), (req, res) => 
         db.query('SELECT id, name, email, bio, iconUrl, email_notifications, feature_announcements, maintenance_info, language, theme FROM users WHERE id = ?', [id], (err, results) => {
           if (err) {
             console.error('データベースエラー:', err);
-            return res.status(500).json({ 
-              success: false, 
-              error: 'データベースエラーが発生しました' 
+            return res.status(500).json({
+              success: false,
+              error: 'データベースエラーが発生しました'
             });
           }
           if (results.length === 0) {
             return res.status(404).json({
-                success: false,
-                error: '更新後のユーザー情報が見つかりません'
+              success: false,
+              error: '更新後のユーザー情報が見つかりません'
             });
           }
-          res.json({ 
-            success: true, 
+          res.json({
+            success: true,
             message: 'プロフィールが更新されました',
             user: results[0]
           });
@@ -421,9 +421,9 @@ app.put('/api/profile', authenticateToken, upload.single('icon'), (req, res) => 
     );
   } catch (error) {
     console.error('サーバーエラー:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'サーバーエラーが発生しました' 
+    res.status(500).json({
+      success: false,
+      error: 'サーバーエラーが発生しました'
     });
   }
 });
@@ -435,9 +435,9 @@ app.post('/api/change-password', authenticateToken, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ 
-        success: false, 
-        error: '現在のパスワードと新しいパスワードを入力してください' 
+      return res.status(400).json({
+        success: false,
+        error: '現在のパスワードと新しいパスワードを入力してください'
       });
     }
 
@@ -605,8 +605,8 @@ app.put('/api/general-settings', authenticateToken, (req, res) => {
           }
           if (results.length === 0) {
             return res.status(404).json({
-                success: false,
-                error: '更新後のユーザー情報が見つかりません'
+              success: false,
+              error: '更新後のユーザー情報が見つかりません'
             });
           }
           res.json({
@@ -847,7 +847,7 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
 
     // 2. 関連するお気に入りの曲をすべて取得
     const preferenceIds = preferences.map(p => p.id);
-    
+
     // First, initialize song_order for songs that don't have it set
     for (const prefId of preferenceIds) {
       const songsToInit = await new Promise((resolve, reject) => {
@@ -860,7 +860,7 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
           }
         );
       });
-      
+
       if (songsToInit.length > 0) {
         // Get the current max order for this preference
         const maxOrderResult = await new Promise((resolve, reject) => {
@@ -873,9 +873,9 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
             }
           );
         });
-        
+
         let nextOrder = (maxOrderResult[0]?.max_order ?? -1) + 1;
-        
+
         // Update each song with NULL order
         for (const song of songsToInit) {
           await new Promise((resolve, reject) => {
@@ -892,7 +892,7 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
         }
       }
     }
-    
+
     // Now fetch all songs with proper ordering
     const songs = await new Promise((resolve, reject) => {
       const query = `
@@ -1066,7 +1066,7 @@ app.delete('/api/songs/:songId', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('サーバーエラー:', error);
     if (error.message === 'Song not found') {
-        return res.status(404).json({ success: false, error: '曲が見つかりません。' });
+      return res.status(404).json({ success: false, error: '曲が見つかりません。' });
     }
     res.status(500).json({ success: false, error: '曲の削除中にサーバーエラーが発生しました。' });
   }
@@ -1128,11 +1128,11 @@ app.put('/api/songs/reorder', authenticateToken, async (req, res) => {
         for (let i = 0; i < songIds.length; i++) {
           const songId = parseInt(songIds[i], 10);
           const order = i;
-          
+
           if (isNaN(songId)) {
             throw { status: 400, message: `無効なsongId: ${songIds[i]}` };
           }
-          
+
           await new Promise((resolve, reject) => {
             connection.query(
               'UPDATE favorite_songs SET song_order = ? WHERE id = ? AND preference_id = ?',
@@ -1221,7 +1221,7 @@ app.put('/api/songs/:songId', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('サーバーエラー:', error);
     if (error.message === 'Song not found') {
-        return res.status(404).json({ success: false, error: '曲が見つかりません。' });
+      return res.status(404).json({ success: false, error: '曲が見つかりません。' });
     }
     res.status(500).json({ success: false, error: '曲の更新中にサーバーエラーが発生しました。' });
   }
@@ -1239,7 +1239,7 @@ app.get('/api/user-songs', authenticateToken, async (req, res) => {
       WHERE ump.user_id = ?
       ORDER BY fs.song_title
     `;
-    
+
     db.query(query, [userId], (err, songs) => {
       if (err) {
         console.error('データベースエラー:', err);
@@ -1343,97 +1343,97 @@ app.post('/api/played-games', authenticateToken, (req, res) => {
 
 // プレイ済みゲームを更新 (評価、コメント、プレイ時間、シリーズ、BGM)
 app.put('/api/played-games/:playedGameId', authenticateToken, (req, res) => {
-    const { id: userId } = req.user;
-    const { playedGameId } = req.params;
-    const { rating, comment, playtime_hours, series, bgms } = req.body;
+  const { id: userId } = req.user;
+  const { playedGameId } = req.params;
+  const { rating, comment, playtime_hours, series, bgms } = req.body;
 
-    // バリデーション
-    if (rating !== undefined && rating !== null && (parseInt(rating, 10) < 1 || parseInt(rating, 10) > 10)) {
-        return res.status(400).json({ success: false, error: '評価は1から10の間、または未設定である必要があります。' });
-    }
-    if (bgms !== undefined && !Array.isArray(bgms)) {
-        return res.status(400).json({ success: false, error: 'BGMは配列である必要があります。' });
-    }
-    if (bgms && bgms.length > MAX_BGM_ENTRIES) {
-        return res.status(400).json({ success: false, error: `登録できるBGMの数は${MAX_BGM_ENTRIES}個までです。` });
+  // バリデーション
+  if (rating !== undefined && rating !== null && (parseInt(rating, 10) < 1 || parseInt(rating, 10) > 10)) {
+    return res.status(400).json({ success: false, error: '評価は1から10の間、または未設定である必要があります。' });
+  }
+  if (bgms !== undefined && !Array.isArray(bgms)) {
+    return res.status(400).json({ success: false, error: 'BGMは配列である必要があります。' });
+  }
+  if (bgms && bgms.length > MAX_BGM_ENTRIES) {
+    return res.status(400).json({ success: false, error: `登録できるBGMの数は${MAX_BGM_ENTRIES}個までです。` });
+  }
+
+  db.getConnection((err, connection) => {
+    if (err) {
+      console.error('データベース接続エラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
     }
 
-    db.getConnection((err, connection) => {
-        if (err) {
-            console.error('データベース接続エラー:', err);
-            return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    connection.beginTransaction(async (err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ success: false, error: 'トランザクションの開始に失敗しました。' });
+      }
+
+      try {
+        // 1. played_games テーブルの基本情報を更新
+        const fieldsToUpdate = {};
+        if ('rating' in req.body) fieldsToUpdate.rating = rating === null || rating === '' ? null : parseInt(rating, 10);
+        if ('comment' in req.body) fieldsToUpdate.comment = comment === null || comment === '' ? null : comment;
+        if ('playtime_hours' in req.body) fieldsToUpdate.playtime_hours = playtime_hours === null || playtime_hours === '' ? null : parseFloat(playtime_hours);
+        if ('series' in req.body) fieldsToUpdate.series = series === null || series === '' ? null : series;
+
+        if (Object.keys(fieldsToUpdate).length > 0) {
+          await new Promise((resolve, reject) => {
+            connection.query('UPDATE played_games SET ? WHERE id = ? AND user_id = ?', [fieldsToUpdate, playedGameId, userId], (err, result) => {
+              if (err) return reject(err);
+              if (result.affectedRows === 0) return reject(new Error('GAME_NOT_FOUND'));
+              resolve(result);
+            });
+          });
         }
 
-        connection.beginTransaction(async (err) => {
-            if (err) {
-                connection.release();
-                return res.status(500).json({ success: false, error: 'トランザクションの開始に失敗しました。' });
-            }
+        // 2. BGM情報を更新 (指定されている場合のみ)
+        if (bgms) {
+          // 2a. 既存のBGMをすべて削除
+          await new Promise((resolve, reject) => {
+            connection.query('DELETE FROM game_bgms WHERE played_game_id = ?', [playedGameId], (err) => {
+              if (err) return reject(err);
+              resolve();
+            });
+          });
 
-            try {
-                // 1. played_games テーブルの基本情報を更新
-                const fieldsToUpdate = {};
-                if ('rating' in req.body) fieldsToUpdate.rating = rating === null || rating === '' ? null : parseInt(rating, 10);
-                if ('comment' in req.body) fieldsToUpdate.comment = comment === null || comment === '' ? null : comment;
-                if ('playtime_hours' in req.body) fieldsToUpdate.playtime_hours = playtime_hours === null || playtime_hours === '' ? null : parseFloat(playtime_hours);
-                if ('series' in req.body) fieldsToUpdate.series = series === null || series === '' ? null : series;
+          // 2b. 新しいBGMリストを挿入
+          if (bgms.length > 0) {
+            const bgmValues = bgms.map(bgm => [playedGameId, bgm.title || null, bgm.url]);
+            await new Promise((resolve, reject) => {
+              connection.query('INSERT INTO game_bgms (played_game_id, title, url) VALUES ?', [bgmValues], (err) => {
+                if (err) return reject(err);
+                resolve();
+              });
+            });
+          }
+        }
 
-                if (Object.keys(fieldsToUpdate).length > 0) {
-                    await new Promise((resolve, reject) => {
-                        connection.query('UPDATE played_games SET ? WHERE id = ? AND user_id = ?', [fieldsToUpdate, playedGameId, userId], (err, result) => {
-                            if (err) return reject(err);
-                            if (result.affectedRows === 0) return reject(new Error('GAME_NOT_FOUND'));
-                            resolve(result);
-                        });
-                    });
-                }
-
-                // 2. BGM情報を更新 (指定されている場合のみ)
-                if (bgms) {
-                    // 2a. 既存のBGMをすべて削除
-                    await new Promise((resolve, reject) => {
-                        connection.query('DELETE FROM game_bgms WHERE played_game_id = ?', [playedGameId], (err) => {
-                            if (err) return reject(err);
-                            resolve();
-                        });
-                    });
-
-                    // 2b. 新しいBGMリストを挿入
-                    if (bgms.length > 0) {
-                        const bgmValues = bgms.map(bgm => [playedGameId, bgm.title || null, bgm.url]);
-                        await new Promise((resolve, reject) => {
-                            connection.query('INSERT INTO game_bgms (played_game_id, title, url) VALUES ?', [bgmValues], (err) => {
-                                if (err) return reject(err);
-                                resolve();
-                            });
-                        });
-                    }
-                }
-
-                // 3. トランザクションをコミット
-                connection.commit((err) => {
-                    if (err) {
-                        return connection.rollback(() => {
-                            connection.release();
-                            res.status(500).json({ success: false, error: '更新のコミットに失敗しました。' });
-                        });
-                    }
-                    connection.release();
-                    res.json({ success: true, message: 'ゲーム情報が更新されました。' });
-                });
-
-            } catch (error) {
-                connection.rollback(() => {
-                    connection.release();
-                    if (error.message === 'GAME_NOT_FOUND') {
-                        return res.status(404).json({ success: false, error: 'ゲームが見つからないか、更新する権限がありません。' });
-                    }
-                    console.error('トランザクションエラー:', error);
-                    res.status(500).json({ success: false, error: 'ゲーム情報の更新中にデータベースエラーが発生しました。' });
-                });
-            }
+        // 3. トランザクションをコミット
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              res.status(500).json({ success: false, error: '更新のコミットに失敗しました。' });
+            });
+          }
+          connection.release();
+          res.json({ success: true, message: 'ゲーム情報が更新されました。' });
         });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          if (error.message === 'GAME_NOT_FOUND') {
+            return res.status(404).json({ success: false, error: 'ゲームが見つからないか、更新する権限がありません。' });
+          }
+          console.error('トランザクションエラー:', error);
+          res.status(500).json({ success: false, error: 'ゲーム情報の更新中にデータベースエラーが発生しました。' });
+        });
+      }
     });
+  });
 });
 
 // プレイ済みゲームを削除
@@ -1877,13 +1877,13 @@ app.get('/api/portfolios/:portfolioId', tryAuthenticateToken, (req, res) => {
         }));
 
         portfolio.projects = projectsWithData;
-        
+
         // Return portfolio data with ownership flag
-        res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           portfolio: {
             ...portfolio,
-            isOwner: isOwner 
+            isOwner: isOwner
           }
         });
       });
@@ -2164,9 +2164,9 @@ app.get('/api/public/projects/:projectId', tryAuthenticateToken, (req, res) => {
         }
 
         project.contents = contentResults;
-        
+
         res.json({
-          success: true, 
+          success: true,
           project: {
             ...project,
             isOwner: isOwner
@@ -2285,15 +2285,15 @@ app.put('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (
         console.log('Constructed updatedProject object:', updatedProject);
 
         if (Object.keys(updatedProject).length > 0) {
-            await new Promise((resolve, reject) => {
-                connection.query('UPDATE projects SET ? WHERE id = ? AND portfolio_id = ?', [updatedProject, projectId, portfolioId], (err, result) => {
-                    if (err) return reject(err);
-                    console.log('Project update query result:', result);
-                    // Note: affectedRows can be 0 if the data is the same. We only error if the project is not found.
-                    // A more robust check might be needed if no-op updates are a concern.
-                    resolve(result);
-                });
+          await new Promise((resolve, reject) => {
+            connection.query('UPDATE projects SET ? WHERE id = ? AND portfolio_id = ?', [updatedProject, projectId, portfolioId], (err, result) => {
+              if (err) return reject(err);
+              console.log('Project update query result:', result);
+              // Note: affectedRows can be 0 if the data is the same. We only error if the project is not found.
+              // A more robust check might be needed if no-op updates are a concern.
+              resolve(result);
             });
+          });
         }
 
         // 3. Handle tags if they are provided
@@ -2631,7 +2631,7 @@ app.put('/api/contents/:contentId', authenticateToken, async (req, res) => {
 
     // 1. Verify ownership through project and portfolio
     const contents = await new Promise((resolve, reject) => {
-        const query = `
+      const query = `
             SELECT pc.id 
             FROM project_contents pc
             JOIN projects p ON pc.project_id = p.id
@@ -2687,7 +2687,7 @@ app.delete('/api/contents/:contentId', authenticateToken, async (req, res) => {
 
     // 1. Verify ownership
     const contents = await new Promise((resolve, reject) => {
-        const query = `
+      const query = `
             SELECT pc.id 
             FROM project_contents pc
             JOIN projects p ON pc.project_id = p.id
@@ -2932,6 +2932,469 @@ app.post('/api/reset-password', async (req, res) => {
     res.status(500).json({ success: false, error: 'サーバーエラーが発生しました。' });
   }
 });
+// --- バックアップ機能関連API ---
+
+// 1. ゲームのバックアップ
+// エクスポート
+app.get('/api/backup/games', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+
+  try {
+    const query = `
+      SELECT 
+        pg.*,
+        CONCAT('[', GROUP_CONCAT(CASE WHEN bgm.id IS NOT NULL THEN JSON_OBJECT('title', bgm.title, 'url', bgm.url) ELSE NULL END), ']') as bgms_json
+      FROM played_games pg
+      LEFT JOIN game_bgms bgm ON pg.id = bgm.played_game_id
+      WHERE pg.user_id = ?
+      GROUP BY pg.id
+    `;
+
+    db.query(query, [userId], (err, results) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+      }
+
+      const games = results.map(game => ({
+        ...game,
+        platforms: game.platforms ? JSON.parse(game.platforms) : [],
+        genres: game.genres ? JSON.parse(game.genres) : [],
+        bgms: game.bgms_json ? JSON.parse(game.bgms_json).filter(b => b !== null) : [],
+        bgms_json: undefined // 不要なフィールドを削除
+      }));
+
+      res.json({ success: true, games: games });
+    });
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました。' });
+  }
+});
+
+// インポート (Games)
+app.post('/api/backup/games/import', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+  const { games } = req.body;
+
+  if (!games || !Array.isArray(games)) {
+    return res.status(400).json({ success: false, error: '有効なゲームデータリストが必要です。' });
+  }
+
+  db.getConnection((err, connection) => {
+    if (err) return res.status(500).json({ success: false, error: 'データベース接続エラー' });
+
+    connection.beginTransaction(async (err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ success: false, error: 'トランザクション開始エラー' });
+      }
+
+      try {
+        let importedCount = 0;
+        let skippedCount = 0;
+
+        for (const game of games) {
+          // 既存チェック (game_api_idを使用)
+          const existing = await new Promise((resolve, reject) => {
+            connection.query(
+              'SELECT id FROM played_games WHERE user_id = ? AND game_api_id = ?',
+              [userId, game.game_api_id],
+              (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
+              }
+            );
+          });
+
+          if (existing.length > 0) {
+            skippedCount++;
+            continue; // 重複時はスキップ
+          }
+
+          // ゲームの挿入
+          const insertResult = await new Promise((resolve, reject) => {
+            const gameData = {
+              user_id: userId,
+              game_api_id: game.game_api_id,
+              title: game.title,
+              image_url: game.image_url,
+              rating: game.rating,
+              comment: game.comment,
+              playtime_hours: game.playtime_hours,
+              platforms: JSON.stringify(game.platforms || []),
+              genres: JSON.stringify(game.genres || []),
+              series: game.series,
+            };
+            connection.query('INSERT INTO played_games SET ?', gameData, (err, result) => {
+              if (err) return reject(err);
+              resolve(result);
+            });
+          });
+
+          const newGameId = insertResult.insertId;
+
+          // BGMの挿入
+          if (game.bgms && game.bgms.length > 0) {
+            const bgmValues = game.bgms.map(bgm => [newGameId, bgm.title || null, bgm.url]);
+            await new Promise((resolve, reject) => {
+              connection.query('INSERT INTO game_bgms (played_game_id, title, url) VALUES ?', [bgmValues], (err) => {
+                if (err) return reject(err);
+                resolve();
+              });
+            });
+          }
+          importedCount++;
+        }
+
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              res.status(500).json({ success: false, error: 'コミットエラー' });
+            });
+          }
+          connection.release();
+          res.json({ success: true, message: `${importedCount}件インポートしました（${skippedCount}件スキップ）。`, importedCount, skippedCount });
+        });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          console.error('インポートエラー:', error);
+          res.status(500).json({ success: false, error: 'インポート中にエラーが発生しました。' });
+        });
+      }
+    });
+  });
+});
+
+// 2. 読書のバックアップ
+// エクスポート
+app.get('/api/backup/reading', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+
+  try {
+    // 著者を取得
+    const authors = await new Promise((resolve, reject) => {
+      db.query('SELECT * FROM reading_authors WHERE user_id = ?', [userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    // 書籍を取得
+    const books = await new Promise((resolve, reject) => {
+      db.query('SELECT * FROM reading_books WHERE user_id = ?', [userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    // 著者ごとに書籍をまとめる
+    const authorsWithBooks = authors.map(author => ({
+      ...author,
+      books: books.filter(book => book.author_id === author.id)
+    }));
+
+    res.json({ success: true, readingData: authorsWithBooks });
+
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました。' });
+  }
+});
+
+// インポート (Reading)
+app.post('/api/backup/reading/import', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+  const { readingData } = req.body; // authors with books
+
+  if (!readingData || !Array.isArray(readingData)) {
+    return res.status(400).json({ success: false, error: '有効な読書データが必要です。' });
+  }
+
+  db.getConnection((err, connection) => {
+    if (err) return res.status(500).json({ success: false, error: 'データベース接続エラー' });
+
+    connection.beginTransaction(async (err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ success: false, error: 'トランザクション開始エラー' });
+      }
+
+      try {
+        let importedAuthors = 0;
+        let importedBooks = 0;
+
+        for (const author of readingData) {
+          // 著者の既存チェック
+          let authorId;
+          const existingAuthor = await new Promise((resolve, reject) => {
+            connection.query('SELECT id FROM reading_authors WHERE user_id = ? AND name = ?', [userId, author.name], (err, results) => {
+              if (err) return reject(err);
+              resolve(results);
+            });
+          });
+
+          if (existingAuthor.length > 0) {
+            authorId = existingAuthor[0].id;
+          } else {
+            // 著者を新規作成
+            const result = await new Promise((resolve, reject) => {
+              connection.query('INSERT INTO reading_authors (user_id, name) VALUES (?, ?)', [userId, author.name], (err, res) => {
+                if (err) return reject(err);
+                resolve(res);
+              });
+            });
+            authorId = result.insertId;
+            importedAuthors++;
+          }
+
+          // 書籍のインポート
+          if (author.books && author.books.length > 0) {
+            for (const book of author.books) {
+              // 書籍の重複チェック (タイトル + 著者IDで簡易チェック)
+              const existingBook = await new Promise((resolve, reject) => {
+                connection.query(
+                  'SELECT id FROM reading_books WHERE user_id = ? AND author_id = ? AND title = ?',
+                  [userId, authorId, book.title],
+                  (err, results) => {
+                    if (err) return reject(err);
+                    resolve(results);
+                  }
+                );
+              });
+
+              if (existingBook.length === 0) {
+                // 書籍を追加
+                await new Promise((resolve, reject) => {
+                  const bookData = {
+                    user_id: userId,
+                    author_id: authorId,
+                    type: book.type,
+                    genre: book.genre,
+                    title: book.title,
+                    image_url: book.image_url,
+                    comment: book.comment,
+                    rating: book.rating,
+                    display_order: book.display_order // 既存のオーダー順を保持するか、あるいはリセットするか。ここではそのまま使う
+                  };
+                  // undefined を null に
+                  Object.keys(bookData).forEach(k => bookData[k] === undefined && (bookData[k] = null));
+
+                  connection.query('INSERT INTO reading_books SET ?', bookData, (err, res) => {
+                    if (err) return reject(err);
+                    resolve(res);
+                  });
+                });
+                importedBooks++;
+              }
+            }
+          }
+        }
+
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              res.status(500).json({ success: false, error: 'コミットエラー' });
+            });
+          }
+          connection.release();
+          res.json({ success: true, message: `インポート完了: 作家 ${importedAuthors}名, 書籍 ${importedBooks}冊` });
+        });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          console.error('インポートエラー:', error);
+          res.status(500).json({ success: false, error: 'インポート中にエラーが発生しました。' });
+        });
+      }
+    });
+  });
+});
+
+// 3. 音楽のバックアップ
+// エクスポート
+app.get('/api/backup/music', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+
+  try {
+    // 設定（ジャンル/アーティスト）を取得
+    const preferences = await new Promise((resolve, reject) => {
+      // ジャンル名も含めて取得しておく
+      const query = `
+        SELECT ump.*, mg.name as genre_name
+        FROM user_music_preferences ump
+        LEFT JOIN music_genres mg ON ump.genre_id = mg.id
+        WHERE ump.user_id = ?
+      `;
+      db.query(query, [userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    // お気に入りの曲を取得
+    const songs = await new Promise((resolve, reject) => {
+      const query = `
+        SELECT fs.* 
+        FROM favorite_songs fs
+        JOIN user_music_preferences ump ON fs.preference_id = ump.id
+        WHERE ump.user_id = ?
+      `;
+      db.query(query, [userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    // マージ
+    const musicData = preferences.map(pref => ({
+      ...pref,
+      songs: songs.filter(s => s.preference_id === pref.id)
+    }));
+
+    res.json({ success: true, musicData: musicData });
+
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました。' });
+  }
+});
+
+// インポート (Music)
+app.post('/api/backup/music/import', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+  const { musicData } = req.body;
+
+  if (!musicData || !Array.isArray(musicData)) {
+    return res.status(400).json({ success: false, error: '有効な音楽データが必要です。' });
+  }
+
+  db.getConnection((err, connection) => {
+    if (err) return res.status(500).json({ success: false, error: 'データベース接続エラー' });
+
+    connection.beginTransaction(async (err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ success: false, error: 'トランザクション開始エラー' });
+      }
+
+      try {
+        let importedPrefs = 0;
+        let importedSongs = 0;
+
+        for (const pref of musicData) {
+          // Genre IDの解決 (名前から解決するか、あるいはIDが一致すると仮定するか。
+          // ジャンルテーブルはマスタ扱いだと思うので、IDが不変とは限らないが、今回は標準ジャンルなので名前マッチが安全かも)
+          // ただ、エクスポート時に genre_id も genre_name も出している。
+          // もし genre_name が null でないなら、名前でIDを探す。
+
+          let targetGenreId = pref.genre_id;
+          if (pref.genre_name) {
+            const genreRes = await new Promise((resolve, reject) => {
+              connection.query('SELECT id FROM music_genres WHERE name = ?', [pref.genre_name], (err, res) => {
+                if (err) return reject(err);
+                resolve(res);
+              });
+            });
+            if (genreRes.length > 0) {
+              targetGenreId = genreRes[0].id;
+            }
+            // なければ null (その他扱い)
+          }
+
+          // プリファレンスの重複チェック (user_id, genre_id, artist_name)
+          // artist_name は null 許容
+          let prefId;
+          const existingPref = await new Promise((resolve, reject) => {
+            const sql = 'SELECT id FROM user_music_preferences WHERE user_id = ? AND (genre_id = ? OR (genre_id IS NULL AND ? IS NULL)) AND (artist_name = ? OR (artist_name IS NULL AND ? IS NULL))';
+            connection.query(sql, [userId, targetGenreId, targetGenreId, pref.artist_name, pref.artist_name], (err, res) => {
+              if (err) return reject(err);
+              resolve(res);
+            });
+          });
+
+          if (existingPref.length > 0) {
+            prefId = existingPref[0].id;
+          } else {
+            // 新規作成
+            const resInsert = await new Promise((resolve, reject) => {
+              connection.query(
+                'INSERT INTO user_music_preferences (user_id, genre_id, artist_name) VALUES (?, ?, ?)',
+                [userId, targetGenreId, pref.artist_name],
+                (err, res) => {
+                  if (err) return reject(err);
+                  resolve(res);
+                }
+              );
+            });
+            prefId = resInsert.insertId;
+            importedPrefs++;
+          }
+
+          // 曲のインポート
+          if (pref.songs && pref.songs.length > 0) {
+            for (const song of pref.songs) {
+              // 曲の重複チェック (preference_id, song_title)
+              const existingSong = await new Promise((resolve, reject) => {
+                connection.query(
+                  'SELECT id FROM favorite_songs WHERE preference_id = ? AND song_title = ?',
+                  [prefId, song.song_title],
+                  (err, res) => {
+                    if (err) return reject(err);
+                    resolve(res);
+                  }
+                );
+              });
+
+              if (existingSong.length === 0) {
+                await new Promise((resolve, reject) => {
+                  const songData = {
+                    preference_id: prefId,
+                    song_title: song.song_title,
+                    artist_name: song.artist_name,
+                    youtube_url: song.youtube_url,
+                    song_order: song.song_order
+                  };
+                  Object.keys(songData).forEach(k => songData[k] === undefined && (songData[k] = null));
+
+                  connection.query('INSERT INTO favorite_songs SET ?', songData, (err, res) => {
+                    if (err) return reject(err);
+                    resolve(res);
+                  });
+                });
+                importedSongs++;
+              }
+            }
+          }
+        }
+
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              res.status(500).json({ success: false, error: 'コミットエラー' });
+            });
+          }
+          connection.release();
+          res.json({ success: true, message: `インポート完了: 設定 ${importedPrefs}件, 曲 ${importedSongs}曲` });
+        });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          console.error('インポートエラー:', error);
+          res.status(500).json({ success: false, error: 'インポート中にエラーが発生しました。' });
+        });
+      }
+    });
+  });
+});
+
 
 // サーバーの起動
 const PORT = process.env.PORT || 5000;
