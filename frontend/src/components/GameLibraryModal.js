@@ -748,7 +748,33 @@ function GameLibraryModal({ onClose, isOwner }) {
     'RSE': 'Pokemon Ruby Sapphire Emerald',
     'FRLG': 'Pokemon FireRed LeafGreen',
     'GSC': 'Pokemon Gold Silver Crystal',
-    'RBY': 'Pokemon Red Blue Yellow'
+    'RBY': 'Pokemon Red Blue Yellow',
+
+    // 追加の略称対応
+    'モンハン': 'Monster Hunter',
+    'MH': 'Monster Hunter',
+    'スマブラ': 'Super Smash Bros',
+    'ブレワイ': 'The Legend of Zelda Breath of the Wild',
+    'ティアキン': 'The Legend of Zelda Tears of the Kingdom',
+    'あつ森': 'Animal Crossing New Horizons',
+    'どう森': 'Animal Crossing',
+    'ドラクエ': 'Dragon Quest',
+    'DQ': 'Dragon Quest',
+    'FF': 'Final Fantasy',
+    'FE': 'Fire Emblem',
+    'マイクラ': 'Minecraft',
+    'フォトナ': 'Fortnite',
+    'エペ': 'Apex Legends',
+    'OW': 'Overwatch',
+    'バロ': 'VALORANT',
+    'バイオ': 'Resident Evil',
+    'メタギア': 'Metal Gear Solid',
+    'MGS': 'Metal Gear Solid',
+    'キンハ': 'Kingdom Hearts',
+    'KH': 'Kingdom Hearts',
+    'ニーア': 'Nier',
+    'パルワールド': 'Palworld',
+    'ウマ娘': 'Uma Musume'
   };
 
   // 英語名から日本語名へのマッピング（表示用）
@@ -1002,8 +1028,77 @@ function GameLibraryModal({ onClose, isOwner }) {
           console.log('After client-side platform filtering, results count:', allResults.length, allResults.map(g => g.name)); // クライアントサイドフィルタリング後の結果
         }
 
-        // 結果を評価順にソート（重複を除去後）
-        allResults.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        // 結果を関連性スコアでソート（より関連性の高い結果を上位に）
+        allResults = allResults.map(game => {
+          const gameName = game.name.toLowerCase();
+          const searchLower = translatedQuery.toLowerCase();
+          const originalLower = query.toLowerCase();
+
+          let relevanceScore = 0;
+
+          // 完全一致（最高スコア）
+          if (gameName === searchLower || gameName === originalLower) {
+            relevanceScore = 1000;
+          }
+          // タイトルの先頭から一致
+          else if (gameName.startsWith(searchLower) || gameName.startsWith(originalLower)) {
+            relevanceScore = 500;
+          }
+          // フレーズ全体が含まれている（複数単語の場合に重要）
+          else if (gameName.includes(searchLower) || gameName.includes(originalLower)) {
+            relevanceScore = 400;
+          }
+          // 単語の先頭から一致（例: "Monster Hunter" の "Monster" 部分）
+          else if (gameName.split(' ').some(word => word.startsWith(searchLower) || word.startsWith(originalLower))) {
+            relevanceScore = 300;
+          }
+          // 検索クエリが複数単語の場合、全ての単語が含まれているかチェック
+          else {
+            const searchWords = searchLower.split(' ').filter(w => w.length > 0);
+            const gameWords = gameName.split(' ');
+
+            // 全ての検索単語がゲーム名に含まれている場合のみスコアを付ける
+            if (searchWords.length > 1) {
+              const allWordsMatch = searchWords.every(searchWord =>
+                gameWords.some(gameWord => gameWord.includes(searchWord))
+              );
+
+              if (allWordsMatch) {
+                // 全単語が含まれているが、連続していない場合
+                relevanceScore = 150;
+              }
+            } else {
+              // 単一単語の検索で部分一致
+              if (gameWords.some(word => word.includes(searchLower))) {
+                relevanceScore = 100;
+              }
+            }
+          }
+
+          // 評価も考慮（関連性スコアに加算）
+          relevanceScore += (game.rating || 0) * 10;
+
+          return { ...game, relevanceScore };
+        });
+
+        // 関連性スコアでソート
+        allResults.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
+
+        // 関連性が低すぎる結果を除外
+        // 閾値を100に設定することで、フレーズ全体が含まれているゲームのみ表示
+        // (フレーズ一致400点 + rating最大50点 = 最大450点)
+        // 単語の一部だけが一致するゲーム（例: "Dragon"だけ、"Quest"だけ）は除外される
+        const minRelevanceThreshold = 100;
+        const beforeFilterCount = allResults.length;
+        allResults = allResults.filter(game => {
+          const score = game.relevanceScore || 0;
+          // 検索語が含まれていない場合は除外（スコアが評価のみの場合）
+          if (score < minRelevanceThreshold) return false;
+          return true;
+        });
+
+        console.log(`Relevance filtering: ${beforeFilterCount} -> ${allResults.length} results`);
+        console.log('After relevance filtering:', allResults.map(g => ({ name: g.name, score: g.relevanceScore })));
 
         // 検索結果の各ゲームのプラットフォーム情報を確認
         if (allResults.length > 0) {
@@ -1314,9 +1409,9 @@ function GameLibraryModal({ onClose, isOwner }) {
               </select>
             </div>
             {searchLoading && (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <div className="spinner"></div>
-                <p>検索中...</p>
+              <div className="search-loading-container">
+                <div className="spinner-centered"></div>
+                <p style={{ marginTop: '10px', color: '#666' }}>検索中...</p>
               </div>
             )}
             {!searchLoading && searchTerm.length >= 2 && searchResults.length === 0 && (

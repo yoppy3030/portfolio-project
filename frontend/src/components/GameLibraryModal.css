@@ -17,12 +17,15 @@
   padding: 20px;
   border-radius: 8px;
   width: 90%;
-  max-width: 600px; /* 大幅に縮小 */
+  max-width: 600px;
+  /* 大幅に縮小 */
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  overflow-y: auto; /* 追加 */
-  position: relative; /* Add this line */
+  overflow-y: auto;
+  /* 追加 */
+  position: relative;
+  /* Add this line */
 }
 
 .game-library-modal-content .modal-header {
@@ -104,9 +107,44 @@
   animation: spin 1s linear infinite;
 }
 
+/* 検索中の読み込みアイコン用のコンテナ */
+.search-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  min-height: 200px;
+}
+
+/* 中央配置用のスピナー */
+.spinner-centered {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin-centered 1s linear infinite;
+}
+
 @keyframes spin {
-  0% { transform: translateY(-50%) rotate(0deg); }
-  100% { transform: translateY(-50%) rotate(360deg); }
+  0% {
+    transform: translateY(-50%) rotate(0deg);
+  }
+
+  100% {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+@keyframes spin-centered {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .search-results {
@@ -117,7 +155,8 @@
   border-radius: 4px;
 }
 
-.game-result-item, .library-item {
+.game-result-item,
+.library-item {
   display: flex;
   align-items: center;
   padding: 10px;
@@ -153,7 +192,8 @@
   line-height: 1.4;
 }
 
-.btn-add-game, .btn-remove-game {
+.btn-add-game,
+.btn-remove-game {
   padding: 5px 10px;
   border-radius: 4px;
   cursor: pointer;
@@ -189,7 +229,8 @@
 
 .library-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Always two columns */
+  grid-template-columns: repeat(2, 1fr);
+  /* Always two columns */
   gap: 15px;
 }
 
@@ -201,7 +242,8 @@
   border: 1px solid #eee;
   padding: 0;
   position: relative;
-  transition: box-shadow 0.2s, transform 0.2s; /* Add transition for smooth effect */
+  transition: box-shadow 0.2s, transform 0.2s;
+  /* Add transition for smooth effect */
 }
 
 .library-item .game-image {
@@ -232,7 +274,8 @@
   display: inline-flex;
   gap: 1px;
   margin-left: 5px;
-  white-space: nowrap; /* Ensure stars stay on one line */
+  white-space: nowrap;
+  /* Ensure stars stay on one line */
 }
 
 .star {
@@ -254,11 +297,13 @@
   margin-top: 10px;
 }
 
-.rating-display, .rating-section {
+.rating-display,
+.rating-section {
   margin-bottom: 10px;
 }
 
-.rating-display label, .rating-section label {
+.rating-display label,
+.rating-section label {
   font-size: 0.9rem;
   color: #666;
   margin-right: 5px;
@@ -277,7 +322,8 @@
   background-color: #f5f5f5;
   border-radius: 4px;
   word-wrap: break-word;
-  white-space: pre-wrap; /* Add this line to preserve line breaks */
+  white-space: pre-wrap;
+  /* Add this line to preserve line breaks */
 }
 
 .no-details {
@@ -291,7 +337,8 @@
   margin-top: 10px;
 }
 
-.playtime-section, .comment-section {
+.playtime-section,
+.comment-section {
   margin-top: 10px;
 }
 
@@ -329,7 +376,9 @@
   margin-top: 10px;
 }
 
-.btn-save, .btn-cancel, .btn-edit {
+.btn-save,
+.btn-cancel,
+.btn-edit {
   padding: 5px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -396,7 +445,7 @@
   background-color: rgba(0, 0, 0, 0.15);
 }
 
-.drag-handle > .material-icons {
+.drag-handle>.material-icons {
   color: rgba(0, 0, 0, 0.6);
 }
 
@@ -413,16 +462,21 @@
 .series-folder .library-grid {
   transition: background-color 0.3s;
 }
-.series-folder .library-grid[style*="background-color: rgb(240, 240, 240)"] { /* This targets the inline style from dnd library */
+
+.series-folder .library-grid[style*="background-color: rgb(240, 240, 240)"] {
+  /* This targets the inline style from dnd library */
   outline: 2px dashed #007bff;
   background-color: #e9f4ff !important;
 }
 
 /* BGM Entry Styles */
 .bgm-entry {
-  display: flex; /* Keep flex for overall layout */
-  align-items: flex-start; /* Align items to the start (top) */
-  gap: 10px; /* Space between drag handle, inputs, and remove button */
+  display: flex;
+  /* Keep flex for overall layout */
+  align-items: flex-start;
+  /* Align items to the start (top) */
+  gap: 10px;
+  /* Space between drag handle, inputs, and remove button */
   margin-bottom: 5px;
   padding: 5px;
   border: 1px solid #eee;
@@ -436,14 +490,18 @@
   color: #666;
   font-size: 18px;
   flex-shrink: 0;
-  margin-top: 8px; /* Align with the top of the first input group */
+  margin-top: 8px;
+  /* Align with the top of the first input group */
 }
 
 .bgm-entry-content {
-  flex-grow: 1; /* Allow content area to take available space */
+  flex-grow: 1;
+  /* Allow content area to take available space */
   display: flex;
-  flex-direction: column; /* Stack input groups vertically */
-  gap: 5px; /* Space between input groups */
+  flex-direction: column;
+  /* Stack input groups vertically */
+  gap: 5px;
+  /* Space between input groups */
 }
 
 .bgm-input-group {
@@ -476,7 +534,8 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  margin-top: 8px; /* Align with the top of the first input group */
+  margin-top: 8px;
+  /* Align with the top of the first input group */
 }
 
 .bgm-entry .btn-remove-bgm:hover {
