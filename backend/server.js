@@ -137,6 +137,32 @@ const tryAuthenticateToken = (req, res, next) => {
   });
 };
 
+// 管理者権限チェックミドルウェア
+const authenticateAdmin = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'アクセストークンが必要です' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, error: '無効なトークンです' });
+    }
+
+    // 管理者メールアドレスをチェック
+    const ADMIN_EMAIL = 'test.example3030@gmail.com';
+    if (user.email !== ADMIN_EMAIL) {
+      return res.status(403).json({ success: false, error: '管理者権限が必要です' });
+    }
+
+    req.user = user;
+    next();
+  });
+};
+
+
 // 期限切れの認証コードを削除する関数
 const cleanupExpiredCodes = () => {
   db.query(
@@ -3422,6 +3448,179 @@ app.post('/api/backup/music/import', authenticateToken, async (req, res) => {
       }
     });
   });
+});
+
+
+// --- メンテナンス関連API ---
+
+// メンテナンステーブル作成（初回実行時）
+db.query(`
+  CREATE TABLE IF NOT EXISTS maintenance_settings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    is_maintenance_mode BOOLEAN DEFAULT FALSE,
+    maintenance_message TEXT,
+    scheduled_end DATETIME,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )
+`, (err) => {
+  if (err) {
+    console.error('メンテナンステーブル作成エラー:', err);
+  } else {
+    // 初期レコードを挿入（存在しない場合のみ）
+    db.query('SELECT COUNT(*) as count FROM maintenance_settings', (err, results) => {
+      if (!err && results[0].count === 0) {
+        db.query(
+          'INSERT INTO maintenance_settings (is_maintenance_mode, maintenance_message) VALUES (?, ?)',
+          [false, 'システムメンテナンス中です。しばらくお待ちください。']
+        );
+      }
+    });
+  }
+});
+
+// メンテナンスモード状態取得API（認証不要）
+app.get('/api/maintenance-status', (req, res) => {
+  db.query('SELECT is_maintenance_mode, maintenance_message, scheduled_end FROM maintenance_settings LIMIT 1', (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+    }
+
+    if (results.length === 0) {
+      return res.json({ success: true, isMaintenanceMode: false });
+    }
+
+    res.json({
+      success: true,
+      isMaintenanceMode: results[0].is_maintenance_mode,
+      maintenanceMessage: results[0].maintenance_message,
+      scheduledEnd: results[0].scheduled_end
+    });
+  });
+});
+
+// メンテナンスモード設定API（管理者用）
+app.post('/api/admin/maintenance-mode', authenticateAdmin, (req, res) => {
+  const { isMaintenanceMode, maintenanceMessage, scheduledEnd } = req.body;
+
+  // 簡易的な管理者チェック（本番環境では適切な権限管理を実装）
+  // ここでは例として、特定のユーザーIDを管理者とする
+  // 実際の実装では、usersテーブルにis_adminカラムを追加することを推奨
+
+  const updateData = {
+    is_maintenance_mode: isMaintenanceMode
+  };
+
+  if (maintenanceMessage !== undefined) {
+    updateData.maintenance_message = maintenanceMessage;
+  }
+
+  if (scheduledEnd !== undefined) {
+    updateData.scheduled_end = scheduledEnd;
+  }
+
+  db.query('UPDATE maintenance_settings SET ? WHERE id = 1', [updateData], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+    }
+
+    res.json({ success: true, message: 'メンテナンスモードが更新されました' });
+  });
+});
+
+// メンテナンス通知送信API（管理者用）
+app.post('/api/admin/send-maintenance-notification', authenticateAdmin, async (req, res) => {
+  const { subject, message, scheduledEnd } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ success: false, error: 'メッセージは必須です' });
+  }
+
+  try {
+    const { sendMaintenanceNotification } = require('./config/email');
+
+    // メンテナンス情報を受け取る設定のユーザーを取得
+    db.query(
+      'SELECT email FROM users WHERE maintenance_info = 1',
+      async (err, results) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+        }
+
+        let sentCount = 0;
+        const errors = [];
+
+        for (const user of results) {
+          try {
+            await sendMaintenanceNotification(user.email, subject, message, scheduledEnd);
+            sentCount++;
+          } catch (error) {
+            console.error(`${user.email}への送信失敗:`, error);
+            errors.push(user.email);
+          }
+        }
+
+        res.json({
+          success: true,
+          message: `メンテナンス通知を${sentCount}件送信しました`,
+          sentCount,
+          failedEmails: errors
+        });
+      }
+    );
+  } catch (error) {
+    console.error('メール送信エラー:', error);
+    res.status(500).json({ success: false, error: 'メール送信中にエラーが発生しました' });
+  }
+});
+
+// 新機能通知送信API（管理者用）
+app.post('/api/admin/send-feature-notification', authenticateAdmin, async (req, res) => {
+  const { subject, message } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ success: false, error: 'メッセージは必須です' });
+  }
+
+  try {
+    const { sendFeatureNotification } = require('./config/email');
+
+    // 新機能のお知らせを受け取る設定のユーザーを取得
+    db.query(
+      'SELECT email FROM users WHERE feature_announcements = 1',
+      async (err, results) => {
+        if (err) {
+          console.error('データベースエラー:', err);
+          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+        }
+
+        let sentCount = 0;
+        const errors = [];
+
+        for (const user of results) {
+          try {
+            await sendFeatureNotification(user.email, subject, message);
+            sentCount++;
+          } catch (error) {
+            console.error(`${user.email}への送信失敗:`, error);
+            errors.push(user.email);
+          }
+        }
+
+        res.json({
+          success: true,
+          message: `新機能通知を${sentCount}件送信しました`,
+          sentCount,
+          failedEmails: errors
+        });
+      }
+    );
+  } catch (error) {
+    console.error('メール送信エラー:', error);
+    res.status(500).json({ success: false, error: 'メール送信中にエラーが発生しました' });
+  }
 });
 
 

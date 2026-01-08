@@ -14,6 +14,8 @@ import PortfolioBuilder from "./PortfolioBuilder";
 import Portfolio from "./Portfolio";
 import ProjectPage from "./ProjectPage";
 import Tutorial from "./Tutorial";
+import Maintenance from "./Maintenance";
+import AdminPanel from "./AdminPanel";
 import "../App.css";
 
 // Main logic moved to a child component of <Router>
@@ -25,6 +27,11 @@ function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [language, setLanguage] = useState(i18n.language);
   const [activeTemplate, setActiveTemplate] = useState(null);
+
+  // メンテナンスモード状態
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
+  const [scheduledEnd, setScheduledEnd] = useState(null);
 
   // --- Portfolio State Management ---
   const [portfolio, setPortfolio] = useState(null);
@@ -93,6 +100,22 @@ function AppContent() {
     }
   }, [location]);
 
+  // メンテナンスモード状態をチェック
+  useEffect(() => {
+    fetch('http://localhost:5000/api/maintenance-status')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setIsMaintenanceMode(data.isMaintenanceMode);
+          setMaintenanceMessage(data.maintenanceMessage);
+          setScheduledEnd(data.scheduledEnd);
+        }
+      })
+      .catch(error => {
+        console.error('メンテナンス状態の取得エラー:', error);
+      });
+  }, []);
+
   // Restore login state from JWT token on page load
   useEffect(() => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -100,27 +123,27 @@ function AppContent() {
       fetch('http://localhost:5000/api/verify-token', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          const userData = data.user;
-          setUser(userData);
-          const userLang = userData.language || 'ja';
-          i18n.changeLanguage(userLang);
-          setLanguage(userLang);
-        } else {
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            const userData = data.user;
+            setUser(userData);
+            const userLang = userData.language || 'ja';
+            i18n.changeLanguage(userLang);
+            setLanguage(userLang);
+          } else {
+            localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
+          }
+        })
+        .catch(error => {
+          console.error('Token verification error:', error);
           localStorage.removeItem('token');
           sessionStorage.removeItem('token');
-        }
-      })
-      .catch(error => {
-        console.error('Token verification error:', error);
-        localStorage.removeItem('token');
-        sessionStorage.removeItem('token');
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     } else {
       setIsLoading(false);
     }
@@ -175,6 +198,11 @@ function AppContent() {
     return <div>{t('loading')}</div>;
   }
 
+  // メンテナンスモード中は管理者パネル以外のページでメンテナンス画面を表示
+  if (isMaintenanceMode && !location.pathname.startsWith('/admin')) {
+    return <Maintenance maintenanceMessage={maintenanceMessage} scheduledEnd={scheduledEnd} />;
+  }
+
   console.log("Current portfolio state in App.js:", portfolio);
 
   return (
@@ -192,6 +220,7 @@ function AppContent() {
         <Route path="/portfolio-builder" element={<PortfolioBuilder theme={user?.theme} />} />
         <Route path="/portfolio/:portfolioId" element={<Portfolio onTemplateChange={handleTemplateChange} portfolio={portfolio} setPortfolio={setPortfolio} fetchPortfolio={fetchPortfolio} user={user} />} />
         <Route path="/portfolio/:portfolioId/project/:projectId" element={<ProjectPage user={user} />} />
+        <Route path="/admin" element={<AdminPanel />} />
       </Routes>
       <Footer theme={user?.theme} activeTemplate={activeTemplate} />
     </div>

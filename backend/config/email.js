@@ -34,4 +34,53 @@ const sendVerificationCode = async (email, code) => {
   }
 };
 
-module.exports = { sendVerificationCode };
+// メンテナンス通知送信関数
+const sendMaintenanceNotification = async (email, subject, message, scheduledEnd) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'test.example3030@gmail.com',
+      to: email,
+      subject: subject || 'メンテナンスのお知らせ',
+      html: `
+        <h2>メンテナンスのお知らせ</h2>
+        <p>${message}</p>
+        ${scheduledEnd ? `<p><strong>メンテナンス終了予定:</strong> ${scheduledEnd}</p>` : ''}
+        <p>ご不便をおかけして申し訳ございません。</p>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`メンテナンス通知を ${email} に送信しました`);
+  } catch (error) {
+    console.error('メール送信エラー:', error);
+    throw error;
+  }
+};
+
+// 新機能通知送信関数
+const sendFeatureNotification = async (email, subject, message) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'test.example3030@gmail.com',
+      to: email,
+      subject: subject || '新機能のお知らせ',
+      html: `
+        <h2>新機能のお知らせ</h2>
+        <p>${message}</p>
+        <p>今後ともよろしくお願いいたします。</p>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`新機能通知を ${email} に送信しました`);
+  } catch (error) {
+    console.error('メール送信エラー:', error);
+    throw error;
+  }
+};
+
+module.exports = {
+  sendVerificationCode,
+  sendMaintenanceNotification,
+  sendFeatureNotification
+};
