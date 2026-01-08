@@ -485,17 +485,14 @@ export default function ProjectPage({ user }) {
         <p>{project.description}</p>
         {isOwner && (
           <div className="project-page-controls">
-            <div className="edit-mode-toggle">
-              <label htmlFor="edit-mode-switch">編集モード</label>
-              <input
-                id="edit-mode-switch"
-                type="checkbox"
-                checked={isEditMode}
-                onChange={() => setIsEditMode(!isEditMode)}
-              />
+            <div className={`edit-mode-toggle ${isEditMode ? 'active' : ''}`} onClick={() => setIsEditMode(!isEditMode)}>
+              <i className="material-icons">{isEditMode ? 'edit_off' : 'edit'}</i>
+              <span>編集モード</span>
             </div>
             {isEditMode && (
-              <button className="btn-primary" onClick={() => setEditingBlock({})}>コンテンツを追加</button>
+              <button className="btn-primary" onClick={() => setEditingBlock({})}>
+                <i className="material-icons">add</i> コンテンツを追加
+              </button>
             )}
           </div>
         )}

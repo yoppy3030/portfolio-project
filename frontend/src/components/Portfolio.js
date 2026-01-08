@@ -791,6 +791,7 @@ export default function Portfolio({ onTemplateChange, portfolio, setPortfolio, f
   const [editingTextBlock, setEditingTextBlock] = useState(null); // 現在編集中のテキストブロックデータ
   const [isEditMode, setIsEditMode] = useState(false); // 編集モードが有効かどうか（所有者のみ切り替え可能）
   const [showShareModal, setShowShareModal] = useState(false); // 共有モーダルの表示/非表示
+  const [isPublic, setIsPublic] = useState(false); // 公開設定のステート
 
   // 現在のログインユーザーが、このポートフォリオの作成者（所有者）であるかどうかを判定
   // 編集ボタンなどの表示制御に使用します
@@ -801,9 +802,11 @@ export default function Portfolio({ onTemplateChange, portfolio, setPortfolio, f
   // --- useEffect (副作用フック) ---
   // ポートフォリオデータや所有権が変更された時の処理
   useEffect(() => {
-    // ポートフォリオの設定されているテンプレートを親コンポーネント（App.jsなど）に通知して適用させる
-    if (portfolio && onTemplateChange) {
-      onTemplateChange(portfolio.template);
+    if (portfolio) {
+      if (onTemplateChange) {
+        onTemplateChange(portfolio.template);
+      }
+      setIsPublic(portfolio.is_public);
     }
     // 所有者でない場合は強制的に閲覧モードにする（編集モードをOFF）
     if (!isOwner) {
@@ -1006,6 +1009,34 @@ export default function Portfolio({ onTemplateChange, portfolio, setPortfolio, f
     }
   };
 
+  // 公開/非公開の切り替え処理
+  const handleVisibilityToggle = async () => {
+    const newValue = !isPublic;
+    setIsPublic(newValue); // 即座にUIを更新（楽観的更新）
+
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/portfolios/${portfolioId}/visibility`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ is_public: newValue }),
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        setIsPublic(!newValue); // 失敗したら元に戻す
+        alert(t('portfolio_alert_update_db_error', '設定の更新に失敗しました。'));
+      }
+    } catch (err) {
+      setIsPublic(!newValue); // 失敗したら元に戻す
+      console.error(err);
+      alert(t('portfolio_alert_server_error', 'サーバーエラーが発生しました。'));
+    }
+  };
+
   const generateLayout = () => {
     if (!portfolio || !portfolio.projects) return [];
     return portfolio.projects.map(project => ({
@@ -1025,21 +1056,42 @@ export default function Portfolio({ onTemplateChange, portfolio, setPortfolio, f
         <h1>{portfolio.title}</h1>
         {isOwner && (
           <div className="portfolio-controls">
-            <div className="edit-mode-toggle">
-              <label htmlFor="edit-mode-switch">{t('portfolio_edit_mode')}</label>
-              <input
-                id="edit-mode-switch"
-                type="checkbox"
-                checked={isEditMode}
-                onChange={() => setIsEditMode(!isEditMode)}
-              />
+            <div className="visibility-toggle">
+              <label className="switch-label">
+                <span style={{ marginRight: '8px', fontWeight: 'bold', color: isPublic ? '#28a745' : '#6c757d' }}>
+                  {isPublic ? t('portfolio_visibility_public', '公開') : t('portfolio_visibility_private', '非公開')}
+                </span>
+                <div className="switch">
+                  <input
+                    type="checkbox"
+                    checked={isPublic}
+                    onChange={handleVisibilityToggle}
+                  />
+                  <span className="slider round"></span>
+                </div>
+              </label>
             </div>
-            <button className="btn-secondary share-button" onClick={() => setShowShareModal(true)}>{t('portfolio_share_button')}</button>
+
+            <div className={`edit-mode-toggle ${isEditMode ? 'active' : ''}`} onClick={() => setIsEditMode(!isEditMode)}>
+              <i className="material-icons">{isEditMode ? 'edit_off' : 'edit'}</i>
+              <span>{t('portfolio_edit_mode')}</span>
+            </div>
+
+            <button className="btn-secondary share-button" onClick={() => setShowShareModal(true)}>
+              <i className="material-icons">share</i>
+            </button>
+
             {isEditMode && (
               <div className="portfolio-header-actions">
-                <button className="btn-primary" onClick={() => setShowAddModal(true)}>{t('portfolio_add_new_project')}</button>
-                <button className="btn-primary" onClick={() => setShowAddTextModal(true)}>{t('portfolio_add_text')}</button>
-                <button className="btn-danger" onClick={handleDeletePortfolio}>{t('portfolio_delete_portfolio')}</button>
+                <button className="btn-primary" onClick={() => setShowAddModal(true)}>
+                  <i className="material-icons">add</i> {t('portfolio_add_new_project')}
+                </button>
+                <button className="btn-primary" onClick={() => setShowAddTextModal(true)}>
+                  <i className="material-icons">text_fields</i> {t('portfolio_add_text')}
+                </button>
+                <button className="btn-danger" onClick={handleDeletePortfolio}>
+                  <i className="material-icons">delete</i>
+                </button>
               </div>
             )}
           </div>

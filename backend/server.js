@@ -1820,7 +1820,7 @@ app.post('/api/portfolios', authenticateToken, (req, res) => {
   }
 });
 
-// ポートフォリオ詳細取得API (Publicly accessible)
+// ポートフォリオ詳細取得API (Publicly accessible with visibility check)
 app.get('/api/portfolios/:portfolioId', tryAuthenticateToken, (req, res) => {
   try {
     const { portfolioId } = req.params;
@@ -1839,6 +1839,11 @@ app.get('/api/portfolios/:portfolioId', tryAuthenticateToken, (req, res) => {
 
       const portfolio = portfolioResults[0];
       const isOwner = loggedInUserId === portfolio.user_id;
+
+      // Access Control: If not owner and not public, deny access
+      if (!isOwner && !portfolio.is_public) {
+        return res.status(403).json({ success: false, error: 'このポートフォリオは非公開です。' });
+      }
 
       // Next, get projects for this portfolio
       const projectsQuery = `
@@ -1883,7 +1888,8 @@ app.get('/api/portfolios/:portfolioId', tryAuthenticateToken, (req, res) => {
           success: true,
           portfolio: {
             ...portfolio,
-            isOwner: isOwner
+            isOwner: isOwner,
+            is_public: portfolio.is_public === 1 || portfolio.is_public === true // Ensure boolean
           }
         });
       });
@@ -1892,6 +1898,29 @@ app.get('/api/portfolios/:portfolioId', tryAuthenticateToken, (req, res) => {
     console.error('サーバーエラー:', error);
     res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
   }
+});
+
+// ポートフォリオの公開/非公開設定を更新するAPI
+app.put('/api/portfolios/:portfolioId/visibility', authenticateToken, (req, res) => {
+  const { portfolioId } = req.params;
+  const { is_public } = req.body;
+  const { id: userId } = req.user;
+
+  if (typeof is_public !== 'boolean') {
+    return res.status(400).json({ success: false, error: '無効な公開設定です。' });
+  }
+
+  // Check ownership and update
+  db.query('UPDATE portfolios SET is_public = ? WHERE id = ? AND user_id = ?', [is_public, portfolioId, userId], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '公開設定の更新中にデータベースエラーが発生しました。' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: 'ポートフォリオが見つからないか、更新する権限がありません。' });
+    }
+    res.json({ success: true, message: '公開設定が更新されました。' });
+  });
 });
 
 // ポートフォリオ削除API
