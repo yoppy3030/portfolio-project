@@ -1,0 +1,287 @@
+.login-form-wrapper {
+  background: #fff;
+  max-width: 600px;
+  margin: 48px auto;
+  border-radius: 10px;
+  box-shadow: 0px 8px 24px rgba(0,0,0,0.07);
+  padding: 40px 48px 32px 48px;
+  font-family: 'Yu Gothic', 'Meiryo', sans-serif;
+}
+
+body.dark-theme .login-form-wrapper {
+  background: #444;
+  box-shadow: 0px 8px 24px rgba(0,0,0,0.3);
+}
+
+.login-form h2 {
+  text-align: center;
+  margin-bottom: 40px;
+  font-size: 1.6em;
+  font-weight: bold;
+  letter-spacing: 0.07em;
+  color: #333;
+}
+
+body.dark-theme .login-form h2 {
+  color: #eee;
+}
+
+/* 1行整形 */
+.input-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 0 8px;
+}
+
+.input-row label {
+  min-width: 160px;
+  font-size: 1.1em;
+  color: #222;
+  font-weight: 500;
+}
+
+body.dark-theme .input-row label {
+  color: #eee;
+}
+
+.input-row input[type="text"],
+.input-row input[type="email"],
+.input-row input[type="password"] {
+  flex: 1;
+  font-size: 1em;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #aed6f7;
+  margin-left: 16px;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+body.dark-theme .input-row input[type="text"],
+body.dark-theme .input-row input[type="email"],
+body.dark-theme .input-row input[type="password"] {
+  background: #555;
+  border-color: #666;
+  color: #eee;
+}
+
+.pw-input-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* パスワードだけ右側padding多め：アイコンスペース */
+.pw-input-wrapper input[type="password"],
+.pw-input-wrapper input[type="text"] {
+  flex: 1;
+  font-size: 1em;
+  padding: 10px 40px 10px 12px; /* 右：40pxがアイコン分 */
+  border-radius: 6px;
+  border: 1px solid #aed6f7;
+  margin-left: 16px;
+  margin-right: 0;
+  box-sizing: border-box;
+  background: #fff;
+  position: relative;
+  z-index: 1;
+  transition: border-color 0.2s;
+}
+
+body.dark-theme .pw-input-wrapper input[type="password"],
+body.dark-theme .pw-input-wrapper input[type="text"] {
+  background: #555;
+  border-color: #666;
+  color: #eee;
+}
+
+/* アイコン自体のみ、シンプル表示 */
+.pw-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  z-index: 2;
+  box-shadow: none;
+}
+.pw-toggle svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  pointer-events: none;
+}
+body.dark-theme .pw-toggle svg {
+  filter: invert(1) hue-rotate(180deg) brightness(1.5); /* Adjust SVG color for dark theme */
+}
+.pw-toggle:focus {
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+}
+.pw-toggle:hover {
+  background: transparent;
+}
+.pw-toggle:active {
+  background: transparent;
+}
+
+/* フォーカス時のinput枠統一 */
+.pw-input-wrapper input:focus {
+  outline: none;
+  border: 2px solid #2196F3;
+}
+.input-row input:focus {
+  outline: none;
+  border: 2px solid #2196F3;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  margin: 16px 0 32px 0;
+  font-size: 1em;
+  padding: 0 8px;
+}
+
+body.dark-theme .checkbox-label {
+  color: #eee;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin-right: 8px;
+  transform: scale(1.1);
+}
+
+.form-actions {
+  text-align: center;
+  margin: 32px 0 24px 0;
+}
+
+.login-form button:not(.pw-toggle) {
+  margin: 0 12px;
+  padding: 10px 32px;
+  background: #2196F3;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+.login-form button[type="button"]:not(.pw-toggle) {
+  background: #eee;
+  color: #222;
+}
+
+body.dark-theme .login-form button[type="button"]:not(.pw-toggle) {
+  background: #666;
+  color: #eee;
+}
+
+.login-form button:not(.pw-toggle):hover {
+  background: #176ec5;
+}
+.login-form button[type="button"]:not(.pw-toggle):hover {
+  background: #bbb;
+}
+
+body.dark-theme .login-form button[type="button"]:not(.pw-toggle):hover {
+  background: #888;
+}
+
+.login-links {
+  margin-top: 32px;
+  text-align: center;
+  font-size: 0.95em;
+  padding: 0 8px;
+}
+.login-links p {
+  margin: 12px 0;
+  color: #555;
+  line-height: 1.4;
+}
+
+body.dark-theme .login-links p {
+  color: #ccc;
+}
+
+.link-text {
+  color: #2196F3;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+body.dark-theme .link-text {
+  color: #90caf9;
+}
+
+.link-text:hover {
+  color: #176ec5;
+}
+.text-btn {
+  background: none;
+  border: none;
+  color: #2196F3;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  font-weight: 500;
+}
+
+body.dark-theme .text-btn {
+  color: #90caf9;
+}
+
+.text-btn:hover {
+  color: #176ec5;
+}
+.login-links a.text-btn {
+  color: #2196F3;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+body.dark-theme .login-links a.text-btn {
+  color: #90caf9;
+}
+
+.login-links a.text-btn:hover {
+  color: #176ec5;
+}
+
+@media (max-width: 700px) {
+  .login-form-wrapper { padding: 18px 6vw; }
+  .login-form h2 { font-size: 1.2em; }
+  .input-row label,
+  .checkbox-label { font-size: 0.96em; }
+}
+
+body, html {
+  height: 100%;
+  margin: 0;
+}
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.main-content {
+  flex: 1;
+}

@@ -1,64 +1,55 @@
-// 必要なライブラリやコンポーネントをインポート
 import React, { useState, useEffect } from 'react';
-import { withTranslation } from 'react-i18next'; // 多言語対応のための高階コンポーネント
-import HobbiesManager from './HobbiesManager'; // 趣味管理コンポーネント
-import '../Settings.css'; // このコンポーネント専用のスタイルシート
+import { withTranslation } from 'react-i18next';
+import HobbiesManager from './HobbiesManager';
+import '../Settings.css';
 
-// 設定ページのメインコンポーネント
 function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, language }) {
-  // 現在表示している設定タブ（'profile', 'account'など）を管理するState
   const [activeTab, setActiveTab] = useState('profile');
   
-  // --- 各タブの入力値を管理するState ---
-  // プロフィールタブ
+  // Profile state
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
-  const [profilePicFile, setProfilePicFile] = useState(null); // アップロードするプロフィール画像ファイル
+  const [profilePicFile, setProfilePicFile] = useState(null);
 
-  // アカウントタブ
+  // Account state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
-  // 通知タブ
+  // Notifications state
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [featureAnnouncements, setFeatureAnnouncements] = useState(true);
   const [maintenanceInfo, setMaintenanceInfo] = useState(true);
 
-  // 一般設定タブ
+  // General state
   const [theme, setTheme] = useState('light');
-  const [deletePassword, setDeletePassword] = useState(''); // アカウント削除時のパスワード
+  const [deletePassword, setDeletePassword] = useState('');
 
-  // ユーザーへのメッセージ（成功・エラーなど）を表示するためのState
+  // General message state
   const [message, setMessage] = useState('');
 
-  // userオブジェクト（親から渡されるログインユーザー情報）が変更されたときに実行
   useEffect(() => {
     if (user) {
-      // ユーザー情報から各Stateを初期化する
       setUsername(user.name || '');
       setBio(user.bio || '');
-      setEmailNotifications(user.email_notifications === 1);
-      setFeatureAnnouncements(user.feature_announcements === 1);
-      setMaintenanceInfo(user.maintenance_info === 1);
+      setEmailNotifications(user.email_notifications === 1 ? true : false);
+      setFeatureAnnouncements(user.feature_announcements === 1 ? true : false);
+      setMaintenanceInfo(user.maintenance_info === 1 ? true : false);
       setTheme(user.theme || 'light');
     }
-  }, [user]); // userが変更されるたびに再実行
+  }, [user]);
 
-  // プロフィール画像のファイルが選択されたときに呼ばれる
   const handleFileChange = (e) => {
     setProfilePicFile(e.target.files[0]);
   };
 
-  // 「プロフィールを保存」ボタンの処理
   const handleProfileSave = async () => {
-    setMessage(''); // メッセージをリセット
+    setMessage('');
     const token = localStorage.getItem('token');
     if (!token) {
       setMessage(t('settings_message_not_logged_in'));
       return;
     }
 
-    // FormDataを使って、テキストとファイルを一緒に送信する
     const formData = new FormData();
     formData.append('name', username);
     formData.append('bio', bio);
@@ -71,7 +62,8 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
-          // 'Content-Type'はFormDataを使う場合、ブラウザが自動で設定するため指定しない
+          // 'Content-Type' is intentionally omitted. The browser will set it
+          // to 'multipart/form-data' with the correct boundary.
         },
         body: formData
       });
@@ -79,8 +71,8 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       const data = await response.json();
       if (data.success) {
         setMessage(t('settings_message_profile_updated'));
-        onUpdateUser(data.user); // 親コンポーネントにユーザー情報の更新を通知
-        setProfilePicFile(null); // ファイル選択をリセット
+        onUpdateUser(data.user);
+        setProfilePicFile(null); // Clear the file input after successful upload
       } else {
         setMessage(data.error);
       }
@@ -89,7 +81,6 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
 
-  // 「パスワードを変更」ボタンの処理
   const handleChangePassword = async () => {
     setMessage('');
     const token = localStorage.getItem('token');
@@ -97,7 +88,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       setMessage(t('settings_message_not_logged_in'));
       return;
     }
-    // パスワード強度の簡易チェック
+
     if (newPassword.length < 8) {
       setMessage(t('settings_message_password_too_short'));
       return;
@@ -116,7 +107,6 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       const data = await response.json();
       if (data.success) {
         setMessage(t('settings_message_password_changed'));
-        // 成功したら入力欄をクリア
         setCurrentPassword('');
         setNewPassword('');
       } else {
@@ -127,7 +117,6 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
 
-  // 「通知設定を保存」ボタンの処理
   const handleNotificationSave = async () => {
     setMessage('');
     const token = localStorage.getItem('token');
@@ -155,7 +144,6 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       const data = await response.json();
       if (data.success) {
         setMessage(t('settings_message_notifications_updated'));
-        // 設定を保存した後、最新のユーザー情報を取得して親コンポーネントに通知
         const verifyResponse = await fetch('http://localhost:5000/api/verify-token', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -171,10 +159,8 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
 
-  // 「アカウントを削除」ボタンの処理
   const handleDeleteAccount = async () => {
     setMessage('');
-    // 重要な操作なので確認ダイアログを表示
     if (!window.confirm(t('settings_confirm_delete_account'))) {
       return;
     }
@@ -192,13 +178,13 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ password: deletePassword }) // パスワードを送信して本人確認
+        body: JSON.stringify({ password: deletePassword })
       });
 
       const data = await response.json();
       if (data.success) {
         alert(t('settings_message_account_deleted'));
-        onLogout(); // 親コンポーネントのログアウト処理を呼び出す
+        onLogout();
       } else {
         setMessage(data.error);
       }
@@ -207,7 +193,6 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
 
-  // 「一般設定を保存」ボタンの処理
   const handleGeneralSave = async () => {
     setMessage('');
     const token = localStorage.getItem('token');
@@ -216,7 +201,10 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       return;
     }
 
-    const generalSettings = { language, theme };
+    const generalSettings = {
+      language,
+      theme
+    };
 
     try {
       const response = await fetch('http://localhost:5000/api/general-settings', {
@@ -229,9 +217,10 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       });
 
       const data = await response.json();
+
       if (data.success) {
         setMessage(t('settings_message_general_updated'));
-        onUpdateUser(data.user); // 親コンポーネントにユーザー情報の更新を通知
+        onUpdateUser(data.user);
       } else {
         setMessage(data.error);
       }
@@ -240,12 +229,10 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
   
-  // コンポーネントの描画部分
   return (
     <div className="settings-container">
       <h2>{t('settings_title')}</h2>
       <div className="settings-layout">
-        {/* サイドバー：各設定タブへの切り替えボタン */}
         <div className="settings-sidebar">
           <button onClick={() => { setMessage(''); setActiveTab('profile'); }} className={activeTab === 'profile' ? 'active' : ''}>{t('settings_profile_button')}</button>
           <button onClick={() => { setMessage(''); setActiveTab('hobbies'); }} className={activeTab === 'hobbies' ? 'active' : ''}>{t('settings_hobbies_button', '趣味')}</button>
@@ -253,9 +240,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
           <button onClick={() => { setMessage(''); setActiveTab('notifications'); }} className={activeTab === 'notifications' ? 'active' : ''}>{t('settings_notifications_button')}</button>
           <button onClick={() => { setMessage(''); setActiveTab('general'); }} className={activeTab === 'general' ? 'active' : ''}>{t('settings_general_title')}</button>
         </div>
-        {/* メインコンテンツ：選択中のタブに応じて内容を切り替える */}
         <div className="settings-main">
-          {/* プロフィールタブ */}
           {activeTab === 'profile' && (
             <div className="settings-content">
               <h3>{t('settings_profile_title')}</h3>
@@ -275,11 +260,9 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
               <button onClick={handleProfileSave}>{t('settings_save_button')}</button>
             </div>
           )}
-          {/* 趣味タブ */}
           {activeTab === 'hobbies' && (
             <HobbiesManager isOwner={true} />
           )}
-          {/* アカウントタブ */}
           {activeTab === 'account' && (
             <div className="settings-content">
               <h3>{t('settings_account_title')}</h3>
@@ -301,7 +284,6 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
               <button onClick={handleChangePassword}>{t('settings_change_password_button')}</button>
             </div>
           )}
-          {/* 通知タブ */}
           {activeTab === 'notifications' && (
             <div className="settings-content">
               <h3>{t('settings_notifications_title')}</h3>
@@ -321,7 +303,6 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
               <button onClick={handleNotificationSave}>{t('settings_save_button')}</button>
             </div>
           )}
-          {/* 一般設定タブ */}
           {activeTab === 'general' && (
             <div className="settings-content">
               <h3>{t('settings_general_title')}</h3>
@@ -329,10 +310,36 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
               <div className="form-group">
                 <label htmlFor="language">{t('settings_language_label')}</label>
                 <select id="language" value={language} onChange={(e) => onLanguageChange(e.target.value)}>
-                  {/* 多言語の選択肢 */}
                   <option value="ja">日本語</option>
                   <option value="en">English</option>
-                  {/* ... 他の言語 ... */}
+                  <option value="zh-CN">简体中文</option>
+                  <option value="zh-TW">繁體中文</option>
+                  <option value="ko">한국어</option>
+                  <option value="es">Español</option>
+                  <option value="fr">Français</option>
+                  <option value="de">Deutsch</option>
+                  <option value="it">Italiano</option>
+                  <option value="pt">Português</option>
+                  <option value="ru">Русский</option>
+                  <option value="ar">العربية</option>
+                  <option value="th">ไทย</option>
+                  <option value="vi">Tiếng Việt</option>
+                  <option value="id">Bahasa Indonesia</option>
+                  <option value="hi">हिन्दी</option>
+                  <option value="tr">Türkçe</option>
+                  <option value="nl">Nederlands</option>
+                  <option value="sv">Svenska</option>
+                  <option value="no">Norsk</option>
+                  <option value="da">Dansk</option>
+                  <option value="fi">Suomi</option>
+                  <option value="pl">Polski</option>
+                  <option value="cs">Čeština</option>
+                  <option value="hu">Magyar</option>
+                  <option value="ro">Română</option>
+                  <option value="el">Ελληνικά</option>
+                  <option value="he">עברית</option>
+                  <option value="ms">Bahasa Melayu</option>
+                  <option value="tl">Tagalog</option>
                 </select>
               </div>
               <div className="form-group">
@@ -359,5 +366,4 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
   );
 }
 
-// withTranslation()でコンポーネントをラップすることで、t関数などの多言語対応機能がpropsとして渡される
 export default withTranslation()(Settings);
