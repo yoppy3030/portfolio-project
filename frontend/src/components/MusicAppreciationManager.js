@@ -1,31 +1,43 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../Settings.css'; // スタイルを共有
-import ManageSongsModal from './ManageSongsModal'; // ★ インポート
+import ManageSongsModal from './ManageSongsModal'; // 曲管理のためのモーダルコンポーネント
 
 function MusicAppreciationManager() {
+  // --- ステート（状態変数）の定義 ---
+  // 音楽ジャンルのリスト
   const [genres, setGenres] = useState([]);
+  // ユーザーの音楽の好みリスト
   const [preferences, setPreferences] = useState([]);
+  // フォームで選択されたジャンルのID
   const [selectedGenreId, setSelectedGenreId] = useState('');
+  // フォームに入力されたアーティスト名
   const [newArtistName, setNewArtistName] = useState('');
+  // 読み込み中フラグ
   const [loading, setLoading] = useState(false);
+  // エラーメッセージ
   const [error, setError] = useState('');
+  // 成功メッセージ（追加・削除完了時など）
   const [message, setMessage] = useState('');
-  const [managingSongsOf, setManagingSongsOf] = useState(null); // ★ 曲管理モーダルのためのstate
+  // 曲管理画面（モーダル）を開いている対象の「好み」データ（nullなら閉じた状態）
+  const [managingSongsOf, setManagingSongsOf] = useState(null);
 
   const { t } = useTranslation();
 
   // ジャンルリストの取得
+  // 音楽ジャンルのリストをサーバーから取得
   const fetchGenres = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
+      // APIからジャンル一覧を取得
       const response = await fetch('http://localhost:5000/api/music-genres');
       const data = await response.json();
       if (data.success) {
         setGenres(data.genres);
+        // デフォルトでリストの最初のジャンルを選択状態にする
         if (data.genres.length > 0) {
-          setSelectedGenreId(data.genres[0].id); // デフォルトで最初のジャンルを選択
+          setSelectedGenreId(data.genres[0].id);
         }
       } else {
         setError(data.error || t('music_alert_fetch_genres_failed'));
@@ -38,6 +50,7 @@ function MusicAppreciationManager() {
   }, [t]);
 
   // ユーザーの音楽設定リストの取得
+  // ユーザーの登録済み音楽設定（好み）を取得
   const fetchPreferences = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -48,6 +61,7 @@ function MusicAppreciationManager() {
       return [];
     }
     try {
+      // 認証トークンを使ってAPIから個人の設定を取得
       const response = await fetch('http://localhost:5000/api/user-music-preferences', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -56,7 +70,7 @@ function MusicAppreciationManager() {
       const data = await response.json();
       if (data.success) {
         setPreferences(data.preferences);
-        return data.preferences;
+        return data.preferences; // 最新のデータを返す（後続の処理で使うため）
       } else {
         setError(data.error || t('music_alert_fetch_preferences_failed'));
         return [];
@@ -96,16 +110,16 @@ function MusicAppreciationManager() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ 
-          genre_id: selectedGenreId || null, 
-          artist_name: newArtistName.trim() || null 
+        body: JSON.stringify({
+          genre_id: selectedGenreId || null,
+          artist_name: newArtistName.trim() || null
         })
       });
       const data = await response.json();
       if (data.success) {
         setMessage(t('music_message_preference_added'));
         setNewArtistName('');
-        fetchPreferences(); // リストを再取得
+        fetchPreferences(); // 追加後にリストを再取得
       } else {
         setError(data.error || t('music_alert_add_preference_failed'));
       }
@@ -139,7 +153,7 @@ function MusicAppreciationManager() {
       const data = await response.json();
       if (data.success) {
         setMessage(t('music_message_preference_deleted'));
-        fetchPreferences(); // リストを再取得
+        fetchPreferences(); // 削除後にリストを再取得
       } else {
         setError(data.error || t('music_alert_delete_preference_failed'));
       }
@@ -153,15 +167,15 @@ function MusicAppreciationManager() {
   return (
     <div className="music-appreciation-manager">
       <h4>{t('music_title')}</h4>
-      
+
       {error && <p className="error-message">{error}</p>}
       {message && <p className="success-message">{message}</p>}
 
       <div className="form-group">
         <label htmlFor="music-genre-select">{t('music_label_select_genre')}</label>
-        <select 
-          id="music-genre-select" 
-          value={selectedGenreId} 
+        <select
+          id="music-genre-select"
+          value={selectedGenreId}
           onChange={(e) => setSelectedGenreId(e.target.value)}
           disabled={loading}
         >
@@ -202,7 +216,7 @@ function MusicAppreciationManager() {
                 {pref.genre_name ? `[${pref.genre_name}] ` : ''}
                 {pref.artist_name || t('music_no_artist_specified')}
               </span>
-              {/* ★ ボタン群を追加 */}
+              {/* 好みの項目に対する操作ボタン */}
               <div className="preference-actions">
                 <button className="btn-secondary-outline" onClick={() => setManagingSongsOf(pref)}>
                   {t('music_songs_manage_button')} ({pref.songs ? pref.songs.length : 0})
@@ -218,23 +232,23 @@ function MusicAppreciationManager() {
         )}
       </div>
 
-      {/* ★ モーダル表示のロジック */}
+      {/* 曲管理モーダルの表示（managingSongsOf がセットされている時のみ表示） */}
       {managingSongsOf && (
-        <ManageSongsModal 
+        <ManageSongsModal
           preference={managingSongsOf}
           onClose={() => setManagingSongsOf(null)}
           onUpdate={async (closeModal = true) => {
-            // Always fetch latest preferences
+            // 曲の追加・削除などがあった場合、設定リスト全体を再取得して最新の状態にする
             const updatedPrefs = await fetchPreferences();
-            
+
             if (closeModal) {
               setManagingSongsOf(null); // モーダルを閉じる
             } else {
-              // Keep modal open and update the preference data
+              // モーダルを開いたままデータを更新する場合（例: 曲順変更など）
               if (updatedPrefs && updatedPrefs.length > 0 && managingSongsOf) {
                 const updatedPref = updatedPrefs.find(p => p.id === managingSongsOf.id);
                 if (updatedPref) {
-                  setManagingSongsOf(updatedPref);
+                  setManagingSongsOf(updatedPref); // モーダル内の表示データを更新
                 }
               }
             }

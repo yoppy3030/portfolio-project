@@ -1,9 +1,15 @@
+// Reactの基本的な機能（フック）をインポート
+// useState: データを保存する
+// useEffect: 画面が表示されたタイミングで処理を実行する
+// useCallback: 関数を無駄に作らないようにする（パフォーマンス対策）
 import React, { useState, useEffect, useCallback } from 'react';
+// 多言語対応（日本語・英語の切り替えなど）のためのフック
 import { useTranslation } from 'react-i18next';
+// ドラッグ＆ドロップで並び替えをするためのライブラリ
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import './ReadingHobbyModal.css';
 
-// Star rating display component
+// 星評価表示コンポーネント
 const StarRating = ({ rating }) => {
   const totalStars = 10;
   const fullStars = Math.floor(rating);
@@ -17,7 +23,7 @@ const StarRating = ({ rating }) => {
   );
 };
 
-// Star rating input component
+// 星評価入力コンポーネント
 const StarInput = ({ rating, setRating }) => {
   const totalStars = 10;
   return (
@@ -47,13 +53,26 @@ const bookTypeKeys = [
 
 function ReadingHobbyModal({ onClose, isOwner }) {
   const { t } = useTranslation();
-  const [authors, setAuthors] = useState([]);
-  const [books, setBooks] = useState([]);
+
+  // --- 状態（State）の管理 ---
+  // APIから取得したデータを保存する変数
+  const [authors, setAuthors] = useState([]); // 著者のリスト
+  const [books, setBooks] = useState([]);     // 本のリスト
+
+  // 現在選択されている著者のID
   const [selectedAuthorId, setSelectedAuthorId] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [booksLoading, setBooksLoading] = useState(false);
+
+  // 読み込み中かどうか（ローディング表示）
+  const [loading, setLoading] = useState(false);        // 著者リストの読み込み
+  const [booksLoading, setBooksLoading] = useState(false); // 本リストの読み込み
+
+  // エラーメッセージ
   const [error, setError] = useState('');
+
+  // 新しく追加する著者の名前
   const [newAuthorName, setNewAuthorName] = useState('');
+
+  // 新しく追加する本のデータ
   const [newBookData, setNewBookData] = useState({
     type: 'novel',
     genre: '',
@@ -62,19 +81,28 @@ function ReadingHobbyModal({ onClose, isOwner }) {
     rating: 0,
     image: null
   });
+
+  // 編集中の本のIDとデータ
   const [editingBookId, setEditingBookId] = useState(null);
   const [editBookData, setEditBookData] = useState(null);
 
+  // 認証トークン（ログイン情報）を取得する関数
   const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
 
+  // ★サーバーから著者リストを取得する関数
+  // useCallbackを使って関数をメモ化（再生成を防ぐ）しています
   const fetchAuthors = useCallback(async () => {
-    if (!isOwner) return;
-    setLoading(true);
+    if (!isOwner) return; // 所有者でなければ何もしない
+
+    setLoading(true); // 読み込み開始（ローディング表示ON）
     try {
+      // サーバー（API）にリクエストを送信
       const response = await fetch('http://localhost:5000/api/reading/authors', {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
+        headers: { 'Authorization': `Bearer ${getToken()}` } // 認証情報をヘッダーにセット
       });
       const data = await response.json();
+
+      // 成功したらデータをstateに保存
       if (data.success) {
         setAuthors(data.authors);
       } else {
@@ -83,7 +111,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
     } catch (err) {
       setError(t('readingHobby.modal.serverConnectionError'));
     } finally {
-      setLoading(false);
+      setLoading(false); // 読み込み終了（ローディング表示OFF）
     }
   }, [isOwner, t]);
 
@@ -118,22 +146,27 @@ function ReadingHobbyModal({ onClose, isOwner }) {
     fetchBooks(selectedAuthorId);
   }, [selectedAuthorId, fetchBooks]);
 
+  // ★新しい著者を追加する関数
   const handleAddAuthor = async () => {
-    if (!newAuthorName.trim()) return;
+    if (!newAuthorName.trim()) return; // 名前が空なら何もしない
     setError('');
+
     try {
+      // POSTメソッドでデータを送信
       const response = await fetch('http://localhost:5000/api/reading/authors', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getToken()}`
         },
+        // 送信するデータをJSON文字列に変換
         body: JSON.stringify({ name: newAuthorName })
       });
       const data = await response.json();
+
       if (data.success) {
-        setNewAuthorName('');
-        fetchAuthors();
+        setNewAuthorName(''); // 入力欄をクリア
+        fetchAuthors();       // 最新のリストを取得し直す
       } else {
         setError(data.error || t('readingHobby.modal.addAuthorError'));
       }
@@ -168,7 +201,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
     const { name, value } = e.target;
     setNewBookData(prev => ({ ...prev, [name]: value }));
   };
-  
+
   const setNewBookRating = (rating) => {
     setNewBookData(prev => ({ ...prev, rating }));
   };
@@ -177,13 +210,17 @@ function ReadingHobbyModal({ onClose, isOwner }) {
     setNewBookData(prev => ({ ...prev, image: e.target.files[0] }));
   };
 
+  // ★本を追加する関数（画像を含むため FormData を使用）
   const handleAddBook = async () => {
+    // 入力チェック（バリデーション）
     if (!selectedAuthorId || !newBookData.title || !newBookData.type) {
       setError(t('readingHobby.modal.addBookValidationError'));
       return;
     }
     setError('');
 
+    // 画像ファイルを送るために FormData オブジェクトを使います
+    // JSONではなく、マルチパート形式で送信されます
     const formData = new FormData();
     formData.append('author_id', selectedAuthorId);
     formData.append('type', newBookData.type);
@@ -197,13 +234,14 @@ function ReadingHobbyModal({ onClose, isOwner }) {
 
     try {
       const response = await fetch('http://localhost:5000/api/reading/books', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${getToken()}` },
+        method: 'POST', // データ作成はPOST
+        headers: { 'Authorization': `Bearer ${getToken()}` }, // Content-Typeは自動設定されるので指定しない
         body: formData
       });
       const data = await response.json();
       if (data.success) {
-        fetchBooks(selectedAuthorId);
+        fetchBooks(selectedAuthorId); // リストを更新
+        // 入力フォームをリセット
         setNewBookData({ type: 'novel', genre: '', title: '', comment: '', rating: 0, image: null });
       } else {
         setError(data.error || t('readingHobby.modal.addBookError'));
@@ -264,7 +302,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
 
     const formData = new FormData();
     Object.keys(editBookData).forEach(key => {
-        formData.append(key, editBookData[key]);
+      formData.append(key, editBookData[key]);
     });
 
     try {
@@ -331,7 +369,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
         </div>
         <div className="modal-body">
           {error && <p className="error-message">{error}</p>}
-          
+
           <div className="reading-hobby-manager">
             <div className="author-management-section">
               <h4>{t('readingHobby.modal.authorManagementTitle')}</h4>
@@ -347,8 +385,8 @@ function ReadingHobbyModal({ onClose, isOwner }) {
               <div className="author-list">
                 {loading ? <p>{t('readingHobby.modal.loading')}</p> : (
                   authors.map(author => (
-                    <div 
-                      key={author.id} 
+                    <div
+                      key={author.id}
                       className={`author-item ${selectedAuthorId === author.id ? 'selected' : ''}`}
                       onClick={() => setSelectedAuthorId(author.id)}
                     >

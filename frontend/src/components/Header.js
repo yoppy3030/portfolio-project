@@ -6,17 +6,20 @@ import '../Header.css';
 
 const CATEGORIES = ["dashboard", "learning", "school", "other"];
 
+// ヘッダーコンポーネント（ナビゲーションバー）
 function Header({ user, onLogout, theme, activeTemplate, portfolio }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  // --- ステート（状態変数） ---
+  // openMenu: 現在開いているカテゴリーメニューの名前（開いていなければnull）
   const [openMenu, setOpenMenu] = useState(null);
-  const menuRef = useRef(null);
+  const menuRef = useRef(null); // メニュー外クリック検知用の参照
 
   const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNFNUU3RUIiLz4KPHBhdGggZD0iTTE2IDhDMTguMjA5MSA4IDIwIDkuNzkwODYgMjAgMTJDMjAgMTQuMjA5MSAxOC4yMDkxIDE2IDE2IDE2QzEzLjc5MDkgMTYgMTIgMTQuMjA5MSAxMiAxMkMxMiA5Ljc5MDg2IDEzLjc5MDkgOCAxNiA4WiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNOCAyNEM4IDIwLjY4NjMgMTAuNjg2MyAxOCAxNCAxOEgxOEMyMS4zMTM3IDE4IDI0IDIwLjY4NjMgMjQgMjRWMjZIOFYyNFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+Cg==";
 
-  const userIconUrl = user && user.iconUrl 
-    ? `http://localhost:5000${user.iconUrl}?t=${new Date().getTime()}` 
+  const userIconUrl = user && user.iconUrl
+    ? `http://localhost:5000${user.iconUrl}?t=${new Date().getTime()}`
     : defaultAvatar;
 
   const handleCategoryClick = (category) => {
@@ -27,6 +30,7 @@ function Header({ user, onLogout, theme, activeTemplate, portfolio }) {
     }
   };
 
+  // メニューの外側をクリックした時にメニューを閉じる処理
   const handleClickOutside = (event) => {
     if (menuRef.current && !menuRef.current.contains(event.target)) {
       setOpenMenu(null);
@@ -42,6 +46,7 @@ function Header({ user, onLogout, theme, activeTemplate, portfolio }) {
 
   const showBackButton = location.pathname !== '/' && location.pathname !== '/login' && location.pathname !== '/register';
 
+  // カテゴリーメニューの中身（プロジェクト一覧）を表示する関数
   const renderCategoryMenu = (category) => {
     if (!portfolio) {
       return (
@@ -50,6 +55,7 @@ function Header({ user, onLogout, theme, activeTemplate, portfolio }) {
         </div>
       );
     }
+    // そのカテゴリーに関連付けられたプロジェクトをフィルタリング
     const projects = portfolio.projects?.filter(p => p.tags?.includes(category)) || [];
     if (projects.length === 0) {
       return (

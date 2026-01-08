@@ -3,35 +3,38 @@ import { withTranslation } from 'react-i18next';
 import HobbiesManager from './HobbiesManager';
 import '../Settings.css';
 
+// ユーザー設定画面のメインコンポーネント
 function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, language }) {
+  // 現在表示しているタブのID（profile, hobbies, account, notifications, general）
   const [activeTab, setActiveTab] = useState('profile');
-  
-  // Profile state
-  const [username, setUsername] = useState('');
-  const [bio, setBio] = useState('');
-  const [profilePicFile, setProfilePicFile] = useState(null);
 
-  // Account state
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  // --- プロフィール設定のステート ---
+  const [username, setUsername] = useState(''); // ユーザー名
+  const [bio, setBio] = useState(''); // 自己紹介
+  const [profilePicFile, setProfilePicFile] = useState(null); // プロフィール画像ファイル
 
-  // Notifications state
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [featureAnnouncements, setFeatureAnnouncements] = useState(true);
-  const [maintenanceInfo, setMaintenanceInfo] = useState(true);
+  // --- アカウント設定のステート ---
+  const [currentPassword, setCurrentPassword] = useState(''); // 現在のパスワード
+  const [newPassword, setNewPassword] = useState(''); // 新しいパスワード
 
-  // General state
-  const [theme, setTheme] = useState('light');
-  const [deletePassword, setDeletePassword] = useState('');
+  // --- 通知設定のステート ---
+  const [emailNotifications, setEmailNotifications] = useState(true); // メール通知
+  const [featureAnnouncements, setFeatureAnnouncements] = useState(true); // 新機能のお知らせ
+  const [maintenanceInfo, setMaintenanceInfo] = useState(true); // メンテナンス情報
 
-  // General message state
+  // --- 一般設定のステート ---
+  const [theme, setTheme] = useState('light'); // テーマ（ライト/ダーク）
+  const [deletePassword, setDeletePassword] = useState(''); // アカウント削除時の確認用パスワード
+
+  // 画面に表示するメッセージ（成功/エラー）
   const [message, setMessage] = useState('');
 
+  // ユーザー情報が渡されたら（ログイン時など）、ステートに初期値をセット
   useEffect(() => {
     if (user) {
       setUsername(user.name || '');
       setBio(user.bio || '');
-      setEmailNotifications(user.email_notifications === 1 ? true : false);
+      setEmailNotifications(user.email_notifications === 1 ? true : false); // 1ならtrue, 0ならfalse
       setFeatureAnnouncements(user.feature_announcements === 1 ? true : false);
       setMaintenanceInfo(user.maintenance_info === 1 ? true : false);
       setTheme(user.theme || 'light');
@@ -42,6 +45,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     setProfilePicFile(e.target.files[0]);
   };
 
+  // プロフィール情報の保存処理
   const handleProfileSave = async () => {
     setMessage('');
     const token = localStorage.getItem('token');
@@ -62,8 +66,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
-          // 'Content-Type' is intentionally omitted. The browser will set it
-          // to 'multipart/form-data' with the correct boundary.
+          // FormDataを送る際は Content-Type ヘッダーを自動設定させるため省略
         },
         body: formData
       });
@@ -71,8 +74,8 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       const data = await response.json();
       if (data.success) {
         setMessage(t('settings_message_profile_updated'));
-        onUpdateUser(data.user);
-        setProfilePicFile(null); // Clear the file input after successful upload
+        onUpdateUser(data.user); // 親コンポーネント（App.js）のユーザー情報を更新
+        setProfilePicFile(null); // ファイル入力をクリア
       } else {
         setMessage(data.error);
       }
@@ -81,6 +84,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
 
+  // パスワード変更処理
   const handleChangePassword = async () => {
     setMessage('');
     const token = localStorage.getItem('token');
@@ -117,6 +121,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
 
+  // 通知設定の保存処理
   const handleNotificationSave = async () => {
     setMessage('');
     const token = localStorage.getItem('token');
@@ -144,6 +149,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       const data = await response.json();
       if (data.success) {
         setMessage(t('settings_message_notifications_updated'));
+        // ユーザー情報を最新化するためにトークン検証APIを呼ぶ
         const verifyResponse = await fetch('http://localhost:5000/api/verify-token', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -159,6 +165,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
 
+  // アカウント削除処理
   const handleDeleteAccount = async () => {
     setMessage('');
     if (!window.confirm(t('settings_confirm_delete_account'))) {
@@ -184,7 +191,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       const data = await response.json();
       if (data.success) {
         alert(t('settings_message_account_deleted'));
-        onLogout();
+        onLogout(); // ログアウト処理
       } else {
         setMessage(data.error);
       }
@@ -193,6 +200,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
     }
   };
 
+  // 一般設定（言語・テーマ）の保存処理
   const handleGeneralSave = async () => {
     setMessage('');
     const token = localStorage.getItem('token');
@@ -228,7 +236,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       setMessage(t('settings_message_general_update_failed'));
     }
   };
-  
+
   return (
     <div className="settings-container">
       <h2>{t('settings_title')}</h2>

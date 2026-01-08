@@ -6,22 +6,22 @@ import modernTemplate from '../assets/modern-template.svg';
 import classicTemplate from '../assets/classic-template.svg';
 import minimalistTemplate from '../assets/minimalist-template.svg';
 
+// 新しいポートフォリオを作成するための画面コンポーネント
 export default function PortfolioBuilder({ theme }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const [portfolioTitle, setPortfolioTitle] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
+  // --- ステート（状態変数） ---
+  const [portfolioTitle, setPortfolioTitle] = useState(''); // ポートフォリオのタイトル
+  const [selectedTemplate, setSelectedTemplate] = useState(null); // 選択されたテンプレートの種類
+
+  // コンポーネントがマウントされた時に実行（既存のポートフォリオがあるかチェック）
   useEffect(() => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    // if (!token) {
-    //   navigate('/login');
-    //   return; // Stop execution if not logged in
-    // }
 
+    // 既存のポートフォリオがあるかどうかを確認する非同期関数
     const checkForExistingPortfolio = async () => {
-      // Token should be checked here for this specific action
       if (token) {
         try {
           const response = await fetch('http://localhost:5000/api/user/portfolio', {
@@ -31,14 +31,13 @@ export default function PortfolioBuilder({ theme }) {
           if (response.ok) {
             const data = await response.json();
             if (data.success) {
-              // Portfolio exists, redirect to it
+              // 既にポートフォリオが存在する場合は、そのポートフォリオページに移動（リダイレクト）
               navigate(`/portfolio/${data.portfolioId}`);
             }
-            // If !data.success or response is 404, do nothing and show the builder.
           }
         } catch (error) {
           console.error('Error checking for existing portfolio:', error);
-          // If there's an error, just proceed to show the builder page.
+          // エラーが発生した場合は、そのままこの作成画面を表示し続ける
         }
       }
     };
@@ -46,14 +45,16 @@ export default function PortfolioBuilder({ theme }) {
     checkForExistingPortfolio();
   }, [navigate]);
 
+  // 「ポートフォリオを作成」ボタンが押された時の処理
   const handleCreatePortfolio = async () => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
-      // Redirect to login page if not logged in, passing current location
+      // ログインしていなければログインページへ移動（ログイン後に戻ってこれるように現在の場所をstateで渡す）
       navigate('/login', { state: { from: location } });
       return;
     }
 
+    // 入力チェック：タイトルとテンプレートが選択されているか
     if (!portfolioTitle) {
       alert(t('portfolio_title_required'));
       return;
@@ -64,6 +65,7 @@ export default function PortfolioBuilder({ theme }) {
     }
 
     try {
+      // サーバーにポートフォリオ作成リクエストを送信
       const response = await fetch('http://localhost:5000/api/portfolios', {
         method: 'POST',
         headers: {
@@ -76,6 +78,7 @@ export default function PortfolioBuilder({ theme }) {
       const data = await response.json();
 
       if (data.success) {
+        // 作成成功：アラートを表示して、作成されたポートフォリオページへ移動
         alert(t('portfolio_creation_success', { title: portfolioTitle, template: selectedTemplate }));
         navigate(`/portfolio/${data.portfolio.id}`);
       } else {

@@ -2,12 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import './ReadingHobbyDisplay.css';
 
+// 読書記録（書籍リスト）を表示する一覧コンポーネント
 function ReadingHobbyDisplay() {
-  const { t } = useTranslation();
-  const [books, setBooks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { t } = useTranslation(); // 翻訳フック
+  // --- ステート（状態変数） ---
+  const [books, setBooks] = useState([]); // 書籍リスト
+  const [loading, setLoading] = useState(true); // 読み込み中フラグ
+  const [error, setError] = useState(''); // エラーメッセージ
 
+  // サーバーから書籍リストを取得する関数
   const fetchBooks = useCallback(async () => {
     setLoading(true);
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -52,9 +55,9 @@ function ReadingHobbyDisplay() {
         <div className="books-grid">
           {books.map(book => (
             <div key={book.id} className="book-card">
-              <img 
-                src={book.image_url ? `http://localhost:5000${book.image_url}` : 'https://via.placeholder.com/150x220.png?text=No+Image'} 
-                alt={book.title} 
+              <img
+                src={book.image_url ? `http://localhost:5000${book.image_url}` : 'https://via.placeholder.com/150x220.png?text=No+Image'}
+                alt={book.title}
                 className="book-card-image"
               />
               <div className="book-card-content">

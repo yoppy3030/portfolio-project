@@ -1,10 +1,25 @@
+// Reactとその機能（フック）をインポートします
+// useState: 変数（状態）を管理する
+// useEffect: 画面表示後やデータの変化時に処理を行う
+// useCallback, useMemo: 処理を記憶してパフォーマンスを向上させる
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './GameLibraryModal.css';
+// lodash.debounce: 入力が終わるまで処理を待つための便利な道具（検索処理などで使用）
 import debounce from 'lodash.debounce';
+// @hello-pangea/dnd: ドラッグ＆ドロップ機能を実現するライブラリ
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
-// 新しいコンポーネント: 登録済み曲から選択するモーダル
+/**
+ * 登録済み曲から選択するモーダルコンポーネント
+ * @param {Object[]} songs - ユーザーの全曲リスト
+ * @param {Object[]} existingBgms - 現在設定されているBGMリスト（重複除外用）
+ * @param {Function} onSelect - 曲が選択されたときのコールバック
+ * @param {Function} onClose - モーダルを閉じる関数
+ */
 function SelectSongModal({ songs, existingBgms, onSelect, onClose }) {
+  // ★重要: useState（ステートフック）の使い方
+  // const [変数名, 更新関数] = useState(初期値);
+  // ここでは、検索ボックスの文字を管理する `searchTerm` と、それを書き換える `setSearchTerm` を作っています。
   const [searchTerm, setSearchTerm] = useState('');
 
   // 既にBGMとして追加されている曲と、検索語でフィルタリング
@@ -16,8 +31,8 @@ function SelectSongModal({ songs, existingBgms, onSelect, onClose }) {
     if (searchTerm === '') {
       return true;
     }
-    return (song.song_title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            song.artist_name?.toLowerCase().includes(searchTerm.toLowerCase()));
+    return (song.song_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      song.artist_name?.toLowerCase().includes(searchTerm.toLowerCase()));
   });
 
   return (
@@ -33,6 +48,8 @@ function SelectSongModal({ songs, existingBgms, onSelect, onClose }) {
               type="text"
               placeholder="曲名やアーティスト名で検索..."
               value={searchTerm}
+              // 入力エリアの値が変わった時に実行される関数：
+              // 入力された文字（e.target.value）を searchTerm にセットします
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
@@ -58,24 +75,32 @@ function SelectSongModal({ songs, existingBgms, onSelect, onClose }) {
 }
 
 
+/**
+ * 検索結果のゲーム項目を表示するコンポーネント
+ * @param {Object} game - ゲームデータ
+ * @param {Function} onAdd - 追加ボタンが押されたときのハンドラ
+ * @param {boolean} isAdded - 既に追加済みかどうか
+ * @param {Function} translateToJapanese - 英語名を日本語に変換する関数
+ */
 function GameResult({ game, onAdd, isAdded, translateToJapanese }) {
   // プラットフォーム名を取得（Nintendo Switch, PlayStation, Xbox, PC など）
+  // props（親から渡されたデータ）を使って表示内容を決めます
   const getPlatformNames = (platforms) => {
     if (!platforms || !Array.isArray(platforms) || platforms.length === 0) {
       return 'プラットフォーム情報なし';
     }
-    
+
     const platformNames = platforms
       .map(p => p.platform?.name || p.name)
       .filter(Boolean)
       .slice(0, 3); // 最大3つまで表示
-    
+
     return platformNames.length > 0 ? platformNames.join(', ') : 'プラットフォーム情報なし';
   };
 
   const platformNames = getPlatformNames(game.platforms);
   // 日本語名があれば日本語名を、なければ英語名を表示
-  const displayName = translateToJapanese ? translateToJapanese(game.name) : game.name; 
+  const displayName = translateToJapanese ? translateToJapanese(game.name) : game.name;
   const showEnglishName = displayName !== game.name; // 日本語名に変換できた場合
 
   return (
@@ -93,8 +118,8 @@ function GameResult({ game, onAdd, isAdded, translateToJapanese }) {
             <small style={{ color: '#666' }}>{game.released}</small>
           )}
           {game.rating && game.rating > 0 && (
-            <small style={{ 
-              color: '#ff9800', 
+            <small style={{
+              color: '#ff9800',
               fontWeight: '600',
               backgroundColor: '#fff3e0',
               padding: '2px 6px',
@@ -108,8 +133,8 @@ function GameResult({ game, onAdd, isAdded, translateToJapanese }) {
           {platformNames}
         </small>
       </div>
-      <button 
-        onClick={() => onAdd(game)} 
+      <button
+        onClick={() => onAdd(game)}
         disabled={isAdded}
         className="btn-add-game"
       >
@@ -119,17 +144,33 @@ function GameResult({ game, onAdd, isAdded, translateToJapanese }) {
   );
 }
 
+/**
+ * ライブラリ内の各ゲームアイテムを表示・編集するコンポーネント
+ * ドラッグ&ドロップ、評価、コメント編集、BGM管理の機能を持つ
+ */
 function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProvided, dndSnapshot, isOwner, layoutMode, allUserSongs }) {
   console.log(`[DEBUG] LibraryItem for game "${game.title}" received allSeries:`, allSeries);
+  // --- ステート（状態変数）の定義エリア ---
+  // ここで画面に表示したり、編集したりするデータを管理します。
+
+  // 編集モードかどうかを切り替える変数。trueなら編集画面を表示、falseなら通常の表示画面。
   const [isEditing, setIsEditing] = useState(false);
+  // ゲームの評価（★の数）を保存する変数。初期値は props で渡された game.rating です。
   const [rating, setRating] = useState(game.rating || null);
+  // 感想コメントを保存する変数
   const [comment, setComment] = useState(game.comment || '');
+  // プレイ時間を保存する変数。文字列として扱います。
   const [playtimeHours, setPlaytimeHours] = useState(game.playtime_hours ? String(game.playtime_hours) : '');
+  // シリーズ名を保存する変数
   const [series, setSeries] = useState(game.series || '');
+  // 設定されたBGMリストを保存する変数。配列 [] で管理します。
   const [bgms, setBgms] = useState(game.bgms || []);
-  const [showSelectSongModal, setShowSelectSongModal] = useState(false); // ★ 曲選択モーダル用のstate
+  // 曲選択モーダルを表示するかどうかを決めるフラグ変数
+  const [showSelectSongModal, setShowSelectSongModal] = useState(false);
 
   useEffect(() => {
+    // 親コンポーネントから渡された game データが変わったら、
+    // ローカルの状態（rating, comment など）も更新して同期します
     setRating(game.rating || null);
     setComment(game.comment || '');
     setPlaytimeHours(game.playtime_hours ? String(game.playtime_hours) : '');
@@ -137,18 +178,25 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
     setBgms(game.bgms || []);
   }, [game.rating, game.comment, game.playtime_hours, game.series, game.bgms]);
 
+  // ★データを保存する関数
+  // async (非同期) と await (待機) を使って、保存処理が終わるのを待ってから次の処理（編集モード終了）を行います。
   const handleSave = async () => {
+    // サーバーに送るためのデータオブジェクトを作成
     const updateData = {
       rating: rating === null || rating === 0 ? null : rating,
+      // trim() は文字の前後の空白を削除します。「  あいう  」→「あいう」
       comment: comment && comment.trim() ? comment.trim() : null,
       playtime_hours: playtimeHours && playtimeHours.trim() ? parseFloat(playtimeHours) : null,
       series: series && series.trim() ? series.trim() : null,
-      bgms: bgms.filter(bgm => (bgm.title && bgm.title.trim() !== '') || (bgm.url && bgm.url.trim() !== '')), // URLが空でないBGMのみを送信
+      // タイトルかURLが入っているBGMだけを残します（空の行を削除）
+      bgms: bgms.filter(bgm => (bgm.title && bgm.title.trim() !== '') || (bgm.url && bgm.url.trim() !== '')),
     };
-    
+
     console.log('[DEBUG] handleSave: bgms before filtering:', bgms);
     console.log('Saving game update:', game.id, updateData);
+    // 親コンポーネントから渡された更新関数（onUpdate）を実行
     await onUpdate(game.id, updateData);
+    // 編集モードを終了して表示モードに戻る
     setIsEditing(false);
   };
 
@@ -186,6 +234,7 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
     setBgms(newBgms);
   };
 
+  // BGMリストのドラッグ&ドロップによる並び替え終了時の処理
   const handleBgmDragEnd = (result) => {
     if (!result.destination) {
       return;
@@ -198,6 +247,8 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
     setBgms(reorderedBgms);
   };
 
+  // ★星マークを表示する関数
+  // Array.from({ length: 10 }) で10個の要素を持つ配列を作り、mapでループして星を表示します。
   const renderStars = (value, interactive = false) => {
     const ratingValue = value || 0;
     return (
@@ -222,9 +273,9 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
   const dragHandleProps = isDraggable ? dndProvided.dragHandleProps : {};
   const style = isDraggable
     ? {
-        ...dndProvided.draggableProps.style,
-        boxShadow: dndSnapshot.isDragging ? '0 6px 12px rgba(0,0,0,0.2)' : 'none',
-      }
+      ...dndProvided.draggableProps.style,
+      boxShadow: dndSnapshot.isDragging ? '0 6px 12px rgba(0,0,0,0.2)' : 'none',
+    }
     : {};
   const className = `library-item ${isDraggable ? 'draggable' : ''} ${layoutMode}`;
 
@@ -253,9 +304,9 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
             <div className="rating-section">
               <label>評価:</label>
               {renderStars(rating || 0, true)}
-              <button 
+              <button
                 type="button"
-                onClick={() => setRating(null)} 
+                onClick={() => setRating(null)}
                 className="btn-clear-rating"
                 style={{ marginLeft: '10px', fontSize: '0.8rem', padding: '2px 8px' }}
               >
@@ -414,12 +465,12 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
               <p className="no-details">評価、プレイ時間、コメント、BGMを追加してください</p>
             )}
             {isOwner && (
-              <button 
+              <button
                 type="button"
                 onClick={() => {
                   console.log('Edit button clicked for game:', game.id);
                   setIsEditing(true);
-                }} 
+                }}
                 className="btn-edit"
               >
                 編集
@@ -433,15 +484,33 @@ function LibraryItem({ game, onRemove, onUpdate, allSeries, isDraggable, dndProv
   );
 }
 
+/**
+ * ゲームライブラリ管理のメインモーダル
+ * APIからのデータ取得、検索、並び替え、シリーズごとのグループ化などを管理
+ */
 function GameLibraryModal({ onClose, isOwner }) {
+  // --- アプリケーションの状態管理 (State) ---
+
+  // 自分のライブラリにあるゲームのリスト。配列として管理します。
   const [myGames, setMyGames] = useState([]);
+
+  // 検索した結果のゲームリスト
   const [searchResults, setSearchResults] = useState([]);
+
+  // 検索ボックスに入力されたキーワード
   const [searchTerm, setSearchTerm] = useState('');
+
+  // 処理中かどうかを管理するフラグ（trueならローディング画面を表示）
+  // loading: メインの読み込み, searchLoading: 検索時の読み込み, loadingMore: 追加読み込み
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // エラーが発生したときのメッセージを保存。空文字ならエラーなし。
   const [error, setError] = useState('');
-  const [selectedPlatform, setSelectedPlatform] = useState(''); // プラットフォーム選択の状態
+
+  // 検索時に絞り込むプラットフォーム（機種）のID
+  const [selectedPlatform, setSelectedPlatform] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreResults, setHasMoreResults] = useState(false);
   const [searchResultsRef, setSearchResultsRef] = useState(null);
@@ -473,9 +542,11 @@ function GameLibraryModal({ onClose, isOwner }) {
 
   const getToken = () => localStorage.getItem('token');
 
-  // ★ ユーザーの全曲を取得する関数
+  // ユーザーの全曲を取得する関数
+  // useCallbackを使うと、関数の再生成を防いでパフォーマンスを改善できます
   const fetchAllUserSongs = useCallback(async () => {
     try {
+      // サーバー（バックエンド）のAPIを呼び出して曲データを取得
       const response = await fetch('http://localhost:5000/api/user-songs', {
         headers: { 'Authorization': `Bearer ${getToken()}` }
       });
@@ -491,13 +562,22 @@ function GameLibraryModal({ onClose, isOwner }) {
   }, []);
 
 
+  // ★サーバーから自分のゲームリストを取得する関数
+  // useCallback はこの関数を再利用するために使います（無駄な再生成を防ぐ）
   const fetchMyGames = useCallback(async () => {
     console.log('[DEBUG] fetchMyGames called');
+
+    // データの取得を開始するので、ローディング表示をONにします
     setLoading(true);
+
     try {
+      // API（サーバーのURL）にリクエストを送ります
+      // headers には認証トークン（ログイン情報）を含めます
       const response = await fetch('http://localhost:5000/api/played-games', {
         headers: { 'Authorization': `Bearer ${getToken()}` }
       });
+
+      // サーバーからの返事（レスポンス）をJSON形式のデータとして読み取ります
       const data = await response.json();
       if (data.success) {
         const games = data.playedGames;
@@ -505,24 +585,24 @@ function GameLibraryModal({ onClose, isOwner }) {
         // 常にAPIから取得した順序でセットする
         setMyGames(games);
         console.log('[DEBUG] fetchMyGames: myGames set.');
-        
+
         setUpdateCounter(c => c + 1); // 強制再描画をトリガー
-        
+
         // 既存のlocalStorageの状態を尊重しつつ、新しいシリーズはデフォルトで開く
         setExpandedSeries(prev => {
-            const seriesNames = [...new Set(games.map(g => g.series && g.series.trim() !== '' ? g.series.trim() : '未分類'))];
-            const newExpansionState = {...prev};
-            seriesNames.forEach(name => {
-                if (newExpansionState[name] === undefined) {
-                    newExpansionState[name] = true;
-                }
-            });
-            try {
-                localStorage.setItem('expandedSeriesState', JSON.stringify(newExpansionState));
-            } catch (error) {
-                console.error('Failed to save expandedSeriesState to localStorage', error);
+          const seriesNames = [...new Set(games.map(g => g.series && g.series.trim() !== '' ? g.series.trim() : '未分類'))];
+          const newExpansionState = { ...prev };
+          seriesNames.forEach(name => {
+            if (newExpansionState[name] === undefined) {
+              newExpansionState[name] = true;
             }
-            return newExpansionState;
+          });
+          try {
+            localStorage.setItem('expandedSeriesState', JSON.stringify(newExpansionState));
+          } catch (error) {
+            console.error('Failed to save expandedSeriesState to localStorage', error);
+          }
+          return newExpansionState;
         });
 
       } else {
@@ -538,9 +618,9 @@ function GameLibraryModal({ onClose, isOwner }) {
   // 並び替え機能
   const getSortedGames = (games, order) => {
     if (!games || games.length === 0) return games;
-    
+
     const sorted = [...games];
-    
+
     switch (order) {
       case 'rating':
         return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -562,14 +642,14 @@ function GameLibraryModal({ onClose, isOwner }) {
     }
   };
 
-  
+
 
   // ドラッグ&ドロップの処理
   const handleDragEnd = useCallback((result) => {
     if (!result.destination) {
       return;
     }
-    
+
     setMyGames(prevMyGames => { // 関数形式の更新
       const items = Array.from(prevMyGames); // prevMyGames を参照
       const [reorderedItem] = items.splice(result.source.index, 1);
@@ -756,12 +836,12 @@ function GameLibraryModal({ onClose, isOwner }) {
   // 英語名を日本語名に変換（表示用）
   const translateToJapanese = useCallback((englishName) => {
     if (!englishName) return '';
-    
+
     // 完全一致をチェック
     if (englishToJapaneseMapping[englishName]) {
       return englishToJapaneseMapping[englishName];
     }
-    
+
     // 部分一致をチェック（より長いマッチを優先）
     const sortedEntries = Object.entries(englishToJapaneseMapping).sort((a, b) => b[0].length - a[0].length);
     for (const [en, jp] of sortedEntries) {
@@ -772,7 +852,7 @@ function GameLibraryModal({ onClose, isOwner }) {
         return englishName.replace(new RegExp(escapeRegExp(en), 'gi'), jp);
       }
     }
-    
+
     // 翻訳できない場合は元の英語名を返す
     return englishName;
   }, [englishToJapaneseMapping]);
@@ -803,19 +883,23 @@ function GameLibraryModal({ onClose, isOwner }) {
     return keyword;
   };
 
+  // ★ゲーム検索機能（デバウンス処理付き）
+  // debounce（デバウンス）とは？
+  // ユーザーが文字を入力するたびに検索するとサーバー負荷などの問題があるため、
+  // 入力が一区切りついたタイミング（ここでは500ミリ秒後）に一度だけ検索を実行する仕組みです。
   const debouncedSearch = useCallback(
     debounce(async (query, platformId, page = 1, append = false) => {
       console.log('debouncedSearch called with:', { query, platformId, queryLength: query.length, page, append });
-      
+
       if (query.length < 2) {
-        console.log('Query too short, clearing results');
+        console.log('検索文字数が少なすぎます。結果をクリアします。');
         setSearchResults([]);
         setSearchLoading(false);
         setCurrentPage(1);
         setHasMoreResults(false);
         return;
       }
-      
+
       if (!RAWG_API_KEY) {
         console.warn('RAWG_API_KEY is not set');
         setError('RAWG APIキーが設定されていません。ゲーム検索機能を使用するには、環境変数REACT_APP_RAWG_API_KEYを設定してください。フロントエンドのルートディレクトリに.envファイルを作成し、REACT_APP_RAWG_API_KEY=あなたのAPIキー を追加してください。');
@@ -823,28 +907,28 @@ function GameLibraryModal({ onClose, isOwner }) {
         setLoadingMore(false);
         return;
       }
-      
+
       if (page === 1) {
-        console.log('Starting search...');
+        console.log('検索を開始します...');
         setSearchLoading(true);
       } else {
         setLoadingMore(true);
       }
       setError('');
-      
+
       try {
         // 日本語キーワードを英語に変換
         const translatedQuery = translateJapaneseKeyword(query);
         console.log('Original query:', query, 'Translated query:', translatedQuery);
-        
+
         // 元のクエリと翻訳後のクエリの両方で検索
-        const searchQueries = translatedQuery !== query 
+        const searchQueries = translatedQuery !== query
           ? [translatedQuery, query] // 翻訳された場合、両方試す
           : [query]; // 翻訳できない場合は元のクエリのみ
-        
+
         let allResults = [];
         let lastError = null;
-        
+
         // 複数のクエリで検索を試行
         for (const searchQuery of searchQueries) {
           try {
@@ -852,23 +936,23 @@ function GameLibraryModal({ onClose, isOwner }) {
             // ordering=-rating で評価順（人気順）にソート
             // プラットフォームフィルターはクライアント側で適用するため、APIには送らない
             let url = `https://api.rawg.io/api/games?key=${RAWG_API_KEY}&search=${encodeURIComponent(searchQuery)}&page_size=20&page=${page}&ordering=-rating`;
-            
-            console.log('Fetching games from:', url, 'Platform filter will be applied client-side:', platformId || 'none');
-            
+
+            console.log('ゲームを取得中:', url, 'プラットフォームフィルターはクライアント側で適用されます:', platformId || 'なし');
+
             const response = await fetch(url);
             console.log('Response status:', response.status, response.statusText);
-            
+
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({}));
               console.error('API Error:', errorData);
               lastError = new Error(errorData.error || `HTTP error! status: ${response.status}`);
               continue; // 次のクエリを試す
             }
-            
+
             const data = await response.json();
-            console.log('RAWG API raw results for query:', searchQuery, data.results); // RAWG APIからの生の結果をログ出力
+            console.log('クエリに対するRAWG APIの生の結果:', searchQuery, data.results);
             console.log('Number of results:', data.results ? data.results.length : 0);
-            
+
             if (data.results && data.results.length > 0) {
               // 重複を避けて結果を追加し、日本語名を追加
               const newGames = data.results
@@ -878,7 +962,7 @@ function GameLibraryModal({ onClose, isOwner }) {
                   japaneseName: translateToJapanese(game.name)
                 }));
               allResults = [...allResults, ...newGames];
-              
+
               // 次のページがあるかチェック
               if (data.next && data.results.length === 20) {
                 setHasMoreResults(true);
@@ -894,12 +978,12 @@ function GameLibraryModal({ onClose, isOwner }) {
             continue; // 次のクエリを試す
           }
         }
-        
-        console.log('Before client-side platform filtering, allResults count:', allResults.length, allResults.map(g => g.name)); // クライアントサイドフィルタリング前の結果
+
+        console.log('クライアント側の絞り込み前の結果数:', allResults.length, allResults.map(g => g.name));
 
         // プラットフォームフィルターが選択されている場合、クライアント側でもフィルタリング
         if (platformId && platformId !== '') {
-          console.log('Client-side filtering by platform:', platformId);
+          console.log('クライアント側でプラットフォームによる絞り込み:', platformId);
           allResults = allResults.filter(game => {
             const gamePlatforms = game.platforms || [];
             const hasPlatform = gamePlatforms.some(p => {
@@ -907,9 +991,9 @@ function GameLibraryModal({ onClose, isOwner }) {
               const selectedPlatformStr = String(platformId);
               return platformIdStr === selectedPlatformStr;
             });
-            
+
             if (!hasPlatform) {
-              console.log(`Game "${game.name}" (ID: ${game.id}) does not support platform ${platformId}`, {
+              console.log(`ゲーム "${game.name}" (ID: ${game.id}) はプラットフォーム ${platformId} に対応していません`, {
                 gamePlatforms: gamePlatforms.map(p => ({ id: p.platform?.id || p.id, name: p.platform?.name || p.name }))
               });
             }
@@ -917,24 +1001,24 @@ function GameLibraryModal({ onClose, isOwner }) {
           });
           console.log('After client-side platform filtering, results count:', allResults.length, allResults.map(g => g.name)); // クライアントサイドフィルタリング後の結果
         }
-        
+
         // 結果を評価順にソート（重複を除去後）
         allResults.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        
+
         // 検索結果の各ゲームのプラットフォーム情報を確認
         if (allResults.length > 0) {
           // Nintendo Switch対応ゲームを確認
-          const nintendoGames = allResults.filter(game => 
+          const nintendoGames = allResults.filter(game =>
             game.platforms?.some(p => {
               const platformName = (p.platform?.name || p.name || '').toLowerCase();
               return platformName.includes('nintendo') || platformName.includes('switch');
             })
           );
           console.log(`Nintendo games found: ${nintendoGames.length}`, nintendoGames.map(g => g.name));
-          
+
           allResults.forEach((game, index) => {
             const platformNames = game.platforms?.map(p => p.platform?.name || p.name).filter(Boolean) || [];
-            const hasNintendo = platformNames.some(name => 
+            const hasNintendo = platformNames.some(name =>
               name.toLowerCase().includes('nintendo') || name.toLowerCase().includes('switch')
             );
             console.log(`Game ${index + 1}: ${game.name}`, {
@@ -944,11 +1028,11 @@ function GameLibraryModal({ onClose, isOwner }) {
               released: game.released
             });
           });
-          
+
           // 結果を表示（append=trueの場合は追加、falseの場合は置き換え）
           if (append) {
             setSearchResults(prev => {
-              // 重複を避けて結合
+              // 重複を避けてリストを結合します
               const combined = [...prev];
               allResults.forEach(game => {
                 if (!combined.some(existing => existing.id === game.id)) {
@@ -960,7 +1044,7 @@ function GameLibraryModal({ onClose, isOwner }) {
           } else {
             setSearchResults(allResults);
           }
-          
+
           setCurrentPage(page);
           setError('');
           console.log('Search results set:', allResults.length, 'games');
@@ -990,7 +1074,7 @@ function GameLibraryModal({ onClose, isOwner }) {
   const handleScroll = useCallback((e) => {
     const element = e.target;
     const scrollBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
-    
+
     // 一番下から100px以内に来たら次のページを読み込む
     if (scrollBottom < 100 && hasMoreResults && !loadingMore && !searchLoading && searchTerm.length >= 2) {
       console.log('Loading more results, current page:', currentPage);
@@ -1014,6 +1098,7 @@ function GameLibraryModal({ onClose, isOwner }) {
     }
   }, [searchTerm, selectedPlatform, debouncedSearch]);
 
+  // ゲームをライブラリに追加するハンドラ
   const handleAddGame = async (game) => {
     try {
       const response = await fetch('http://localhost:5000/api/played-games', {
@@ -1026,14 +1111,14 @@ function GameLibraryModal({ onClose, isOwner }) {
           game_api_id: String(game.id),
           title: game.name,
           image_url: game.background_image,
-          platforms: game.platforms, // RAWG APIから取得したplatformsをそのまま送信
-          genres: game.genres,       // RAWG APIから取得したgenresをそのまま送信
+          platforms: game.platforms, // RAWG APIから取得したプラットフォーム情報をそのまま送信
+          genres: game.genres,       // RAWG APIから取得したジャンル情報をそのまま送信
           series: selectedSeriesForAdd.trim() !== '' ? selectedSeriesForAdd.trim() : null, // シリーズ情報を追加
         })
       });
       const data = await response.json();
       if (data.success) {
-        fetchMyGames(); // Refresh library
+        fetchMyGames(); // ライブラリを再取得（更新）
       } else {
         setError(data.error || 'ゲームの追加に失敗しました。');
       }
@@ -1050,7 +1135,7 @@ function GameLibraryModal({ onClose, isOwner }) {
       });
       const data = await response.json();
       if (data.success) {
-        fetchMyGames(); // Refresh library
+        fetchMyGames(); // ライブラリを再取得（更新）
       } else {
         setError(data.error || 'ゲームの削除に失敗しました。');
       }
@@ -1059,17 +1144,19 @@ function GameLibraryModal({ onClose, isOwner }) {
     }
   };
 
+  // ゲーム情報の更新ハンドラ（評価、コメントなど）
+  // ユーザー体験向上のため、サーバー応答を待たずにUIを即座に更新（楽観的更新）
   const handleUpdateGame = async (playedGameId, updateData) => {
     console.log('[DEBUG] handleUpdateGame called with:', playedGameId, updateData);
 
     // 楽観的更新: UIを即座に更新
     setMyGames(prevGames => {
-      console.log('[DEBUG] Performing optimistic update...');
+      console.log('[DEBUG] 楽観的更新を実行中...');
       const newGames = prevGames.map(game =>
         game.id === playedGameId ? { ...game, ...updateData } : game
       );
       const updatedGame = newGames.find(g => g.id === playedGameId);
-      console.log('[DEBUG] Optimistically updated game object:', updatedGame);
+      console.log('[DEBUG] 楽観的更新後のゲームオブジェクト:', updatedGame);
       return newGames;
     });
 
@@ -1100,7 +1187,7 @@ function GameLibraryModal({ onClose, isOwner }) {
       fetchMyGames();
     }
   };
-  
+
   let filteredMyGames = myGames;
 
   if (selectedLibraryPlatform) {
@@ -1122,6 +1209,7 @@ function GameLibraryModal({ onClose, isOwner }) {
   const myGameApiIds = new Set(myGames.map(g => g.game_api_id));
 
   // groupedMyGames を useMemo から外し、直接計算するように変更
+  // ゲームをシリーズごとにグループ化して整理
   const groupedMyGames = (() => {
     const groups = {};
     filteredMyGames.forEach(game => {
@@ -1166,14 +1254,14 @@ function GameLibraryModal({ onClose, isOwner }) {
         </div>
         <div className="modal-body">
           {error && <p className="error-message">{error}</p>}
-          
+
           <div className="game-search-section">
             <h4>ゲームを検索して追加</h4>
             <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '10px' }}>
               💡 検索のヒント: 日本語名（例: ゼルダ、マリオ）や英語名（例: Zelda, Mario, Pokemon）で検索できます
             </p>
             <div className="search-controls"> {/* New div for controls */}
-              <input 
+              <input
                 type="text"
                 placeholder="ゲームのタイトルを入力... (例: ゼルダの伝説、Mario, Pokemon)"
                 value={searchTerm}
@@ -1188,7 +1276,7 @@ function GameLibraryModal({ onClose, isOwner }) {
                   }
                 }}
               />
-              
+
               <select
                 value={selectedPlatform}
                 onChange={(e) => {
@@ -1237,16 +1325,16 @@ function GameLibraryModal({ onClose, isOwner }) {
               </p>
             )}
             {!searchLoading && searchResults.length > 0 && (
-              <div 
+              <div
                 className="search-results"
                 onScroll={handleScroll}
                 ref={setSearchResultsRef}
                 style={{ maxHeight: '400px', overflowY: 'auto' }}
               >
                 {searchResults.map(game => (
-                  <GameResult 
-                    key={game.id} 
-                    game={game} 
+                  <GameResult
+                    key={game.id}
+                    game={game}
                     onAdd={handleAddGame}
                     isAdded={myGameApiIds.has(String(game.id))}
                     translateToJapanese={translateToJapanese}
@@ -1266,9 +1354,9 @@ function GameLibraryModal({ onClose, isOwner }) {
               </div>
             )}
           </div>
-          
+
           <hr />
-          
+
           <div className="my-library-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
               <h4 style={{ margin: 0 }}>マイライブラリ ({filteredMyGames.length})</h4>
@@ -1408,53 +1496,53 @@ function GameLibraryModal({ onClose, isOwner }) {
                             </Droppable>
                           ) : (
                             sortOrder === 'custom' ? (
-            <Droppable droppableId={`library-grid-${seriesName}`} type="game">
-              {(provided, snapshot) => (
-                <div
-                  className={`library-grid ${layoutMode}`}
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  style={{
-                    backgroundColor: snapshot.isDraggingOver ? '#f0f0f0' : 'transparent',
-                    transition: 'background-color 0.2s',
-                  }}
-                >
-                  {games.map((game, index) => (
-                    <Draggable key={game.id} draggableId={String(game.id)} index={index}>
-                      {(provided, snapshot) => (
-                        <LibraryItem
-                          game={game}
-                          onRemove={handleRemoveGame}
-                          onUpdate={handleUpdateGame}
-                          isDraggable={true}
-                          dndProvided={provided}
-                          dndSnapshot={snapshot}
-                          layoutMode={layoutMode}
-                          allUserSongs={allUserSongs} // ★ 曲リストを渡す
-                        />
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          ) : (
-            <div className={`library-grid ${layoutMode}`}>
-              {games.map(game => (
-                <LibraryItem
-                  key={game.id}
-                  game={game}
-                  onRemove={handleRemoveGame}
-                  onUpdate={handleUpdateGame}
-                  isDraggable={false}
-                  isOwner={isOwner}
-                  layoutMode={layoutMode}
-                  allUserSongs={allUserSongs} // ★ 曲リストを渡す
-                />
-              ))}
-            </div>
-          )
+                              <Droppable droppableId={`library-grid-${seriesName}`} type="game">
+                                {(provided, snapshot) => (
+                                  <div
+                                    className={`library-grid ${layoutMode}`}
+                                    {...provided.droppableProps}
+                                    ref={provided.innerRef}
+                                    style={{
+                                      backgroundColor: snapshot.isDraggingOver ? '#f0f0f0' : 'transparent',
+                                      transition: 'background-color 0.2s',
+                                    }}
+                                  >
+                                    {games.map((game, index) => (
+                                      <Draggable key={game.id} draggableId={String(game.id)} index={index}>
+                                        {(provided, snapshot) => (
+                                          <LibraryItem
+                                            game={game}
+                                            onRemove={handleRemoveGame}
+                                            onUpdate={handleUpdateGame}
+                                            isDraggable={true}
+                                            dndProvided={provided}
+                                            dndSnapshot={snapshot}
+                                            layoutMode={layoutMode}
+                                            allUserSongs={allUserSongs} // ★ 曲リストを渡す
+                                          />
+                                        )}
+                                      </Draggable>
+                                    ))}
+                                    {provided.placeholder}
+                                  </div>
+                                )}
+                              </Droppable>
+                            ) : (
+                              <div className={`library-grid ${layoutMode}`}>
+                                {games.map(game => (
+                                  <LibraryItem
+                                    key={game.id}
+                                    game={game}
+                                    onRemove={handleRemoveGame}
+                                    onUpdate={handleUpdateGame}
+                                    isDraggable={false}
+                                    isOwner={isOwner}
+                                    layoutMode={layoutMode}
+                                    allUserSongs={allUserSongs} // ★ 曲リストを渡す
+                                  />
+                                ))}
+                              </div>
+                            )
                           )
                         )}
                       </div>

@@ -1,34 +1,44 @@
+// Reactの基本的な機能（フック）をインポート
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+// ドラッグ＆ドロップで並び替えをするためのライブラリ
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import './ManageSongsModal.css';
 import { FaYoutube, FaEdit } from 'react-icons/fa';
 
 function ManageSongsModal({ preference, onClose, onUpdate }) {
   const { t } = useTranslation();
-  
+
+  // --- 状態（State）の管理 ---
+  // 曲のリスト
   const [songs, setSongs] = useState(preference.songs || []);
+
+  // 新しく追加する曲のデータ（タイトル、アーティスト、URL）
   const [newSongTitle, setNewSongTitle] = useState('');
   const [newSongArtist, setNewSongArtist] = useState('');
   const [newSongUrl, setNewSongUrl] = useState('');
+
+  // 処理中かどうか（ローディング表示）
   const [loading, setLoading] = useState(false);
+  // エラーメッセージ
   const [error, setError] = useState('');
 
-  // For editing
+  // 編集中の曲のIDとデータ
   const [editingSongId, setEditingSongId] = useState(null);
   const [editedSongData, setEditedSongData] = useState({ song_title: '', artist_name: '', youtube_url: '' });
 
+  // ★曲リストを同期するための副作用フック
+  // useEffect: あるデータが変わった時に実行する処理を書きます
   useEffect(() => {
-    // Only update if songs array reference actually changed
-    // This prevents resetting the order when onUpdate() is called after reordering
+    // 親から渡された曲データ（preference.songs）が変わった場合のみ更新します。
+    // 無駄な更新や、編集中・並び替え中の予期しないリセットを防ぐためのチェックを入れています。
     if (preference.songs) {
-      // Check if the songs are actually different (by comparing IDs)
+      // 既存の曲リストと新しい曲リストのIDを比較して、違いがあるかチェック
       const currentSongIds = songs.map(s => s.id).sort().join(',');
       const newSongIds = preference.songs.map(s => s.id).sort().join(',');
-      
-      // Only update if the song IDs are different (new songs added/removed)
-      // or if we have no songs locally
-      // Also update if we're not currently editing (to avoid overwriting edits)
+
+      // IDが違う（＝新しい曲が追加・削除された）場合、またはローカルの曲がまだない場合
+      // かつ、編集中でない場合に更新を実行します
       if ((currentSongIds !== newSongIds || songs.length === 0) && !editingSongId) {
         setSongs(preference.songs);
       }
@@ -38,15 +48,19 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preference.songs, editingSongId]);
 
+  // ★曲を追加する関数
   const handleAddSong = async () => {
     if (!newSongTitle.trim()) {
-      setError(t('music_songs_alert_title_required'));
+      setError(t('music_songs_alert_title_required')); // バリデーションエラー
       return;
     }
-    setLoading(true);
+
+    setLoading(true); // 読み込み開始
     setError('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token'); // トークン取得
+
     try {
+      // APIにPOSTリクエスト送信
       const response = await fetch(`http://localhost:5000/api/music-preferences/${preference.id}/songs`, {
         method: 'POST',
         headers: {
@@ -60,11 +74,14 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
         })
       });
       const data = await response.json();
+
       if (data.success) {
+        // 成功したら入力欄をクリア
         setNewSongTitle('');
         setNewSongArtist('');
         setNewSongUrl('');
-        // Update without closing modal - this will refresh the list
+
+        // 親コンポーネントに更新を通知（モーダルは閉じない）
         if (onUpdate) {
           onUpdate(false);
         }
@@ -74,7 +91,7 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setLoading(false); // 読み込み終了
     }
   };
 
@@ -119,15 +136,18 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
     setEditingSongId(null);
   };
 
+  // ★曲を編集して保存する関数
   const handleSaveEdit = async (songId) => {
     if (!editedSongData.song_title.trim()) {
-      setError(t('music_songs_alert_title_required'));
+      setError(t('music_songs_alert_title_required')); // タイトル必須
       return;
     }
     setLoading(true);
     setError('');
     const token = localStorage.getItem('token');
+
     try {
+      // PUTメソッドで更新リクエスト
       const response = await fetch(`http://localhost:5000/api/songs/${songId}`, {
         method: 'PUT',
         headers: {
@@ -137,17 +157,20 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
         body: JSON.stringify(editedSongData)
       });
       const data = await response.json();
+
       if (data.success) {
-        setEditingSongId(null);
-        // Update local songs state immediately
-        setSongs(prevSongs => 
-          prevSongs.map(song => 
-            song.id === songId 
+        setEditingSongId(null); // 編集モード終了
+
+        // 画面の表示を即座に更新する（サーバーからの再読み込みを待たずに反映）
+        setSongs(prevSongs =>
+          prevSongs.map(song =>
+            song.id === songId
               ? { ...song, ...editedSongData }
               : song
           )
         );
-        // Update without closing modal
+
+        // 親コンポーネントに通知
         if (onUpdate) {
           onUpdate(false);
         }
@@ -166,30 +189,32 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
     setEditedSongData(prev => ({ ...prev, [name]: value }));
   };
 
+  // ★ドラッグ＆ドロップで並び替えが終わった時の処理
   const handleDragEnd = (result) => {
     if (!result.destination) {
-      return;
+      return; // ドロップ先がなければ何もしない
     }
 
-    // If dropped in the same position, do nothing
+    // 元の場所と同じ位置なら何もしない
     if (result.source.index === result.destination.index) {
       return;
     }
 
+    // 配列を操作して順番を入れ替える
     const items = Array.from(songs);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    setSongs(items); // Optimistic update of the UI
-    setError(''); // Clear any previous errors
+    setSongs(items); // 画面上の並び順を更新（楽観的更新）
+    setError('');
 
-    const songIds = items.map(song => song.id);
+    const songIds = items.map(song => song.id); // 新しい順序のIDリスト
     const token = localStorage.getItem('token');
 
-    // Validate data before sending
+    // サーバーに新しい順序を送信
     if (!preference || !preference.id) {
       setError('preferenceIdが見つかりません。');
-      setSongs(preference.songs || []);
+      setSongs(preference.songs || []); // 元に戻す
       return;
     }
 
@@ -205,7 +230,7 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
 
     console.log('Sending reorder request:', requestBody);
 
-    // Call backend to save the new order
+    // バックエンドに順序保存をリクエスト
     fetch(`http://localhost:5000/api/songs/reorder`, {
       method: 'PUT',
       headers: {
@@ -214,9 +239,10 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
       },
       body: JSON.stringify(requestBody)
     }).then(async res => {
+      // レスポンス処理...
       const contentType = res.headers.get('content-type');
       let data;
-      
+
       if (contentType && contentType.includes('application/json')) {
         data = await res.json();
       } else {
@@ -224,42 +250,35 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
         console.error('Non-JSON response:', text);
         throw new Error(`サーバーエラー: ${res.status} ${res.statusText}`);
       }
-      
+
       if (!res.ok) {
         console.error('Reorder failed:', data);
         throw new Error(data.error || `HTTP ${res.status}: ${res.statusText}`);
       }
-      
+
       return data;
     }).then(data => {
       if (!data.success) {
-        // If backend fails, revert the optimistic update
+        // 失敗した場合、元の順序に戻す
         console.error('Reorder failed:', data);
         setError(data.error || t('music_songs_alert_reorder_failed'));
-        setSongs(preference.songs || []); // Revert to original order
+        setSongs(preference.songs || []);
       } else {
-        // Update parent but don't close modal (pass false to onUpdate)
-        // This will refresh the data but keep the modal open
+        // 成功した場合、親にも通知
         if (onUpdate) {
           onUpdate(false);
         }
       }
     }).catch(err => {
       console.error('Reorder error:', err);
-      console.error('Error details:', {
-        message: err.message,
-        stack: err.stack,
-        requestBody: requestBody
-      });
-      // Show the actual error message if available
+      // エラー処理...
       const errorMessage = err.message || t('music_songs_alert_reorder_error');
-      // Don't show "曲名は必須です" error for reorder operations
       if (errorMessage.includes('曲名は必須です')) {
         setError('並び替えに失敗しました。ページをリロードして再試行してください。');
       } else {
         setError(errorMessage);
       }
-      setSongs(preference.songs || []); // Revert to original order
+      setSongs(preference.songs || []); // 元に戻す
     });
   };
 
@@ -297,8 +316,8 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
                               }
                             }}
                           >
-                            <div 
-                              className="drag-handle" 
+                            <div
+                              className="drag-handle"
                               {...provided.dragHandleProps}
                               onClick={(e) => {
                                 e.preventDefault();
@@ -322,10 +341,10 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
                               <div className="song-edit-form">
                                 <div className="edit-form-group">
                                   <label>{t('music_songs_label_title')} *</label>
-                                  <input 
-                                    type="text" 
-                                    name="song_title" 
-                                    value={editedSongData.song_title} 
+                                  <input
+                                    type="text"
+                                    name="song_title"
+                                    value={editedSongData.song_title}
                                     onChange={handleEditInputChange}
                                     placeholder={t('music_songs_placeholder_title')}
                                     autoFocus
@@ -333,22 +352,22 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
                                 </div>
                                 <div className="edit-form-group">
                                   <label>{t('music_songs_label_artist')}</label>
-                                  <input 
-                                    type="text" 
-                                    name="artist_name" 
-                                    value={editedSongData.artist_name} 
-                                    onChange={handleEditInputChange} 
-                                    placeholder={t('music_songs_placeholder_artist')} 
+                                  <input
+                                    type="text"
+                                    name="artist_name"
+                                    value={editedSongData.artist_name}
+                                    onChange={handleEditInputChange}
+                                    placeholder={t('music_songs_placeholder_artist')}
                                   />
                                 </div>
                                 <div className="edit-form-group">
                                   <label>{t('music_songs_label_youtube_url')}</label>
-                                  <input 
-                                    type="text" 
-                                    name="youtube_url" 
-                                    value={editedSongData.youtube_url} 
-                                    onChange={handleEditInputChange} 
-                                    placeholder={t('music_songs_placeholder_youtube_url')} 
+                                  <input
+                                    type="text"
+                                    name="youtube_url"
+                                    value={editedSongData.youtube_url}
+                                    onChange={handleEditInputChange}
+                                    placeholder={t('music_songs_placeholder_youtube_url')}
                                   />
                                 </div>
                               </div>
@@ -406,21 +425,21 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
         </div>
 
         <div className="modal-footer">
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               handleAddSong();
-            }} 
-            disabled={loading} 
+            }}
+            disabled={loading}
             className="btn-primary"
           >
             {loading ? t('music_songs_adding') : t('music_songs_add_button')}
           </button>
-          <button 
-            type="button" 
-            className="btn-secondary" 
+          <button
+            type="button"
+            className="btn-secondary"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();

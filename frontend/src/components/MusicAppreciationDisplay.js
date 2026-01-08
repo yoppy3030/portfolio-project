@@ -3,6 +3,8 @@ import './MusicAppreciationDisplay.css';
 import { FaYoutube } from 'react-icons/fa';
 
 // 曲リストを表示する新しいコンポーネント
+// 曲リストを表示するコンポーネント
+// YouTubeリンクがある場合はアイコンとリンクを表示します
 function SongList({ songs }) {
   if (!songs || songs.length === 0) {
     return <p className="no-songs-message">登録されている曲はありません。</p>;
@@ -25,12 +27,15 @@ function SongList({ songs }) {
   );
 }
 
+// 音楽の好み（アーティスト・ジャンル）一覧を表示するメインコンポーネント
 function MusicAppreciationDisplay() {
-  const [preferences, setPreferences] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [expandedCardId, setExpandedCardId] = useState(null); // アコーディオン用のstate
+  // --- ステート（状態変数） ---
+  const [preferences, setPreferences] = useState([]); // ユーザーの音楽の好みリスト
+  const [loading, setLoading] = useState(true); // 読み込み中フラグ
+  const [error, setError] = useState(''); // エラーメッセージ
+  const [expandedCardId, setExpandedCardId] = useState(null); // クリックして展開されているカードのID
 
+  // APIから音楽設定を取得する関数
   const fetchPreferences = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -61,6 +66,7 @@ function MusicAppreciationDisplay() {
     fetchPreferences();
   }, [fetchPreferences]);
 
+  // カードがクリックされた時の処理（展開/折りたたみ）
   const handleCardClick = (preferenceId) => {
     setExpandedCardId(prevId => (prevId === preferenceId ? null : preferenceId));
   };
