@@ -15,8 +15,8 @@ function SelectSongModal({ songs, existingBgms, onSelect, onClose }) {
     const isAlreadyAdded = existingBgms.some(bgm => bgm.url === song.youtube_url && bgm.title === song.song_title);
     if (isAlreadyAdded) return false;
     if (searchTerm === '') return true;
-    return (song.song_title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            song.artist_name?.toLowerCase().includes(searchTerm.toLowerCase()));
+    return (song.song_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      song.artist_name?.toLowerCase().includes(searchTerm.toLowerCase()));
   });
 
   return (
@@ -46,7 +46,7 @@ function GameResult({ game, onAdd, isAdded, translateToJapanese }) {
 }
 
 // ライブラリ内の1項目を表示・編集するコンポーネント
-function LibraryItem({ game, onRemove, onUpdate, allUserSongs, ... }) {
+function LibraryItem({ game, onRemove, onUpdate, allUserSongs }) {
   const [isEditing, setIsEditing] = useState(false);
   // 評価、コメント、プレイ時間などのState
   const [rating, setRating] = useState(game.rating || null);
@@ -58,9 +58,18 @@ function LibraryItem({ game, onRemove, onUpdate, allUserSongs, ... }) {
 
   // 保存ボタンが押されたときの処理
   const handleSave = async () => {
-    const updateData = { /* ... 評価、コメント、BGMなどのデータ ... */ };
+    const updateData = { rating, comment, playtime_hours: playtimeHours, series, bgms };
     await onUpdate(game.id, updateData); // 親コンポーネントの更新関数を呼び出す
     setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+  };
+
+  const addBgm = () => {
+    // 手動追加のプレースホルダー
+    console.log("手動追加機能は未実装です");
   };
 
   // BGMリストのドラッグ&ドロップ終了時の処理
@@ -114,6 +123,7 @@ function GameLibraryModal({ onClose, isOwner }) {
   const [error, setError] = useState(''); // エラーメッセージ
   const [sortOrder, setSortOrder] = useState('added'); // ライブラリの並び順
   const [allUserSongs, setAllUserSongs] = useState([]); // ユーザーが登録した全曲リスト
+  const [selectedPlatform, setSelectedPlatform] = useState(null); // 選択されたプラットフォーム
 
   const getToken = () => localStorage.getItem('token');
 
