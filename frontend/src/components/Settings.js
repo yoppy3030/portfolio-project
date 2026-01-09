@@ -48,7 +48,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
   // プロフィール情報の保存処理
   const handleProfileSave = async () => {
     setMessage('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setMessage(t('settings_message_not_logged_in'));
       return;
@@ -87,7 +87,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
   // パスワード変更処理
   const handleChangePassword = async () => {
     setMessage('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setMessage(t('settings_message_not_logged_in'));
       return;
@@ -124,7 +124,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
   // 通知設定の保存処理
   const handleNotificationSave = async () => {
     setMessage('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setMessage(t('settings_message_not_logged_in'));
       return;
@@ -172,7 +172,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
       return;
     }
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setMessage(t('settings_message_not_logged_in'));
       return;
@@ -203,7 +203,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
   // 一般設定（言語・テーマ）の保存処理
   const handleGeneralSave = async () => {
     setMessage('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setMessage(t('settings_message_not_logged_in'));
       return;
@@ -380,7 +380,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
                 <div className="backup-actions">
                   <button onClick={() => {
                     setMessage('');
-                    const token = localStorage.getItem('token');
+                    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
                     fetch('http://localhost:5000/api/backup/games', {
                       headers: { 'Authorization': `Bearer ${token}` }
                     })
@@ -413,7 +413,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
                           const json = JSON.parse(e.target.result);
                           if (!json.games) throw new Error('Invalid format');
 
-                          const token = localStorage.getItem('token');
+                          const token = localStorage.getItem('token') || sessionStorage.getItem('token');
                           const res = await fetch('http://localhost:5000/api/backup/games/import', {
                             method: 'POST',
                             headers: {
@@ -446,7 +446,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
                 <div className="backup-actions">
                   <button onClick={() => {
                     setMessage('');
-                    const token = localStorage.getItem('token');
+                    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
                     fetch('http://localhost:5000/api/backup/reading', {
                       headers: { 'Authorization': `Bearer ${token}` }
                     })
@@ -479,7 +479,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
                           const json = JSON.parse(e.target.result);
                           if (!json.readingData) throw new Error('Invalid format');
 
-                          const token = localStorage.getItem('token');
+                          const token = localStorage.getItem('token') || sessionStorage.getItem('token');
                           const res = await fetch('http://localhost:5000/api/backup/reading/import', {
                             method: 'POST',
                             headers: {
@@ -512,7 +512,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
                 <div className="backup-actions">
                   <button onClick={() => {
                     setMessage('');
-                    const token = localStorage.getItem('token');
+                    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
                     fetch('http://localhost:5000/api/backup/music', {
                       headers: { 'Authorization': `Bearer ${token}` }
                     })
@@ -545,7 +545,7 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
                           const json = JSON.parse(e.target.result);
                           if (!json.musicData) throw new Error('Invalid format');
 
-                          const token = localStorage.getItem('token');
+                          const token = localStorage.getItem('token') || sessionStorage.getItem('token');
                           const res = await fetch('http://localhost:5000/api/backup/music/import', {
                             method: 'POST',
                             headers: {

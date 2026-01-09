@@ -54,7 +54,7 @@ function MusicAppreciationManager() {
   const fetchPreferences = useCallback(async () => {
     setLoading(true);
     setError('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setError(t('settings_message_not_logged_in'));
       setLoading(false);
@@ -91,7 +91,7 @@ function MusicAppreciationManager() {
   const handleAddPreference = async () => {
     setError('');
     setMessage('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setError(t('settings_message_not_logged_in'));
       return;
@@ -136,7 +136,7 @@ function MusicAppreciationManager() {
     }
     setError('');
     setMessage('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setError(t('settings_message_not_logged_in'));
       return;

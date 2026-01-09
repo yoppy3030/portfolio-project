@@ -547,7 +547,7 @@ function GameLibraryModal({ onClose, isOwner }) {
   const [manualImageFile, setManualImageFile] = useState(null); // ローカルファイル選択用
   const fileInputRef = useRef(null); // ファイル入力要素への参照
 
-  const getToken = () => localStorage.getItem('token');
+  const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
 
   // ユーザーの全曲を取得する関数
   // useCallbackを使うと、関数の再生成を防いでパフォーマンスを改善できます
@@ -1501,99 +1501,99 @@ function GameLibraryModal({ onClose, isOwner }) {
                   💡 検索のヒント: 日本語名（例: ゼルダ、マリオ）や英語名（例: Zelda, Mario, Pokemon）で検索できます
                 </p>
                 <div className="search-controls"> {/* New div for controls */}
-              <input
-                type="text"
-                placeholder="ゲームのタイトルを入力... (例: ゼルダの伝説、Mario, Pokemon)"
-                value={searchTerm}
-                onChange={(e) => {
-                  const newValue = e.target.value;
-                  console.log('Input changed:', newValue);
-                  setSearchTerm(newValue);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    console.log('Enter key pressed, current searchTerm:', searchTerm);
-                  }
-                }}
-              />
-
-              <select
-                value={selectedPlatform}
-                onChange={(e) => {
-                  console.log('Platform changed to:', e.target.value);
-                  setSelectedPlatform(e.target.value);
-                }}
-              >
-                <option value="">全てのプラットフォーム</option>
-                <optgroup label="Nintendo">
-                  <option value="7">Nintendo Switch</option>
-                  <option value="83">Nintendo 3DS</option>
-                  <option value="20">Nintendo DS</option>
-                  <option value="10">Wii U</option>
-                  <option value="11">Wii</option>
-                  <option value="105">Game Boy Advance</option>
-                </optgroup>
-                <optgroup label="PlayStation">
-                  <option value="18">PlayStation 5</option>
-                  <option value="187">PlayStation 4</option>
-                  <option value="16">PlayStation 3</option>
-                  <option value="15">PlayStation 2</option>
-                  <option value="19">PlayStation Vita</option>
-                  <option value="17">PlayStation Portable (PSP)</option>
-                </optgroup>
-                <optgroup label="Xbox">
-                  <option value="186">Xbox Series X/S</option>
-                  <option value="1">Xbox One</option>
-                  <option value="14">Xbox 360</option>
-                </optgroup>
-                <optgroup label="その他">
-                  <option value="4">PC</option>
-                  <option value="3">iOS</option>
-                  <option value="21">Android</option>
-                </optgroup>
-              </select>
-            </div>
-            {searchLoading && (
-              <div className="search-loading-container">
-                <div className="spinner-centered"></div>
-                <p style={{ marginTop: '10px', color: '#666' }}>検索中...</p>
-              </div>
-            )}
-            {!searchLoading && searchTerm.length >= 2 && searchResults.length === 0 && (
-              <p style={{ padding: '10px', color: '#666', textAlign: 'center' }}>
-                検索結果がありません
-              </p>
-            )}
-            {!searchLoading && searchResults.length > 0 && (
-              <div
-                className="search-results"
-                onScroll={handleScroll}
-                ref={setSearchResultsRef}
-                style={{ maxHeight: '400px', overflowY: 'auto' }}
-              >
-                {searchResults.map(game => (
-                  <GameResult
-                    key={game.id}
-                    game={game}
-                    onAdd={handleAddGame}
-                    isAdded={myGameApiIds.has(String(game.id))}
-                    translateToJapanese={translateToJapanese}
+                  <input
+                    type="text"
+                    placeholder="ゲームのタイトルを入力... (例: ゼルダの伝説、Mario, Pokemon)"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      console.log('Input changed:', newValue);
+                      setSearchTerm(newValue);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        console.log('Enter key pressed, current searchTerm:', searchTerm);
+                      }
+                    }}
                   />
-                ))}
-                {loadingMore && (
-                  <div style={{ textAlign: 'center', padding: '20px' }}>
-                    <div className="spinner"></div>
-                    <p style={{ marginTop: '10px', color: '#666' }}>さらに読み込み中...</p>
+
+                  <select
+                    value={selectedPlatform}
+                    onChange={(e) => {
+                      console.log('Platform changed to:', e.target.value);
+                      setSelectedPlatform(e.target.value);
+                    }}
+                  >
+                    <option value="">全てのプラットフォーム</option>
+                    <optgroup label="Nintendo">
+                      <option value="7">Nintendo Switch</option>
+                      <option value="83">Nintendo 3DS</option>
+                      <option value="20">Nintendo DS</option>
+                      <option value="10">Wii U</option>
+                      <option value="11">Wii</option>
+                      <option value="105">Game Boy Advance</option>
+                    </optgroup>
+                    <optgroup label="PlayStation">
+                      <option value="18">PlayStation 5</option>
+                      <option value="187">PlayStation 4</option>
+                      <option value="16">PlayStation 3</option>
+                      <option value="15">PlayStation 2</option>
+                      <option value="19">PlayStation Vita</option>
+                      <option value="17">PlayStation Portable (PSP)</option>
+                    </optgroup>
+                    <optgroup label="Xbox">
+                      <option value="186">Xbox Series X/S</option>
+                      <option value="1">Xbox One</option>
+                      <option value="14">Xbox 360</option>
+                    </optgroup>
+                    <optgroup label="その他">
+                      <option value="4">PC</option>
+                      <option value="3">iOS</option>
+                      <option value="21">Android</option>
+                    </optgroup>
+                  </select>
+                </div>
+                {searchLoading && (
+                  <div className="search-loading-container">
+                    <div className="spinner-centered"></div>
+                    <p style={{ marginTop: '10px', color: '#666' }}>検索中...</p>
                   </div>
                 )}
-                {!hasMoreResults && searchResults.length > 0 && (
-                  <p style={{ textAlign: 'center', padding: '10px', color: '#999', fontSize: '0.9rem' }}>
-                    すべての結果を表示しました
+                {!searchLoading && searchTerm.length >= 2 && searchResults.length === 0 && (
+                  <p style={{ padding: '10px', color: '#666', textAlign: 'center' }}>
+                    検索結果がありません
                   </p>
                 )}
-              </div>
-            )}
-          </>
+                {!searchLoading && searchResults.length > 0 && (
+                  <div
+                    className="search-results"
+                    onScroll={handleScroll}
+                    ref={setSearchResultsRef}
+                    style={{ maxHeight: '400px', overflowY: 'auto' }}
+                  >
+                    {searchResults.map(game => (
+                      <GameResult
+                        key={game.id}
+                        game={game}
+                        onAdd={handleAddGame}
+                        isAdded={myGameApiIds.has(String(game.id))}
+                        translateToJapanese={translateToJapanese}
+                      />
+                    ))}
+                    {loadingMore && (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <div className="spinner"></div>
+                        <p style={{ marginTop: '10px', color: '#666' }}>さらに読み込み中...</p>
+                      </div>
+                    )}
+                    {!hasMoreResults && searchResults.length > 0 && (
+                      <p style={{ textAlign: 'center', padding: '10px', color: '#999', fontSize: '0.9rem' }}>
+                        すべての結果を表示しました
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="manual-add-form">
                 <div style={{ marginBottom: '15px' }}>
@@ -1604,7 +1604,7 @@ function GameLibraryModal({ onClose, isOwner }) {
                     type="text"
                     value={manualTitle}
                     onChange={(e) => setManualTitle(e.target.value)}
-                    placeholder="例: ゼルダの伝説 ブレス オブ ザ ワイルド"
+                    placeholder="例: ゼルダの伝説 トワイライトプリンセス"
                     style={{
                       width: '100%',
                       padding: '10px',

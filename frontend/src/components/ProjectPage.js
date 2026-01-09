@@ -186,7 +186,7 @@ function ContentModal({ block, on_close, on_submit }) {
 
     let finalContent = content;
     let finalBackgroundImage = block.background_image || '';
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
     try {
       // 1. コンテンツ（画像または動画）ファイルがアップロードされた場合の処理
@@ -361,7 +361,7 @@ export default function ProjectPage({ user }) {
   // useCallbackでメモ化して、projectIdが変わった時だけ再生成されるようにする
   const fetchProject = useCallback(async () => {
     setIsLoading(true); // 読み込み開始（ローディング表示）
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     const headers = {};
     // ログインしている場合はAuthorizationヘッダーにトークンを追加
     // （公開/非公開設定に関わらず所有者にはデータを見せるためなど）
@@ -402,7 +402,7 @@ export default function ProjectPage({ user }) {
   // レイアウト（配置・サイズ）が変更された時にサーバーに保存する処理
   const handleLayoutChange = async (layout) => {
     if (!isOwner || !isEditMode) return; // 所有者かつ編集モードの時のみ実行
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     try {
       // 変更後のレイアウト情報をPUTリクエストで送信
       await fetch(`http://localhost:5000/api/projects/${projectId}/contents/layout`, {
@@ -418,7 +418,7 @@ export default function ProjectPage({ user }) {
 
   // コンテンツブロックの追加・更新処理
   const handleBlockSubmit = async (blockData) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     const isNew = !blockData.id;
     // URLとメソッドの切り替え（新規作成: POST, 更新: PUT）
     const url = isNew ? `/api/projects/${projectId}/contents` : `/api/contents/${blockData.id}`;
@@ -445,7 +445,7 @@ export default function ProjectPage({ user }) {
   // コンテンツブロックの削除処理
   const handleDeleteBlock = async (contentId) => {
     if (!window.confirm('このコンテンツを本当に削除しますか？')) return;
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     try {
       // DELETEメソッドで削除APIを呼び出し
       const response = await fetch(`http://localhost:5000/api/contents/${contentId}`, {

@@ -33,7 +33,7 @@ function HobbiesManager({ isOwner }) {
   // useCallbackを使って関数をメモ化（再レンダリング時の無駄な再生成を防ぐ）
   const fetchHobbies = useCallback(async () => {
     setLoading(true); // 読み込み開始
-    const token = localStorage.getItem('token'); // 認証トークンを取得
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token'); // 認証トークンを取得
     if (!token) {
       setLoading(false);
       return;
@@ -67,7 +67,7 @@ function HobbiesManager({ isOwner }) {
   const handleAddHobby = async () => {
     if (!newHobby.trim()) return; // 空文字の場合は何もしない
     setError('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     try {
       // APIにPOSTリクエストを送って新しい趣味を保存
       const response = await fetch('http://localhost:5000/api/hobbies', {
@@ -94,7 +94,7 @@ function HobbiesManager({ isOwner }) {
   const handleDeleteHobby = async (hobbyId) => {
     if (!window.confirm(t('hobbies_confirm_delete'))) return; // 確認ダイアログを表示
     setError('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     try {
       // APIにDELETEリクエストを送る
       const response = await fetch(`http://localhost:5000/api/hobbies/${hobbyId}`, {

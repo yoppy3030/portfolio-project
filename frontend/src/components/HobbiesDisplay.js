@@ -20,7 +20,7 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setLoading(false);
       return;

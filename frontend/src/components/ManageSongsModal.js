@@ -57,7 +57,7 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
 
     setLoading(true); // 読み込み開始
     setError('');
-    const token = localStorage.getItem('token'); // トークン取得
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token'); // トークン取得
 
     try {
       // APIにPOSTリクエスト送信
@@ -99,7 +99,7 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
     if (!window.confirm(t('music_songs_confirm_delete'))) return;
     setLoading(true);
     setError('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     try {
       const response = await fetch(`http://localhost:5000/api/songs/${songId}`, {
         method: 'DELETE',
@@ -144,7 +144,7 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
     }
     setLoading(true);
     setError('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
     try {
       // PUTメソッドで更新リクエスト
@@ -209,7 +209,7 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
     setError('');
 
     const songIds = items.map(song => song.id); // 新しい順序のIDリスト
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
     // サーバーに新しい順序を送信
     if (!preference || !preference.id) {

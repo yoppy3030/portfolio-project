@@ -39,7 +39,7 @@ function MusicAppreciationDisplay() {
   const fetchPreferences = useCallback(async () => {
     setLoading(true);
     setError('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setLoading(false);
       setError('ログインが必要です。');

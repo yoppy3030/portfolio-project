@@ -43,7 +43,7 @@ function AppContent() {
   }, []);
 
   const fetchPortfolio = useCallback(async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     // No need to check for user here, as public portfolios can be fetched.
 
     let currentPortfolioId = portfolioIdFromUrl;
