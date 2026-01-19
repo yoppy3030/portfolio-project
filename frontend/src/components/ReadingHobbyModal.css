@@ -24,7 +24,7 @@
   height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   position: relative;
 }
 
@@ -288,31 +288,31 @@
 
 /* General button styles */
 .reading-hobby-modal-backdrop .btn-danger-outline {
-    background-color: transparent;
-    border: 1px solid #D32F2F;
-    color: #D32F2F;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
+  background-color: transparent;
+  border: 1px solid #D32F2F;
+  color: #D32F2F;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
 }
 
 .reading-hobby-modal-backdrop .btn-danger-outline:hover {
-    background-color: #FFEBEE;
+  background-color: #FFEBEE;
 }
 
 .reading-hobby-modal-backdrop .btn-secondary-outline {
-    background-color: transparent;
-    border: 1px solid #757575;
-    color: #757575;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
+  background-color: transparent;
+  border: 1px solid #757575;
+  color: #757575;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
 }
 
 .reading-hobby-modal-backdrop .btn-secondary-outline:hover {
-    background-color: #f5f5f5;
+  background-color: #f5f5f5;
 }
 
 /* Star Rating Styles */
@@ -357,6 +357,97 @@
   color: #FFC107;
 }
 
-.star-input .star:hover {
-  color: #FFC107;
+
+/* Dark Theme Overrides */
+body.dark-theme .reading-hobby-modal-backdrop .modal-content {
+  background-color: #333;
+  color: #eee;
 }
+
+body.dark-theme .reading-hobby-modal-backdrop .modal-header {
+  border-bottom-color: #555;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .close-button {
+  color: #bbb;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .close-button:hover {
+  background-color: #444;
+  color: #fff;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .author-management-section {
+  border-right-color: #555;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .add-author-form input,
+body.dark-theme .reading-hobby-modal-backdrop .add-book-form input,
+body.dark-theme .reading-hobby-modal-backdrop .add-book-form select,
+body.dark-theme .reading-hobby-modal-backdrop .add-book-form textarea,
+body.dark-theme .reading-hobby-modal-backdrop .edit-book-form input,
+body.dark-theme .reading-hobby-modal-backdrop .edit-book-form select,
+body.dark-theme .reading-hobby-modal-backdrop .edit-book-form textarea {
+  background-color: #555;
+  border-color: #666;
+  color: #eee;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .author-item {
+  border-bottom-color: #444;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .author-item:hover {
+  background-color: #444;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .author-item.selected {
+  background-color: #1a3c5a;
+  /* Darker blue for selection */
+  color: #fff;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .book-item-wrapper {
+  background-color: #424242;
+  border-color: #555;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .book-info p {
+  color: #ccc;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .add-book-form,
+body.dark-theme .reading-hobby-modal-backdrop .edit-book-form {
+  border-color: #555;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .book-management-section hr {
+  border-top-color: #555;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .btn-secondary-outline {
+  border-color: #888;
+  color: #aaa;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .btn-secondary-outline:hover {
+  background-color: #555;
+  color: #fff;
+}
+
+body.dark-theme .reading-hobby-modal-backdrop .edit-book-form .edit-actions button:last-child {
+  background-color: #555;
+  color: #eee;
+}
+
+body.dark-theme .suggested-genres button {
+  background-color: #444 !important;
+  color: #ccc !important;
+  border-color: #555 !important;
+}
+
+body.dark-theme .suggested-genres button:hover {
+  background-color: #555 !important;
+}
+
+/* Specific override for selected genre if needed, though inline styles might take precedence */

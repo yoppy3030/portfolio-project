@@ -702,6 +702,118 @@
   transition: all 0.2s ease;
 }
 
-.tab-button:hover {
-  opacity: 0.9;
+
+/* Dark Theme Overrides */
+body.dark-theme .game-library-modal-content {
+  background-color: #333;
+  color: #eee;
+}
+
+body.dark-theme .game-library-modal-content .modal-header {
+  border-bottom-color: #555;
+}
+
+body.dark-theme .game-library-modal-content .close-button {
+  color: #bbb;
+}
+
+body.dark-theme .game-library-modal-content .close-button:hover {
+  background-color: #444;
+  color: #fff;
+}
+
+body.dark-theme .search-input-wrapper input,
+body.dark-theme .search-controls select,
+body.dark-theme .manual-add-form input[type="text"],
+body.dark-theme .manual-add-form input[type="url"],
+body.dark-theme .comment-section textarea,
+body.dark-theme .bgm-entry input[type="text"],
+body.dark-theme .song-search-bar input {
+  background-color: #555;
+  border-color: #666;
+  color: #eee;
+}
+
+body.dark-theme .library-item,
+body.dark-theme .bgm-entry,
+body.dark-theme .manual-add-form {
+  background-color: #424242;
+  border-color: #555;
+}
+
+body.dark-theme .library-item .game-info small,
+body.dark-theme .game-info small {
+  color: #aaa;
+}
+
+body.dark-theme .comment-display p {
+  background-color: #424242;
+  color: #ddd;
+}
+
+body.dark-theme .game-result-item {
+  border-bottom-color: #555;
+}
+
+body.dark-theme .game-result-item:hover,
+body.dark-theme .song-selection-item:hover {
+  background-color: #444;
+}
+
+body.dark-theme .song-selection-item {
+  border-bottom-color: #555;
+}
+
+body.dark-theme .song-selection-item .song-info .song-artist {
+  color: #aaa;
+}
+
+body.dark-theme .layout-toggle {
+  border-color: #555;
+}
+
+body.dark-theme .layout-toggle button {
+  color: #aaa;
+}
+
+body.dark-theme .layout-toggle button:not(:last-child) {
+  border-right-color: #555;
+}
+
+body.dark-theme .layout-toggle button:hover:not(.active) {
+  background-color: #444;
+}
+
+body.dark-theme .layout-toggle button.active {
+  background-color: #007bff;
+  color: white;
+}
+
+body.dark-theme .drag-handle {
+  background-color: rgba(255, 255, 255, 0.05);
+  /* Lighter on dark */
+  border-right-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .drag-handle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .drag-handle>.material-icons,
+body.dark-theme .bgm-entry .material-icons {
+  color: #aaa;
+}
+
+body.dark-theme .no-details {
+  color: #888;
+}
+
+body.dark-theme .btn-cancel {
+  color: #aaa;
+  border-color: #aaa;
+}
+
+body.dark-theme .btn-cancel:hover {
+  background-color: #aaa;
+  color: #333;
 }

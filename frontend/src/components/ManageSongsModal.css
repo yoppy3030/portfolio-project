@@ -15,8 +15,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
@@ -28,12 +33,20 @@
   animation: slideIn 0.3s ease-out;
   display: flex;
   flex-direction: column;
-  max-height: 90vh; /* Limit height */
+  max-height: 90vh;
+  /* Limit height */
 }
 
 @keyframes slideIn {
-  from { transform: translateY(-30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-header {
@@ -49,7 +62,8 @@
 }
 
 .modal-body {
-  overflow-y: auto; /* Make body scrollable */
+  overflow-y: auto;
+  /* Make body scrollable */
   padding: 0 32px;
   flex-grow: 1;
 }
@@ -196,7 +210,7 @@
   overflow: hidden;
 }
 
-.song-item > * {
+.song-item>* {
   flex-shrink: 0;
 }
 
@@ -223,6 +237,7 @@
   align-items: center;
   flex-shrink: 0;
 }
+
 .song-link-icon:hover {
   color: #dc2626;
 }
@@ -273,6 +288,7 @@
 .btn-icon.btn-danger {
   color: #ef4444;
 }
+
 .btn-icon.btn-danger:hover {
   color: #dc2626;
 }
@@ -330,7 +346,8 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
-  font-size: 0.875rem; /* Smaller font size */
+  font-size: 0.875rem;
+  /* Smaller font size */
   box-sizing: border-box;
   width: 100%;
 }
@@ -353,7 +370,8 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
-  font-size: 0.875rem; /* Smaller font size */
+  font-size: 0.875rem;
+  /* Smaller font size */
   box-sizing: border-box;
   width: 100%;
 }
@@ -379,7 +397,8 @@
   margin-right: 0;
   z-index: 10;
   position: relative;
-  order: -1; /* Ensure drag handle is always first */
+  order: -1;
+  /* Ensure drag handle is always first */
 }
 
 .song-item .drag-handle .material-icons {
@@ -409,7 +428,88 @@
   opacity: 0.9;
 }
 
-.song-item.is-dragging .drag-handle {
-  color: #3b82f6;
+
+/* Dark Theme Overrides */
+body.dark-theme .modal-content {
+  background-color: #333;
+  color: #eee;
 }
 
+body.dark-theme .modal-header h2 {
+  color: #fff;
+}
+
+body.dark-theme .song-list {
+  border-color: #555;
+}
+
+body.dark-theme .song-list.is-empty p {
+  background-color: #444;
+  border-color: #555;
+  color: #bbb;
+}
+
+body.dark-theme .song-item:hover {
+  background-color: #444;
+}
+
+body.dark-theme .song-item span {
+  color: #ddd;
+}
+
+body.dark-theme .modal-body hr {
+  border-top-color: #555;
+}
+
+body.dark-theme .modal-body h4 {
+  color: #eee;
+}
+
+body.dark-theme .form-group label,
+body.dark-theme .edit-form-group label {
+  color: #ccc;
+}
+
+body.dark-theme .form-group input[type="text"],
+body.dark-theme .song-edit-form input {
+  background-color: #555;
+  border-color: #666;
+  color: #eee;
+}
+
+body.dark-theme .btn-secondary,
+body.dark-theme .btn-secondary-small {
+  background-color: #555;
+  color: #eee;
+}
+
+body.dark-theme .btn-secondary:hover,
+body.dark-theme .btn-secondary-small:hover {
+  background-color: #666;
+}
+
+body.dark-theme .song-edit-form {
+  background-color: #424242;
+  border-color: #555;
+}
+
+body.dark-theme .modal-footer {
+  border-top-color: #555;
+}
+
+body.dark-theme .btn-icon {
+  color: #aaa;
+}
+
+body.dark-theme .btn-icon:hover {
+  color: #fff;
+}
+
+body.dark-theme .song-item .drag-handle {
+  color: #aaa;
+}
+
+body.dark-theme .song-item .drag-handle:hover {
+  background-color: #444;
+  color: #fff;
+}

@@ -170,3 +170,53 @@
         width: 100%;
     }
 }
+
+/* Dark Theme Overrides */
+body.dark-theme .admin-panel-container h1 {
+    color: #eee;
+}
+
+body.dark-theme .admin-section {
+    background-color: #333;
+    color: #eee;
+}
+
+body.dark-theme .admin-section h2 {
+    color: #fff;
+}
+
+body.dark-theme .section-description {
+    color: #ccc;
+}
+
+body.dark-theme .form-group label {
+    color: #ddd;
+}
+
+body.dark-theme .form-group input[type="text"],
+body.dark-theme .form-group input[type="datetime-local"],
+body.dark-theme .form-group textarea {
+    background-color: #555;
+    border-color: #666;
+    color: #eee;
+}
+
+body.dark-theme .form-group input[type="text"]:focus,
+body.dark-theme .form-group input[type="datetime-local"]:focus,
+body.dark-theme .form-group textarea:focus {
+    border-color: #4facfe;
+}
+
+body.dark-theme .admin-message.success {
+    background-color: #054e26;
+    /* Darker green */
+    color: #d4edda;
+    border-color: #0f5132;
+}
+
+body.dark-theme .admin-message.error {
+    background-color: #5c181e;
+    /* Darker red */
+    color: #f8d7da;
+    border-color: #842029;
+}

@@ -65,7 +65,8 @@
 }
 
 .copy-button.copied {
-  background-color: #28a745; /* Green for success */
+  background-color: #28a745;
+  /* Green for success */
 }
 
 .share-modal-actions {
@@ -79,4 +80,34 @@
   border: 1px solid var(--border-color);
   border-radius: 4px;
   cursor: pointer;
+}
+
+/* Dark Theme Overrides */
+body.dark-theme .share-modal-content {
+  background-color: #333;
+  color: #eee;
+  border-color: #555;
+}
+
+body.dark-theme .share-modal-content h2 {
+  color: #fff;
+}
+
+body.dark-theme .share-url-container {
+  background-color: #444;
+  border-color: #666;
+}
+
+body.dark-theme .share-url-input {
+  color: #eee;
+}
+
+body.dark-theme .share-modal-close-button {
+  background-color: #555;
+  color: #eee;
+  border-color: #666;
+}
+
+body.dark-theme .share-modal-close-button:hover {
+  background-color: #666;
 }
