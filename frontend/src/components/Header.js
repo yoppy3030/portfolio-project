@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import logoImg from '../assets/logo.png';
-import '../Header.css';
+import '../style/Header.css';
 
 const CATEGORIES = ["dashboard", "learning", "school", "other"];
 

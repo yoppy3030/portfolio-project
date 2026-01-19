@@ -16,7 +16,7 @@ import ProjectPage from "./ProjectPage";
 import Tutorial from "./Tutorial";
 import Maintenance from "./Maintenance";
 import AdminPanel from "./AdminPanel";
-import "../App.css";
+import '../style/App.css';
 
 // Main logic moved to a child component of <Router>
 function AppContent() {

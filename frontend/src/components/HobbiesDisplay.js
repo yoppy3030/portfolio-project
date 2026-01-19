@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import './HobbiesDisplay.css';
+import '../style/HobbiesDisplay.css';
 import GameLibraryModal from './GameLibraryModal';
 import MusicAppreciationDisplay from './MusicAppreciationDisplay';
 import ReadingHobbyDisplay from './ReadingHobbyDisplay'; // 新規作成するコンポーネント

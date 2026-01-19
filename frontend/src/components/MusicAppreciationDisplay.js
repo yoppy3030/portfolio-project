@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import './MusicAppreciationDisplay.css';
+import '../style/MusicAppreciationDisplay.css';
 import { FaYoutube } from 'react-icons/fa';
 
 // 曲リストを表示する新しいコンポーネント

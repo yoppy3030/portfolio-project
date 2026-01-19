@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 // ドラッグ＆ドロップで並び替えをするためのライブラリ
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import './ReadingHobbyModal.css';
+import '../style/ReadingHobbyModal.css';
 
 // 星評価表示コンポーネント
 const StarRating = ({ rating }) => {

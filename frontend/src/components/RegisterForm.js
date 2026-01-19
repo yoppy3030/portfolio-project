@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../RegisterForm.css";
+import '../style/RegisterForm.css';
 
 export default function RegisterForm({ theme }) {
   const navigate = useNavigate();
@@ -88,7 +88,7 @@ export default function RegisterForm({ theme }) {
         // ログインページに移動
         navigate('/login');
       } else {
-        alert(`エラー: ${data.error || "不明なエラーが発生しました"}`);
+        alert(`エラー: ${data.error || "不明なエラーが発生しました"} `);
       }
     } catch (error) {
       console.error("登録エラー:", error);
@@ -97,7 +97,7 @@ export default function RegisterForm({ theme }) {
   };
 
   return (
-    <div className={`main-content ${theme}-theme`}>
+    <div className={`main - content ${theme} -theme`}>
       <div className="register-form-wrapper">
         <form className="register-form" onSubmit={handleSubmit}>
           <h2>新規登録</h2>

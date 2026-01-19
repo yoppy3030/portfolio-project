@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import HobbiesDisplay from './HobbiesDisplay';
 
-import '../Portfolio.css';
-import '../ShareModal.css';
+import '../style/Portfolio.css';
+import '../style/ShareModal.css';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import "../LoginForm.css";
+import '../style/LoginForm.css';
 
 // ログイン画面のコンポーネント
 export default function LoginForm(props) {

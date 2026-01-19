@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { withTranslation } from 'react-i18next';
 import HobbiesManager from './HobbiesManager';
-import '../Settings.css';
+import '../style/Settings.css';
 
 /**
  * ユーザー設定画面のメインコンポーネント

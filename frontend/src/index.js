@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
+import './style/index.css';
 import App from './components/App';
 import './i18n'; // i18nの初期化
 

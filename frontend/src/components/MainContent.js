@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import '../MainContent.css';
+import '../style/MainContent.css';
 
 function MainContent({ user, theme }) {
   const { t } = useTranslation();

@@ -5,7 +5,7 @@
 // useMemo: 計算結果を保存して、無駄な計算を減らす機能
 // useRef: 特定のHTML要素（inputタグなど）を直接操作するための機能
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import './GameLibraryModal.css';
+import '../style/GameLibraryModal.css';
 // lodash.debounce: 検索などで、入力が終わるまで処理を待つための便利な道具
 // （例：文字を打つたびに検索すると重くなるので、打ち終わってから0.5秒後に検索する、という時に使います）
 import debounce from 'lodash.debounce';

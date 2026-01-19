@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import './ReadingHobbyDisplay.css';
+import '../style/ReadingHobbyDisplay.css';
 
 // 読書記録（書籍リスト）を表示する一覧コンポーネント
 function ReadingHobbyDisplay() {

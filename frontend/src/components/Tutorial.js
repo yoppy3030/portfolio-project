@@ -1,7 +1,7 @@
 // frontend/src/components/Tutorial.js
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import '../Tutorial.css';
+import '../style/Tutorial.css';
 import tutorialStep1 from '../assets/tutorial-step1.gif';
 import tutorialStep2 from '../assets/tutorial-step2.gif';
 import tutorialStep3 from '../assets/tutorial-step3.gif';

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "../PasswordReset.css";
+import '../style/PasswordReset.css';
 
 export default function PasswordReset() {
   const [form, setForm] = useState({
@@ -21,7 +21,7 @@ export default function PasswordReset() {
   const EyeClosed = (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
       <ellipse cx="12" cy="12" rx="7" ry="5.5" stroke="#bbb" strokeWidth="2" />
-      <line x1="5" y1="19" x2="19" y2="5" stroke="#bbb" strokeWidth="2"/>
+      <line x1="5" y1="19" x2="19" y2="5" stroke="#bbb" strokeWidth="2" />
       <circle cx="12" cy="12" r="2.3" fill="#bbb" />
     </svg>
   );
@@ -45,10 +45,10 @@ export default function PasswordReset() {
         alert(data.message);
         // 開発環境では認証コードを表示
         if (data.code) {
-          alert(`開発環境用認証コード: ${data.code}`);
+          alert(`開発環境用認証コード: ${data.code} `);
         }
       } else {
-        alert(`エラー: ${data.error}`);
+        alert(`エラー: ${data.error} `);
       }
     } catch (error) {
       console.error("認証コード送信エラー:", error);
@@ -103,7 +103,7 @@ export default function PasswordReset() {
               required
             />
           </div>
-          
+
           <div className="send-code-section">
             <button type="button" className="send-code-btn" onClick={handleSendCode}>
               認証コード送信

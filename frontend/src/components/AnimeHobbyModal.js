@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import './ReadingHobbyModal.css'; // Reuse CSS or create new one if needed, for now reuse as it has modal styles
+import '../style/ReadingHobbyModal.css'; // Reuse CSS
+// import './AnimeHobbyModal.css'; // Removed if not exists or update path
+// Reuse CSS or create new one if needed, for now reuse as it has modal styles
 
 const StarRating = ({ rating }) => {
     const totalStars = 10;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import '../Settings.css'; // スタイルを共有
+import '../style/MusicAppreciationManager.css';
 import ManageSongsModal from './ManageSongsModal'; // 曲管理のためのモーダルコンポーネント
 
 function MusicAppreciationManager() {

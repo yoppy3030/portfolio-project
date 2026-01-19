@@ -5,7 +5,7 @@ import GameLibraryModal from './GameLibraryModal';
 
 import ReadingHobbyModal from './ReadingHobbyModal';
 import AnimeHobbyModal from './AnimeHobbyModal';
-import './HobbiesDisplay.css';
+import '../style/HobbiesDisplay.css';
 
 /**
  * 趣味を管理するコンポーネント

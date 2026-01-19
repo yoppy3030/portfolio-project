@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import RGL, { WidthProvider } from 'react-grid-layout';
-import '../ProjectPage.css';
-import '../Portfolio.css'; // Corrected path
+import '../style/ProjectPage.css';
+import '../style/Portfolio.css'; // Corrected path
 
 const GridLayout = WidthProvider(RGL);
 

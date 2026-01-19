@@ -26,7 +26,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import './AdminPanel.css';
+import '../style/AdminPanel.css';
 
 // 管理者パネルコンポーネント
 function AdminPanel() {

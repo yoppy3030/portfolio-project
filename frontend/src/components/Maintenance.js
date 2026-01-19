@@ -1,7 +1,7 @@
 // Reactライブラリをインポート（画面を作るための基本ライブラリ）
 import React from 'react';
 // このコンポーネント専用のスタイルシート（見た目を整えるファイル）
-import './Maintenance.css';
+import '../style/Maintenance.css';
 
 /**
  * メンテナンス画面コンポーネント

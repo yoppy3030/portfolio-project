@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import '../FAQ.css';
+import '../style/FAQ.css';
 
 function FAQ() {
   const navigate = useNavigate();

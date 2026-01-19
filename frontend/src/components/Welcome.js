@@ -2,7 +2,7 @@
 import React from "react";
 import { useTranslation } from 'react-i18next'; // Added
 import { useNavigate } from 'react-router-dom';
-import "../Welcome.css";
+import "../style/Welcome.css";
 
 export default function Welcome({ user }) {
   const { t } = useTranslation(); // Added

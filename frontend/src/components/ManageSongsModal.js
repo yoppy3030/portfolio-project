@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 // ドラッグ＆ドロップで並び替えをするためのライブラリ
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import './ManageSongsModal.css';
+import '../style/ManageSongsModal.css';
 import { FaYoutube, FaEdit } from 'react-icons/fa';
 
 function ManageSongsModal({ preference, onClose, onUpdate }) {
