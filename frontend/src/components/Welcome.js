@@ -30,13 +30,13 @@ export default function Welcome({ user }) {
       <div className="welcome-content">
         <h1 className="welcome-title">{t('welcome')}</h1>
         <p className="welcome-subtitle">サービスを始める準備が整いました</p>
-        
+
         <div className="welcome-actions">
           <div className="welcome-card" onClick={handleTutorialClick}>
             <div className="welcome-icon tutorial-icon">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#4CAF50" strokeWidth="2"/>
-                <path d="M12 6v6l4 2" stroke="#4CAF50" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="12" cy="12" r="10" stroke="#4CAF50" strokeWidth="2" />
+                <path d="M12 6v6l4 2" stroke="#4CAF50" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </div>
             <div className="welcome-card-content">
@@ -48,8 +48,8 @@ export default function Welcome({ user }) {
           <div className="welcome-card" onClick={handleStartClick}>
             <div className="welcome-icon start-icon">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#2196F3" strokeWidth="2"/>
-                <path d="M8 12l3 3 5-6" stroke="#2196F3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="10" stroke="#2196F3" strokeWidth="2" />
+                <path d="M8 12l3 3 5-6" stroke="#2196F3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
             <div className="welcome-card-content">
@@ -61,9 +61,9 @@ export default function Welcome({ user }) {
           <div className="welcome-card" onClick={handleHelpClick}>
             <div className="welcome-icon help-icon">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#FF9800" strokeWidth="2"/>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="#FF9800" strokeWidth="2" strokeLinecap="round"/>
-                <circle cx="12" cy="17" r="1" fill="#FF9800"/>
+                <circle cx="12" cy="12" r="10" stroke="#FF9800" strokeWidth="2" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="#FF9800" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="12" cy="17" r="1" fill="#FF9800" />
               </svg>
             </div>
             <div className="welcome-card-content">

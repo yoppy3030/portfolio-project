@@ -1,16 +1,17 @@
-// 必要なライブラリの読み込み
-require('dotenv').config(); // 環境変数を読み込み
-const express = require('express');
-const mysql = require('mysql');
-const bcrypt = require('bcryptjs');
-const cors = require('cors');
-const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
-const helmet = require('helmet'); // セキュリティヘッダー用
-const rateLimit = require('express-rate-limit'); // レート制限用
-const path = require('path');
-const multer = require('multer');
+// 必要なライブラリ（便利な道具）の読み込み
+require('dotenv').config(); // .envファイルに書かれた秘密の鍵や設定（環境変数）を読み込みます
+const express = require('express'); // サーバーを作るためのメインのフレームワーク
+const mysql = require('mysql'); // データベース（MySQL）とやり取りするための道具
+const bcrypt = require('bcryptjs'); // パスワードを暗号化（ハッシュ化）して安全に守るための道具
+const cors = require('cors'); // 別の場所（フロントエンド）からのアクセスを許可するための道具
+const crypto = require('crypto'); // 暗号などのセキュリティ機能を使うための道具
+const jwt = require('jsonwebtoken'); // ログイン状態を管理する「トークン」を作るための道具
+const helmet = require('helmet'); // アプリのセキュリティを強化する（ヘルメットをかぶるようなイメージ）
+const rateLimit = require('express-rate-limit'); // アクセス回数を制限して、攻撃から守るための道具
+const path = require('path'); // ファイルの場所（パス）を操作するための道具
+const multer = require('multer'); // 画像などのファイルをアップロードするための道具
 
+// Expressアプリを作成（これがサーバーの実体になります）
 const app = express();
 
 // 最大BGMエントリ数
@@ -42,13 +43,17 @@ const loginLimiter = rateLimit({
   }
 });
 
-app.use(express.json({ limit: '10mb' }));
+// リクエストの内容を読み取れるようにする設定（JSON形式とURLエンコード形式）
+app.use(express.json({ limit: '10mb' })); // 画像なども送れるようにサイズ制限を緩和
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// CORS（Cross-Origin Resource Sharing）の設定
+// フロントエンド（Reactなど）が別のURLにある場合、許可しないと通信できません
 app.use(cors({
+  // 許可するオリジン（アクセス元）のURLリスト
   origin: [process.env.FRONTEND_URL, 'http://localhost:3000', 'http://localhost:5001'].filter(Boolean),
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // メソッドを明示的に許可
-  credentials: true
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // 許可する通信の種類
+  credentials: true // クッキーや認証情報の送信を許可するかどうか
 }));
 
 // Serve uploaded files statically from the 'uploads' directory
@@ -73,13 +78,15 @@ const upload = multer({ storage: storage });
 // 環境変数から設定を取得
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-development';
 
+// データベース（MySQL）への接続設定
+// 環境変数（.env）から読み込みますが、無ければデフォルト値（||の後ろ）を使います
 const DB_CONFIG = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'portfolio_user',
-  password: process.env.DB_PASSWORD || 'pfBuilder2025',
-  database: process.env.DB_NAME || 'portfolio_db',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  connectionLimit: 10,
+  host: process.env.DB_HOST || 'localhost', // データベースの場所（自分のPCならlocalhost）
+  user: process.env.DB_USER || 'portfolio_user', // データベースのユーザー名
+  password: process.env.DB_PASSWORD || 'pfBuilder2025', // データベースのパスワード
+  database: process.env.DB_NAME || 'portfolio_db', // データベースの名前
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false, // セキュリティ通信の設定（本番用）
+  connectionLimit: 10, // 同時に接続できる最大数
   acquireTimeout: 60000,
   timeout: 60000,
   reconnect: true
@@ -99,18 +106,26 @@ db.getConnection((err, connection) => {
 });
 
 // JWTトークン検証ミドルウェア
+// 認証ミドルウェア：ログインしているかどうかをチェックする関門
+// 'req' はリクエスト情報、'res' はレスポンス、'next' は次の処理へ進むための関数
 const authenticateToken = (req, res, next) => {
+  // リクエストのヘッダーから認証情報を取り出す
   const authHeader = req.headers['authorization'];
+  // "Bearer <トークン>" という形式なので、スペースで区切ってトークン部分だけ取る
   const token = authHeader && authHeader.split(' ')[1];
 
+  // トークンが無ければエラー（401: 認証が必要）
   if (!token) {
     return res.status(401).json({ success: false, error: 'アクセストークンが必要です' });
   }
 
+  // トークンが正しいか検証する
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
+      // 間違ったトークンならエラー（403: 禁止されています）
       return res.status(403).json({ success: false, error: '無効なトークンです' });
     }
+    // 正しければ、リクエスト情報にユーザー情報を追加して、次の処理（APIの中身など）へ進む
     req.user = user;
     next();
   });
@@ -178,13 +193,16 @@ const cleanupExpiredCodes = () => {
 // 定期的に期限切れの認証コードを削除（1時間ごと）
 setInterval(cleanupExpiredCodes, 60 * 60 * 1000);
 
-// 新規ユーザー登録API（アイコンアップロード対応）
+// 新規ユーザー登録API
+// ユーザーがフォームに入力した情報を受け取って、データベースに保存します
 app.post('/api/register', upload.single('icon'), async (req, res) => {
   try {
+    // リクエストの本文（body）からデータを取り出す
     const { name, email, password, bio } = req.body;
+    // 画像がアップロードされていれば、そのURL（パス）を作る
     const iconUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    // 入力データの検証
+    // 入力チェック：名前、メール、パスワードが無い場合はエラー
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -192,7 +210,7 @@ app.post('/api/register', upload.single('icon'), async (req, res) => {
       });
     }
 
-    // パスワード強度チェック
+    // パスワードの長さチェック
     if (password.length < 8) {
       return res.status(400).json({
         success: false,
@@ -200,7 +218,7 @@ app.post('/api/register', upload.single('icon'), async (req, res) => {
       });
     }
 
-    // メールアドレス形式チェック
+    // メールアドレスの形式チェック（正規表現というルールを使います）
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
@@ -209,12 +227,12 @@ app.post('/api/register', upload.single('icon'), async (req, res) => {
       });
     }
 
-    // パスワードを安全なハッシュに変換
-    const hash = await bcrypt.hash(password, 12); // 本番環境ではより高いラウンド数
+    // パスワードをそのまま保存するのは危険なので、暗号化（ハッシュ化）します
+    const hash = await bcrypt.hash(password, 12);
 
-    // ユーザーが既に存在するかチェック
+    // ユーザーが既に登録されていないかデータベースをチェック
     db.query(
-      'SELECT id FROM users WHERE email = ? OR name = ?',
+      'SELECT id FROM users WHERE email = ? OR name = ?', // ?はプレースホルダーと言い、後で変数が入ります（セキュリティ対策）
       [email, name],
       (err, results) => {
         if (err) {
@@ -225,6 +243,7 @@ app.post('/api/register', upload.single('icon'), async (req, res) => {
           });
         }
 
+        // 既にデータが見つかった場合
         if (results.length > 0) {
           return res.status(409).json({
             success: false,
@@ -232,11 +251,12 @@ app.post('/api/register', upload.single('icon'), async (req, res) => {
           });
         }
 
-        // usersテーブルへINSERT
+        // データベースに新しいユーザーを登録（INSERT）する準備
         let columns = ['name', 'email', 'password_hash'];
         let placeholders = ['?', '?', '?'];
         let values = [name, email, hash];
 
+        // 画像や自己紹介がある場合は追加
         if (iconUrl) {
           columns.push('iconUrl');
           placeholders.push('?');
@@ -249,6 +269,7 @@ app.post('/api/register', upload.single('icon'), async (req, res) => {
           values.push(bio);
         }
 
+        // SQLを実行して登録
         db.query(
           `INSERT INTO users (${columns.join(', ')}) VALUES (${placeholders.join(', ')})`,
           values,
@@ -260,6 +281,7 @@ app.post('/api/register', upload.single('icon'), async (req, res) => {
                 error: 'データベースエラーが発生しました'
               });
             }
+            // 成功したらメッセージと新しいユーザーIDを返す
             res.json({
               success: true,
               message: 'ユーザー登録が完了しました',
@@ -278,11 +300,13 @@ app.post('/api/register', upload.single('icon'), async (req, res) => {
   }
 });
 
-// ログインAPI（レート制限適用）
+// ログインAPI
+// メールアドレスとパスワードを受け取って、正しいか確認します
 app.post('/api/login', loginLimiter, async (req, res) => {
   try {
     const { email, password, autoLogin } = req.body;
 
+    // 入力チェック
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -290,6 +314,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
       });
     }
 
+    // データベースから、入力されたメールアドレスのユーザーを探す
     db.query(
       'SELECT id, name, email, password_hash, bio, iconUrl, email_notifications, feature_announcements, maintenance_info, language, theme FROM users WHERE email = ? OR name = ?',
       [email, email],
@@ -302,6 +327,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
           });
         }
 
+        // ユーザーが見つからなかった場合
         if (results.length === 0) {
           return res.status(401).json({
             success: false,
@@ -310,8 +336,10 @@ app.post('/api/login', loginLimiter, async (req, res) => {
         }
 
         const user = results[0];
+        // データベースのハッシュ化されたパスワードと、入力されたパスワードを比較する
         const isValidPassword = await bcrypt.compare(password, user.password_hash);
 
+        // パスワードが間違っていた場合
         if (!isValidPassword) {
           return res.status(401).json({
             success: false,
@@ -319,8 +347,10 @@ app.post('/api/login', loginLimiter, async (req, res) => {
           });
         }
 
-        // JWTトークンを生成
-        const tokenExpiry = autoLogin ? '30d' : '1d';
+        // ログイン成功！
+        // 「トークン」という身分証明書のようなものを発行します
+        // これを持っていれば、次からパスワード無しでアクセスできます
+        const tokenExpiry = autoLogin ? '30d' : '1d'; // 自動ログインなら30日、そうでなければ1日
         const token = jwt.sign(
           {
             id: user.id,
@@ -331,9 +361,10 @@ app.post('/api/login', loginLimiter, async (req, res) => {
           { expiresIn: tokenExpiry }
         );
 
-        // パスワードハッシュを削除してからユーザー情報を返す
+        // クライアント（ブラウザ）にはパスワードハッシュを送らないように消す
         delete user.password_hash;
 
+        // トークンとユーザー情報を返す
         res.json({
           success: true,
           message: 'ログインしました',
@@ -352,7 +383,9 @@ app.post('/api/login', loginLimiter, async (req, res) => {
 });
 
 // トークン検証API
+// フロントエンドが「今ログインしているのは誰？」と確認するために使います
 app.get('/api/verify-token', authenticateToken, (req, res) => {
+  // 認証済みのユーザーIDを使って、最新のユーザー情報をデータベースから取得
   db.query(
     'SELECT id, name, email, bio, iconUrl, email_notifications, feature_announcements, maintenance_info, language, theme FROM users WHERE id = ?',
     [req.user.id],
@@ -365,6 +398,7 @@ app.get('/api/verify-token', authenticateToken, (req, res) => {
         });
       }
 
+      // 万が一ユーザーが見つからない場合
       if (results.length === 0) {
         return res.status(404).json({
           success: false,
@@ -372,6 +406,7 @@ app.get('/api/verify-token', authenticateToken, (req, res) => {
         });
       }
 
+      // ユーザー情報を返す
       const user = results[0];
       res.json({
         success: true,
@@ -382,21 +417,23 @@ app.get('/api/verify-token', authenticateToken, (req, res) => {
 });
 
 // プロフィール更新API (アイコンアップロード対応)
+// 名前、自己紹介、アイコン画像を変更します
 app.put('/api/profile', authenticateToken, upload.single('icon'), (req, res) => {
   try {
-    const { id } = req.user;
-    const { name, bio } = req.body;
+    const { id } = req.user; // ログイン中のユーザーID
+    const { name, bio } = req.body; // 新しい名前と自己紹介
 
-    // 更新するフィールドを動的に構築
+    // 更新するデータをまとめるためのオブジェクト
     const fieldsToUpdate = {};
-    if (name) fieldsToUpdate.name = name;
-    if (bio) fieldsToUpdate.bio = bio;
+    if (name) fieldsToUpdate.name = name; // 名前があれば追加
+    if (bio) fieldsToUpdate.bio = bio;   // 自己紹介があれば追加
 
-    // ファイルがアップロードされた場合、iconUrlを更新
+    // ファイル（画像）がアップロードされた場合、URLを保存するように追加
     if (req.file) {
       fieldsToUpdate.iconUrl = `/uploads/${req.file.filename}`;
     }
 
+    // 何も変更するデータがない場合
     if (Object.keys(fieldsToUpdate).length === 0) {
       return res.status(400).json({
         success: false,
@@ -404,6 +441,8 @@ app.put('/api/profile', authenticateToken, upload.single('icon'), (req, res) => 
       });
     }
 
+    // データベースを更新 (UPDATE)
+    // "SET ?" の ? 部分に、fieldsToUpdateの中身（例: name='...', bio='...'）が自動的に入ります
     db.query(
       'UPDATE users SET ? WHERE id = ?',
       [fieldsToUpdate, id],
@@ -423,7 +462,7 @@ app.put('/api/profile', authenticateToken, upload.single('icon'), (req, res) => 
           });
         }
 
-        // 更新後のユーザー情報を取得して返す
+        // 更新が成功したら、最新の情報をもう一度取得してフロントエンドに返す
         db.query('SELECT id, name, email, bio, iconUrl, email_notifications, feature_announcements, maintenance_info, language, theme FROM users WHERE id = ?', [id], (err, results) => {
           if (err) {
             console.error('データベースエラー:', err);
@@ -456,11 +495,13 @@ app.put('/api/profile', authenticateToken, upload.single('icon'), (req, res) => 
 });
 
 // パスワード変更API
+// 現在のパスワードを確認した上で、新しいパスワードに変更します
 app.post('/api/change-password', authenticateToken, async (req, res) => {
   try {
     const { id } = req.user;
     const { currentPassword, newPassword } = req.body;
 
+    // 入力チェック
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
@@ -475,6 +516,7 @@ app.post('/api/change-password', authenticateToken, async (req, res) => {
       });
     }
 
+    // まず現在のパスワード（ハッシュ）をデータベースから取得
     db.query('SELECT password_hash FROM users WHERE id = ?', [id], async (err, results) => {
       if (err) {
         console.error('データベースエラー:', err);
@@ -486,14 +528,17 @@ app.post('/api/change-password', authenticateToken, async (req, res) => {
       }
 
       const user = results[0];
+      // 現在のパスワードが合っているか確認
       const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
 
       if (!isValidPassword) {
         return res.status(401).json({ success: false, error: '現在のパスワードが正しくありません' });
       }
 
+      // 新しいパスワードを暗号化（ハッシュ化）
       const hash = await bcrypt.hash(newPassword, 12);
 
+      // データベースのパスワードを更新
       db.query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, id], (err, result) => {
         if (err) {
           console.error('データベースエラー:', err);
@@ -510,17 +555,20 @@ app.post('/api/change-password', authenticateToken, async (req, res) => {
 });
 
 // 通知設定更新API
+// メール通知や新機能のお知らせなどの設定を変更します
 app.put('/api/notifications', authenticateToken, (req, res) => {
   try {
     const { id } = req.user;
-    const { email_notifications, feature_announcements, maintenance_info } = req.body;
+    const { email_notifications, feature_announcements, maintenance_info } = req.body; // フロントエンドから送られてきた設定値
 
+    // 更新するデータをまとめます
     const fieldsToUpdate = {
       email_notifications: email_notifications,
       feature_announcements: feature_announcements,
       maintenance_info: maintenance_info
     };
 
+    // データベースを更新
     db.query(
       'UPDATE users SET ? WHERE id = ?',
       [fieldsToUpdate, id],
@@ -544,15 +592,17 @@ app.put('/api/notifications', authenticateToken, (req, res) => {
 });
 
 // アカウント削除API
+// 重大な操作なので、慎重に行います
 app.delete('/api/account', authenticateToken, async (req, res) => {
   try {
     const { id } = req.user;
-    const { password } = req.body;
+    const { password } = req.body; // 安全のため、削除時にパスワードを再入力してもらいます
 
     if (!password) {
       return res.status(400).json({ success: false, error: 'パスワードを入力してください' });
     }
 
+    // パスワード確認のためにDBからユーザー情報を取得
     db.query('SELECT password_hash FROM users WHERE id = ?', [id], async (err, results) => {
       if (err) {
         console.error('データベースエラー:', err);
@@ -564,12 +614,15 @@ app.delete('/api/account', authenticateToken, async (req, res) => {
       }
 
       const user = results[0];
+      // パスワードが合っているかチェック
       const isValidPassword = await bcrypt.compare(password, user.password_hash);
 
       if (!isValidPassword) {
         return res.status(401).json({ success: false, error: 'パスワードが正しくありません' });
       }
 
+      // パスワードが合っていれば、ユーザーを削除（DELETE）
+      // ユーザーIDに紐づく他のデータ（趣味、ゲーム記録など）も、データベースの設定（ON DELETE CASCADE）により自動的に消えることが多いです
       db.query('DELETE FROM users WHERE id = ?', [id], (err, result) => {
         if (err) {
           console.error('データベースエラー:', err);
@@ -586,11 +639,13 @@ app.delete('/api/account', authenticateToken, async (req, res) => {
 });
 
 // 一般設定更新API
+// 言語設定（日/英）やテーマカラー（ライト/ダーク）などを保存します
 app.put('/api/general-settings', authenticateToken, (req, res) => {
   try {
     const { id } = req.user;
     const { language, theme } = req.body;
 
+    // 更新用のオブジェクトを作成
     const fieldsToUpdate = {};
     if (language) fieldsToUpdate.language = language;
     if (theme) fieldsToUpdate.theme = theme;
@@ -602,6 +657,7 @@ app.put('/api/general-settings', authenticateToken, (req, res) => {
       });
     }
 
+    // DB更新
     db.query(
       'UPDATE users SET ? WHERE id = ?',
       [fieldsToUpdate, id],
@@ -621,7 +677,7 @@ app.put('/api/general-settings', authenticateToken, (req, res) => {
           });
         }
 
-        // 更新後のユーザー情報を取得して返す
+        // 更新後の情報を取得して、フロントエンドにすぐに反映できるようにします
         db.query('SELECT id, name, email, bio, iconUrl, email_notifications, feature_announcements, maintenance_info, language, theme FROM users WHERE id = ?', [id], (err, results) => {
           if (err) {
             console.error('データベースエラー:', err);
@@ -653,13 +709,15 @@ app.put('/api/general-settings', authenticateToken, (req, res) => {
   }
 });
 
-// File upload API
+// ファイルアップロードAPI
+// エディタなどで画像をアップロードする時に使われます
 app.post('/api/upload', authenticateToken, upload.single('file'), (req, res) => {
+  // multerミドルウェアがファイルを処理して req.file に入れてくれます
   if (!req.file) {
     return res.status(400).json({ success: false, error: 'ファイルがアップロードされませんでした。' });
   }
 
-  // Construct the file path that the client can use
+  // クライアントがアクセスできる画像のパス（URLの一部）を作って返します
   const filePath = `/uploads/${req.file.filename}`;
 
   res.json({ success: true, filePath: filePath });
@@ -678,9 +736,11 @@ app.post('/api/upload', authenticateToken, upload.single('file'), (req, res) => 
 // );
 
 // ユーザーの趣味リストを取得
+// 「読書」「ゲーム」など、登録されている趣味の一覧を取得します
 app.get('/api/hobbies', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
 
+  // データベースから、自分のユーザーIDに関連付けられた趣味を、名前順で取得
   db.query('SELECT id, name FROM hobbies WHERE user_id = ? ORDER BY name', [userId], (err, results) => {
     if (err) {
       console.error('データベースエラー:', err);
@@ -691,36 +751,44 @@ app.get('/api/hobbies', authenticateToken, (req, res) => {
 });
 
 // 新しい趣味を追加
+// 例: 「アニメ」「旅行」などを新しく追加する場合
 app.post('/api/hobbies', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
   const { name } = req.body;
 
+  // 空文字の場合はエラー
   if (!name || name.trim() === '') {
     return res.status(400).json({ success: false, error: '趣味の名前は必須です。' });
   }
 
+  // データベースに登録
   db.query('INSERT INTO hobbies (user_id, name) VALUES (?, ?)', [userId, name.trim()], (err, result) => {
     if (err) {
+      // エラーコード 'ER_DUP_ENTRY' は「重複」を意味します
       if (err.code === 'ER_DUP_ENTRY') {
         return res.status(409).json({ success: false, error: 'その趣味は既に追加されています。' });
       }
       console.error('データベースエラー:', err);
       return res.status(500).json({ success: false, error: '趣味の追加中にデータベースエラーが発生しました。' });
     }
+    // 成功したら、追加された趣味の情報を返します
     res.status(201).json({ success: true, message: '趣味が追加されました。', hobby: { id: result.insertId, name: name.trim() } });
   });
 });
 
 // 趣味を削除
+// 特定の趣味をリストから消します
 app.delete('/api/hobbies/:hobbyId', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
-  const { hobbyId } = req.params;
+  const { hobbyId } = req.params; // URLの :hobbyId 部分を取得
 
+  // 自分の趣味だけを削除できるように、user_id も条件に入れます
   db.query('DELETE FROM hobbies WHERE id = ? AND user_id = ?', [hobbyId, userId], (err, result) => {
     if (err) {
       console.error('データベースエラー:', err);
       return res.status(500).json({ success: false, error: '趣味の削除中にデータベースエラーが発生しました。' });
     }
+    // affectedRows（影響を受けた行数）が0なら、削除できなかったということ
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, error: '趣味が見つからないか、削除する権限がありません。' });
     }
@@ -787,9 +855,14 @@ app.delete('/api/hobbies/:hobbyId', authenticateToken, (req, res) => {
 // INSERT IGNORE INTO music_genres (name) VALUES
 // ('クラシック'), ('洋楽'), ('J-POP'), ('軍歌'), ('国歌'), ('ロック'), ('ポップ'), ('ジャズ'), ('ヒップホップ'), ('R&B'), ('エレクトロニック'), ('フォーク'), ('カントリー'), ('ブルース'), ('メタル'), ('レゲエ'), ('ソウル'), ('ワールドミュージック'), ('アニメソング'), ('ゲーム音楽'), ('ボカロ');
 
+// プレイ済みゲームのリストを取得
+// タイトル、画像、評価、BGMなどの詳細情報を含めて取得します
 app.get('/api/played-games', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
 
+  // 複雑なクエリ（SQL）ですが、ゲーム情報とそれに紐づくBGM情報をまとめて取ってきています
+  // LEFT JOIN: ゲーム情報にBGM情報をくっつける（BGMがなくてもゲーム情報は取る）
+  // GROUP_CONCAT: 複数のBGMを1つの文字列としてまとめる
   const query = `
     SELECT 
       pg.id, pg.game_api_id, pg.title, pg.image_url, pg.rating, pg.comment, pg.playtime_hours, pg.platforms, pg.genres, pg.series, pg.created_at,
@@ -807,6 +880,8 @@ app.get('/api/played-games', authenticateToken, (req, res) => {
       return res.status(500).json({ success: false, error: 'プレイ済みゲームの取得中にデータベースエラーが発生しました。' });
     }
 
+    // データベースから取り出したデータの加工
+    // 文字列として保存されている配列（JSON形式）を、プログラムで扱いやすい配列に戻します
     const playedGamesWithParsedData = results.map(game => ({
       ...game,
       platforms: (() => {
@@ -828,6 +903,7 @@ app.get('/api/played-games', authenticateToken, (req, res) => {
       series: game.series || null,
       bgms: (() => {
         try {
+          // BGMリストのnull排除（データベースの仕様による調整）
           return game.bgms ? JSON.parse(game.bgms).filter(b => b !== null) : [];
         } catch (e) {
           console.error("Error parsing bgms JSON:", e);
@@ -840,7 +916,8 @@ app.get('/api/played-games', authenticateToken, (req, res) => {
   });
 });
 
-// 音楽ジャンルリストを取得
+// 音楽ジャンルリストを取得（マスターデータ）
+// 「J-POP」「ロック」などの選択肢を提供するためのAPI
 app.get('/api/music-genres', (req, res) => {
   db.query('SELECT id, name FROM music_genres ORDER BY name', (err, results) => {
     if (err) {
@@ -852,11 +929,12 @@ app.get('/api/music-genres', (req, res) => {
 });
 
 // ユーザーの音楽設定リストを取得
+// そのユーザーが「どんなジャンル」の「どのアーティスト」が好きか、そして「どの曲」がお気に入りかを取得します
 app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
   const { id: userId } = req.user;
 
   try {
-    // 1. ユーザーの音楽設定を取得
+    // 1. まず、ユーザーの音楽設定（ジャンルとアーティスト）を取得します
     const preferences = await new Promise((resolve, reject) => {
       const query = `
         SELECT ump.id, ump.artist_name, mg.name AS genre_name, mg.id AS genre_id
@@ -871,15 +949,18 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
       });
     });
 
+    // 設定がまだ何もなければ空のリストを返して終了
     if (preferences.length === 0) {
       return res.json({ success: true, preferences: [] });
     }
 
-    // 2. 関連するお気に入りの曲をすべて取得
-    const preferenceIds = preferences.map(p => p.id);
+    // 2. 次に、それぞれの設定に関連付けられた「お気に入りの曲」をすべて取得します
+    const preferenceIds = preferences.map(p => p.id); // 設定IDのリストを作る
 
-    // First, initialize song_order for songs that don't have it set
+    // ※ ここから少し複雑な処理：曲の順番（song_order）が登録されていない場合、自動的に番号を振る処理
+    // （古いデータなどで順番が入っていない場合の対策です）
     for (const prefId of preferenceIds) {
+      // 順番がない曲を探す
       const songsToInit = await new Promise((resolve, reject) => {
         db.query(
           'SELECT id FROM favorite_songs WHERE preference_id = ? AND song_order IS NULL ORDER BY created_at ASC',
@@ -892,7 +973,7 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
       });
 
       if (songsToInit.length > 0) {
-        // Get the current max order for this preference
+        // 現在の最大番号を調べて、その続きから番号を振っていく
         const maxOrderResult = await new Promise((resolve, reject) => {
           db.query(
             'SELECT COALESCE(MAX(song_order), -1) AS max_order FROM favorite_songs WHERE preference_id = ?',
@@ -906,7 +987,7 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
 
         let nextOrder = (maxOrderResult[0]?.max_order ?? -1) + 1;
 
-        // Update each song with NULL order
+        // 一つずつ更新
         for (const song of songsToInit) {
           await new Promise((resolve, reject) => {
             db.query(
@@ -923,7 +1004,7 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
       }
     }
 
-    // Now fetch all songs with proper ordering
+    // 3. 準備が整ったので、すべての曲を正しい順序で取得
     const songs = await new Promise((resolve, reject) => {
       const query = `
         SELECT id, preference_id, song_title, artist_name, youtube_url 
@@ -937,7 +1018,7 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
       });
     });
 
-    // 3. 曲を各設定にマッピング
+    // 4. 取得した曲を、それぞれの音楽設定に割り振る（マッピング）
     const songsMap = new Map();
     songs.forEach(song => {
       if (!songsMap.has(song.preference_id)) {
@@ -946,6 +1027,7 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
       songsMap.get(song.preference_id).push(song);
     });
 
+    // 最終的なデータを作成：音楽設定の中に、songsというリストを入れる
     const preferencesWithSongs = preferences.map(pref => ({
       ...pref,
       songs: songsMap.get(pref.id) || []
@@ -959,7 +1041,7 @@ app.get('/api/user-music-preferences', authenticateToken, async (req, res) => {
   }
 });
 
-// ユーザーの音楽設定を追加
+// ユーザーの音楽設定（ジャンルやアーティスト）を追加
 app.post('/api/user-music-preferences', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
   const { genre_id, artist_name } = req.body;
@@ -968,6 +1050,7 @@ app.post('/api/user-music-preferences', authenticateToken, (req, res) => {
     return res.status(400).json({ success: false, error: 'ジャンルまたはアーティスト名は必須です。' });
   }
 
+  // user_id, genre_id, artist_name の組み合わせで登録
   db.query('INSERT INTO user_music_preferences (user_id, genre_id, artist_name) VALUES (?, ?, ?)', [userId, genre_id || null, artist_name || null], (err, result) => {
     if (err) {
       if (err.code === 'ER_DUP_ENTRY') {
@@ -997,7 +1080,8 @@ app.delete('/api/user-music-preferences/:preferenceId', authenticateToken, (req,
   });
 });
 
-// Add a favorite song to a preference
+// お気に入りの曲を追加
+// 特定の設定（preferenceId）の下に、新しい曲を追加します
 app.post('/api/music-preferences/:preferenceId/songs', authenticateToken, async (req, res) => {
   const { preferenceId } = req.params;
   const { id: userId } = req.user;
@@ -1008,7 +1092,7 @@ app.post('/api/music-preferences/:preferenceId/songs', authenticateToken, async 
   }
 
   try {
-    // Verify ownership of the preference
+    // まず、その設定がこのユーザーのものであるかを確認（他人の設定には追加させない）
     const preferences = await new Promise((resolve, reject) => {
       db.query('SELECT id FROM user_music_preferences WHERE id = ? AND user_id = ?', [preferenceId, userId], (err, results) => {
         if (err) return reject(err);
@@ -1020,7 +1104,7 @@ app.post('/api/music-preferences/:preferenceId/songs', authenticateToken, async 
       return res.status(403).json({ success: false, error: 'この設定に曲を追加する権限がありません。' });
     }
 
-    // Get the maximum song_order for this preference to set the new song's order
+    // 現在の曲順の一番最後に追加したいので、最大の song_order を取得します
     const maxOrderResult = await new Promise((resolve, reject) => {
       db.query(
         'SELECT COALESCE(MAX(song_order), -1) AS max_order FROM favorite_songs WHERE preference_id = ?',
@@ -1034,7 +1118,7 @@ app.post('/api/music-preferences/:preferenceId/songs', authenticateToken, async 
 
     const nextOrder = (maxOrderResult[0]?.max_order ?? -1) + 1;
 
-    // Insert the new song
+    // 新しい曲をデータベースに挿入
     const newSong = {
       preference_id: preferenceId,
       song_title,
@@ -1536,109 +1620,76 @@ app.delete('/api/reading/authors/:authorId', authenticateToken, (req, res) => {
   });
 });
 
-// ユーザーの登録書籍リストを取得
-app.get('/api/reading/books', authenticateToken, (req, res) => {
+// 読書記録のリストを取得（並び替えやフィルタリング対応）
+// 登録されたすべての本（または特定の条件に合う本）を取得します
+app.get('/api/reading-entries', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
-  const { author_id } = req.query;
+  const { sort, authorId } = req.query; // クエリパラメータから条件を取得
 
+  // 基本のSQLクエリ：本と、その本の著作者情報を結合して取得
   let query = `
-    SELECT b.*, a.name as author_name 
-    FROM reading_books b
-    JOIN reading_authors a ON b.author_id = a.id
-    WHERE b.user_id = ?
+    SELECT re.*, ra.name as author_name 
+    FROM reading_entries re
+    JOIN reading_authors ra ON re.author_id = ra.id
+    WHERE re.user_id = ?
   `;
   const params = [userId];
 
-  if (author_id) {
-    query += ' AND b.author_id = ?';
-    params.push(author_id);
+  // 特定の作家で絞り込む場合
+  if (authorId) {
+    query += ' AND re.author_id = ?';
+    params.push(authorId);
   }
 
-  query += ' ORDER BY b.display_order ASC, b.created_at DESC';
+  // 並び替えの条件
+  if (sort === 'rating_desc') {
+    query += ' ORDER BY re.rating DESC, re.created_at DESC'; // 評価が高い順
+  } else if (sort === 'rating_asc') {
+    query += ' ORDER BY re.rating ASC, re.created_at DESC'; // 評価が低い順
+  } else if (sort === 'latest') {
+    query += ' ORDER BY re.created_at DESC'; // 新しい順
+  } else if (sort === 'oldest') {
+    query += ' ORDER BY re.created_at ASC'; // 古い順
+  } else {
+    // デフォルトは「本の順番（entry_order）」順、かつ作成日順
+    query += ' ORDER BY re.entry_order ASC, re.created_at DESC';
+  }
 
   db.query(query, params, (err, results) => {
     if (err) {
       console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: '書籍リストの取得中にデータベースエラーが発生しました。' });
+      return res.status(500).json({ success: false, error: '読書記録の取得中にデータベースエラーが発生しました。' });
     }
-    res.json({ success: true, books: results });
+    res.json({ success: true, entries: results });
   });
 });
 
 // 新しい本を追加
-app.post('/api/reading/books', authenticateToken, upload.single('image'), (req, res) => {
+app.post('/api/reading-entries', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
-  const { author_id, type, genre, title, comment, rating } = req.body;
+  const { title, author_id, type, genre, rating, comment } = req.body;
 
-  if (!author_id || !type || !title) {
-    return res.status(400).json({ success: false, error: '作家、種類、タイトルは必須です。' });
+  if (!title || !author_id || !type) {
+    return res.status(400).json({ success: false, error: 'タイトル、作家、種類は必須です。' });
   }
 
-  db.getConnection((err, connection) => {
+  // 現在のリストの最後に本を追加したいので、最大の並び順（entry_order）を取得
+  db.query('SELECT COALESCE(MAX(entry_order), -1) as max_order FROM reading_entries WHERE user_id = ?', [userId], (err, results) => {
     if (err) {
-      console.error('データベース接続エラー:', err);
-      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '順序の取得中にデータベースエラーが発生しました。' });
     }
 
-    connection.beginTransaction(async (err) => {
+    const nextOrder = results[0].max_order + 1;
+
+    // データベースに新しい本を登録
+    const query = 'INSERT INTO reading_entries (user_id, title, author_id, type, genre, rating, comment, entry_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    db.query(query, [userId, title, author_id, type, genre, rating, comment, nextOrder], (err, result) => {
       if (err) {
-        connection.release();
-        return res.status(500).json({ success: false, error: 'トランザクションの開始に失敗しました。' });
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: '読書記録の追加中にデータベースエラーが発生しました。' });
       }
-
-      try {
-        // Get the maximum display_order for this user/author to set the new book's order
-        const maxOrderResult = await new Promise((resolve, reject) => {
-          connection.query(
-            'SELECT COALESCE(MAX(display_order), -1) AS max_order FROM reading_books WHERE user_id = ? AND author_id = ?',
-            [userId, author_id],
-            (err, results) => {
-              if (err) return reject(err);
-              resolve(results);
-            }
-          );
-        });
-
-        const nextOrder = (maxOrderResult[0]?.max_order ?? -1) + 1;
-
-        const newBook = {
-          user_id: userId,
-          author_id,
-          type,
-          genre,
-          title,
-          comment,
-          rating,
-          image_url: req.file ? `/uploads/${req.file.filename}` : null,
-          display_order: nextOrder
-        };
-
-        const result = await new Promise((resolve, reject) => {
-          connection.query('INSERT INTO reading_books SET ?', newBook, (err, result) => {
-            if (err) return reject(err);
-            resolve(result);
-          });
-        });
-
-        connection.commit((err) => {
-          if (err) {
-            return connection.rollback(() => {
-              connection.release();
-              console.error('コミットエラー:', err);
-              res.status(500).json({ success: false, error: `書籍の追加中にデータベースエラーが発生しました: ${err.message}` });
-            });
-          }
-          connection.release();
-          res.status(201).json({ success: true, message: '本が追加されました。', book: { id: result.insertId, ...newBook } });
-        });
-
-      } catch (error) {
-        connection.rollback(() => {
-          connection.release();
-          console.error('トランザクションエラー:', error);
-          res.status(500).json({ success: false, error: '書籍の追加中にデータベースエラーが発生しました。' });
-        });
-      }
+      res.status(201).json({ success: true, message: '読書記録が追加されました。', entryId: result.insertId });
     });
   });
 });
@@ -1747,124 +1798,97 @@ app.put('/api/reading/books/:bookId', authenticateToken, upload.single('image'),
   });
 });
 
-// 本を削除
-app.delete('/api/reading/books/:bookId', authenticateToken, (req, res) => {
+// アニメデータの削除API
+// IDを指定して、特定のアニメデータを削除します
+app.delete('/api/anime-entries/:id', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
-  const { bookId } = req.params;
+  const entryId = req.params.id;
 
-  db.query('DELETE FROM reading_books WHERE id = ? AND user_id = ?', [bookId, userId], (err, result) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: '書籍の削除中にデータベースエラーが発生しました。' });
-    }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, error: '書籍が見つからないか、削除する権限がありません。' });
-    }
-    res.json({ success: true, message: '本が削除されました。' });
-  });
-});
+  // まず削除対象の画像ファイル名を取得（削除するため）
+  db.query('SELECT image_url, user_id FROM anime_entries WHERE id = ?', [entryId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: 'データベースエラー' });
+    if (results.length === 0) return res.status(404).json({ success: false, error: 'データが見つかりません' });
 
-// --- アニメ(Anime)関連API ---
+    // 他人のデータを勝手に消せないようにチェック
+    if (results[0].user_id !== userId) return res.status(403).json({ success: false, error: '権限がありません' });
 
-// アニメ一覧を取得
-app.get('/api/anime', authenticateToken, (req, res) => {
-  const { id: userId } = req.user;
+    const imageUrl = results[0].image_url;
 
-  db.query('SELECT * FROM anime_entries WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, results) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'アニメ一覧の取得中にデータベースエラーが発生しました。' });
-    }
-    res.json({ success: true, animeList: results });
-  });
-});
-
-// 新しいアニメを追加
-app.post('/api/anime', authenticateToken, upload.single('image'), (req, res) => {
-  const { id: userId } = req.user;
-  const { title, original_author, genre, synopsis, rating, review } = req.body;
-
-  if (!title) {
-    return res.status(400).json({ success: false, error: 'タイトルは必須です。' });
-  }
-
-  const newAnime = {
-    user_id: userId,
-    title,
-    original_author: original_author || null,
-    genre: genre || null,
-    synopsis: synopsis || null,
-    rating: rating ? parseInt(rating, 10) : null,
-    review: review || null,
-    image_url: req.file ? `/uploads/${req.file.filename}` : null
-  };
-
-  db.query('INSERT INTO anime_entries SET ?', newAnime, (err, result) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'アニメの追加中にデータベースエラーが発生しました。' });
-    }
-    res.status(201).json({ success: true, message: 'アニメが追加されました。', anime: { id: result.insertId, ...newAnime } });
-  });
-});
-
-// アニメ情報を更新
-app.put('/api/anime/:animeId', authenticateToken, upload.single('image'), (req, res) => {
-  const { id: userId } = req.user;
-  const { animeId } = req.params;
-  const { title, original_author, genre, synopsis, rating, review } = req.body;
-
-  const fieldsToUpdate = {};
-  if (title) fieldsToUpdate.title = title;
-  if ('original_author' in req.body) fieldsToUpdate.original_author = original_author || null;
-  if ('genre' in req.body) fieldsToUpdate.genre = genre || null;
-  if ('synopsis' in req.body) fieldsToUpdate.synopsis = synopsis || null;
-  if ('rating' in req.body) fieldsToUpdate.rating = rating ? parseInt(rating, 10) : null;
-  if ('review' in req.body) fieldsToUpdate.review = review || null;
-  if (req.file) fieldsToUpdate.image_url = `/uploads/${req.file.filename}`;
-
-  if (Object.keys(fieldsToUpdate).length === 0) {
-    return res.status(400).json({ success: false, error: '更新するフィールドがありません。' });
-  }
-
-  db.query('UPDATE anime_entries SET ? WHERE id = ? AND user_id = ?', [fieldsToUpdate, animeId, userId], (err, result) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'アニメの更新中にデータベースエラーが発生しました。' });
-    }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, error: 'アニメが見つからないか、更新する権限がありません。' });
-    }
-
-    // 更新後のデータを取得して返す（画像URLなどが更新されている場合があるため）
-    db.query('SELECT * FROM anime_entries WHERE id = ?', [animeId], (err, results) => {
-      if (!err && results.length > 0) {
-        res.json({ success: true, message: 'アニメ情報が更新されました。', anime: results[0] });
-      } else {
-        res.json({ success: true, message: 'アニメ情報が更新されました。' });
+    // データベースからレコードを削除
+    db.query('DELETE FROM anime_entries WHERE id = ?', [entryId], (err) => {
+      if (err) {
+        console.error('Error deleting anime entry:', err);
+        return res.status(500).json({ success: false, error: 'アニメの削除に失敗しました。' });
       }
+
+      // 画像ファイルがあれば、サーバーからも削除してディスク容量を節約
+      if (imageUrl) {
+        const imagePath = path.join(__dirname, imageUrl);
+        fs.unlink(imagePath, (err) => {
+          if (err) console.error('Failed to delete image file:', err);
+        });
+      }
+
+      res.json({ success: true, message: 'アニメが削除されました。' });
     });
   });
 });
 
-// アニメを削除
-app.delete('/api/anime/:animeId', authenticateToken, (req, res) => {
-  const { id: userId } = req.user;
-  const { animeId } = req.params;
+// --- バックアップと復元 (Backup & Restore) ---
 
-  db.query('DELETE FROM anime_entries WHERE id = ? AND user_id = ?', [animeId, userId], (err, result) => {
+// 共通のエクスポート（バックアップ作成）処理を行う関数
+// 指定されたテーブルのデータをCSV形式に変換してダウンロードさせます
+// 複数のテーブル（hobby, reading, music, anime）で同じロジックを使うため共通化
+const handleExport = (req, res, tableName, filenamePrefix) => {
+  const { id: userId } = req.user;
+
+  // 指定されたテーブルから、このユーザーの全データを取得
+  const query = `SELECT * FROM ${tableName} WHERE user_id = ?`;
+
+  db.query(query, [userId], (err, results) => {
     if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'アニメの削除中にデータベースエラーが発生しました。' });
+      console.error(`Export error for ${tableName}:`, err);
+      return res.status(500).json({ success: false, error: 'データのエクスポートに失敗しました。' });
     }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, error: 'アニメが見つからないか、削除する権限がありません。' });
+
+    // CSV形式のヘッダー行を作成（キーのリスト）
+    // JSON形式の結果が空の場合は空のCSVを返す回避策が必要だが、ここでは簡易的に実装
+    if (results.length === 0) {
+      // データがない場合は空の配列を返す（フロントエンドで処理）
+      return res.json({ success: true, data: [] });
     }
-    res.json({ success: true, message: 'アニメが削除されました。' });
+
+    // json2csvライブラリなどが本来は便利だが、手動でJSONをCSV文字列に変換する場合：
+    // 今回はフロントエンド側でJSONを受け取ってファイル保存する形を想定しているため
+    // そのままJSONデータを返却します。
+    // （もしファイルとして直接ダウンロードさせるなら res.attachment() などを使う）
+    res.json({ success: true, data: results });
   });
+};
+
+// ゲーム記録のバックアップ
+app.get('/api/backup/games', authenticateToken, (req, res) => {
+  handleExport(req, res, 'played_games', 'games_backup');
 });
 
+// 読書記録のバックアップ
+// 読書記録は reading_books テーブル（または reading_entries）と reading_authors テーブルに分かれている場合があるため注意
+// ここでは reading_entries を対象とします
+app.get('/api/backup/reading', authenticateToken, (req, res) => {
+  handleExport(req, res, 'reading_entries', 'reading_backup');
+});
 
+// 音楽設定のバックアップ
+// music_preferences と music_songs の両方が必要になる可能性があります
+// ここでは music_preferences (ジャンル/アーティスト設定) をエクスポート
+app.get('/api/backup/music', authenticateToken, (req, res) => {
+  handleExport(req, res, 'music_preferences', 'music_backup');
+});
+
+// アニメ記録のバックアップ
+app.get('/api/backup/anime', authenticateToken, (req, res) => {
+  handleExport(req, res, 'anime_entries', 'anime_backup');
+});
 
 app.post('/api/portfolios', authenticateToken, (req, res) => {
   try {
@@ -3583,181 +3607,13 @@ app.post('/api/backup/anime/import', authenticateToken, async (req, res) => {
 });
 
 
-// --- メンテナンス関連API ---
 
-// メンテナンステーブル作成（初回実行時）
-db.query(`
-  CREATE TABLE IF NOT EXISTS maintenance_settings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    is_maintenance_mode BOOLEAN DEFAULT FALSE,
-    maintenance_message TEXT,
-    scheduled_end DATETIME,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-  )
-`, (err) => {
-  if (err) {
-    console.error('メンテナンステーブル作成エラー:', err);
-  } else {
-    // 初期レコードを挿入（存在しない場合のみ）
-    db.query('SELECT COUNT(*) as count FROM maintenance_settings', (err, results) => {
-      if (!err && results[0].count === 0) {
-        db.query(
-          'INSERT INTO maintenance_settings (is_maintenance_mode, maintenance_message) VALUES (?, ?)',
-          [false, 'システムメンテナンス中です。しばらくお待ちください。']
-        );
-      }
-    });
-  }
-});
-
-// メンテナンスモード状態取得API（認証不要）
-app.get('/api/maintenance-status', (req, res) => {
-  db.query('SELECT is_maintenance_mode, maintenance_message, scheduled_end FROM maintenance_settings LIMIT 1', (err, results) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
-    }
-
-    if (results.length === 0) {
-      return res.json({ success: true, isMaintenanceMode: false });
-    }
-
-    res.json({
-      success: true,
-      isMaintenanceMode: results[0].is_maintenance_mode,
-      maintenanceMessage: results[0].maintenance_message,
-      scheduledEnd: results[0].scheduled_end
-    });
-  });
-});
-
-// メンテナンスモード設定API（管理者用）
-app.post('/api/admin/maintenance-mode', authenticateAdmin, (req, res) => {
-  const { isMaintenanceMode, maintenanceMessage, scheduledEnd } = req.body;
-
-  // 簡易的な管理者チェック（本番環境では適切な権限管理を実装）
-  // ここでは例として、特定のユーザーIDを管理者とする
-  // 実際の実装では、usersテーブルにis_adminカラムを追加することを推奨
-
-  const updateData = {
-    is_maintenance_mode: isMaintenanceMode
-  };
-
-  if (maintenanceMessage !== undefined) {
-    updateData.maintenance_message = maintenanceMessage;
-  }
-
-  if (scheduledEnd !== undefined) {
-    updateData.scheduled_end = scheduledEnd;
-  }
-
-  db.query('UPDATE maintenance_settings SET ? WHERE id = 1', [updateData], (err, result) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
-    }
-
-    res.json({ success: true, message: 'メンテナンスモードが更新されました' });
-  });
-});
-
-// メンテナンス通知送信API（管理者用）
-app.post('/api/admin/send-maintenance-notification', authenticateAdmin, async (req, res) => {
-  const { subject, message, scheduledEnd } = req.body;
-
-  if (!message) {
-    return res.status(400).json({ success: false, error: 'メッセージは必須です' });
-  }
-
-  try {
-    const { sendMaintenanceNotification } = require('./config/email');
-
-    // メンテナンス情報を受け取る設定のユーザーを取得
-    db.query(
-      'SELECT email FROM users WHERE maintenance_info = 1',
-      async (err, results) => {
-        if (err) {
-          console.error('データベースエラー:', err);
-          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
-        }
-
-        let sentCount = 0;
-        const errors = [];
-
-        for (const user of results) {
-          try {
-            await sendMaintenanceNotification(user.email, subject, message, scheduledEnd);
-            sentCount++;
-          } catch (error) {
-            console.error(`${user.email}への送信失敗:`, error);
-            errors.push(user.email);
-          }
-        }
-
-        res.json({
-          success: true,
-          message: `メンテナンス通知を${sentCount}件送信しました`,
-          sentCount,
-          failedEmails: errors
-        });
-      }
-    );
-  } catch (error) {
-    console.error('メール送信エラー:', error);
-    res.status(500).json({ success: false, error: 'メール送信中にエラーが発生しました' });
-  }
-});
-
-// 新機能通知送信API（管理者用）
-app.post('/api/admin/send-feature-notification', authenticateAdmin, async (req, res) => {
-  const { subject, message } = req.body;
-
-  if (!message) {
-    return res.status(400).json({ success: false, error: 'メッセージは必須です' });
-  }
-
-  try {
-    const { sendFeatureNotification } = require('./config/email');
-
-    // 新機能のお知らせを受け取る設定のユーザーを取得
-    db.query(
-      'SELECT email FROM users WHERE feature_announcements = 1',
-      async (err, results) => {
-        if (err) {
-          console.error('データベースエラー:', err);
-          return res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
-        }
-
-        let sentCount = 0;
-        const errors = [];
-
-        for (const user of results) {
-          try {
-            await sendFeatureNotification(user.email, subject, message);
-            sentCount++;
-          } catch (error) {
-            console.error(`${user.email}への送信失敗:`, error);
-            errors.push(user.email);
-          }
-        }
-
-        res.json({
-          success: true,
-          message: `新機能通知を${sentCount}件送信しました`,
-          sentCount,
-          failedEmails: errors
-        });
-      }
-    );
-  } catch (error) {
-    console.error('メール送信エラー:', error);
-    res.status(500).json({ success: false, error: 'メール送信中にエラーが発生しました' });
-  }
-});
-
-
-// サーバーの起動
+// サーバー起動
+// 指定されたポート（またはデフォルト5000番）でサーバーを待ち受け状態にします
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`サーバーがポート${PORT}で起動しました`);
+  console.log(`Database host: ${process.env.DB_HOST}`);
 });
+
+

@@ -32,7 +32,7 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
         fetch('http://localhost:5000/api/hobbies', { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch('http://localhost:5000/api/played-games', { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch('http://localhost:5000/api/user-music-preferences', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('http://localhost:5000/api/reading/books', { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch('http://localhost:5000/api/reading-entries', { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
       // 1. 一般的な趣味データの処理
@@ -80,7 +80,7 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
         const readingRes = results[3].value;
         const readingData = await readingRes.json();
         if (readingData.success) {
-          setReadingBooksCount(readingData.books.length);
+          setReadingBooksCount(readingData.entries.length);
         } else {
           console.error(readingData.error || 'Failed to fetch reading books');
         }
