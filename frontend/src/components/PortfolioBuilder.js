@@ -25,14 +25,14 @@ export default function PortfolioBuilder({ theme }) {
       if (token) {
         try {
           const response = await fetch('http://localhost:5000/api/user/portfolio', {
-            headers: { 'Authorization': `Bearer ${token} ` },
+            headers: { 'Authorization': `Bearer ${token}` },
           });
 
           if (response.ok) {
             const data = await response.json();
             if (data.success) {
               // 既にポートフォリオが存在する場合は、そのポートフォリオページに移動（リダイレクト）
-              navigate(`/ portfolio / ${data.portfolioId} `);
+              navigate(`/portfolio/${data.portfolioId}`);
             }
           }
         } catch (error) {
@@ -70,7 +70,7 @@ export default function PortfolioBuilder({ theme }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token} `,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ title: portfolioTitle, template: selectedTemplate }),
       });
@@ -80,9 +80,9 @@ export default function PortfolioBuilder({ theme }) {
       if (data.success) {
         // 作成成功：アラートを表示して、作成されたポートフォリオページへ移動
         alert(t('portfolio_creation_success', { title: portfolioTitle, template: selectedTemplate }));
-        navigate(`/ portfolio / ${data.portfolio.id} `);
+        navigate(`/portfolio/${data.portfolio.id}`);
       } else {
-        alert(`Error: ${data.error} `);
+        alert(`Error: ${data.error}`);
       }
     } catch (error) {
       console.error('Failed to create portfolio:', error);
@@ -91,7 +91,7 @@ export default function PortfolioBuilder({ theme }) {
   };
 
   return (
-    <div className={`portfolio - builder - container ${theme} -theme ${selectedTemplate ? `template-${selectedTemplate}` : ''} `}>
+    <div className={`portfolio-builder-container ${theme}-theme ${selectedTemplate ? `template-${selectedTemplate}` : ''}`}>
       <div className="portfolio-builder-content">
         <h1 className="portfolio-builder-title">{t('portfolio_builder_title')}</h1>
         <p className="portfolio-builder-subtitle">{t('portfolio_builder_subtitle')}</p>
@@ -112,7 +112,7 @@ export default function PortfolioBuilder({ theme }) {
             <label>{t('template_selection_label')}</label>
             <div className="template-options">
               <div
-                className={`template - card ${selectedTemplate === 'modern' ? 'selected' : ''} `}
+                className={`template-card ${selectedTemplate === 'modern' ? 'selected' : ''}`}
                 onClick={() => setSelectedTemplate('modern')}
               >
                 <img src={modernTemplate} alt={t('template_modern_title')} className="template-preview" />
@@ -120,7 +120,7 @@ export default function PortfolioBuilder({ theme }) {
                 <p>{t('template_modern_desc')}</p>
               </div>
               <div
-                className={`template - card ${selectedTemplate === 'classic' ? 'selected' : ''} `}
+                className={`template-card ${selectedTemplate === 'classic' ? 'selected' : ''}`}
                 onClick={() => setSelectedTemplate('classic')}
               >
                 <img src={classicTemplate} alt={t('template_classic_title')} className="template-preview" />
@@ -128,7 +128,7 @@ export default function PortfolioBuilder({ theme }) {
                 <p>{t('template_classic_desc')}</p>
               </div>
               <div
-                className={`template - card ${selectedTemplate === 'minimalist' ? 'selected' : ''} `}
+                className={`template-card ${selectedTemplate === 'minimalist' ? 'selected' : ''}`}
                 onClick={() => setSelectedTemplate('minimalist')}
               >
                 <img src={minimalistTemplate} alt={t('template_minimalist_title')} className="template-preview" />
