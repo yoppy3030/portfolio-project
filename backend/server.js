@@ -3049,6 +3049,257 @@ app.post('/api/reset-password', async (req, res) => {
     res.status(500).json({ success: false, error: 'サーバーエラーが発生しました。' });
   }
 });
+// --- 読書管理機能関連API ---
+
+// 著者の取得
+app.get('/api/reading/authors', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  db.query('SELECT * FROM reading_authors WHERE user_id = ? ORDER BY id DESC', [userId], (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+    res.json({ success: true, authors: results });
+  });
+});
+
+// 著者の追加
+app.post('/api/reading/authors', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ success: false, error: '著者名は必須です。' });
+
+  db.query('INSERT INTO reading_authors (user_id, name) VALUES (?, ?)', [userId, name], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+    res.json({ success: true, message: '著者が追加されました。' });
+  });
+});
+
+// 著者の削除
+app.delete('/api/reading/authors/:id', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { id: authorId } = req.params;
+
+  db.query('DELETE FROM reading_authors WHERE id = ? AND user_id = ?', [authorId, userId], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+    res.json({ success: true, message: '著者が削除されました。' });
+  });
+});
+
+// 本の取得
+app.get('/api/reading/books', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { author_id } = req.query;
+
+  let query = 'SELECT * FROM reading_books WHERE user_id = ?';
+  const params = [userId];
+
+  if (author_id) {
+    query += ' AND author_id = ?';
+    params.push(author_id);
+  }
+  query += ' ORDER BY display_order ASC, id DESC';
+
+  db.query(query, params, (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+    res.json({ success: true, books: results });
+  });
+});
+
+// 本の並び替え
+app.put('/api/reading/books/reorder', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+  const { books } = req.body; // [{ id, display_order }]
+
+  if (!books || !Array.isArray(books)) {
+    return res.status(400).json({ success: false, error: '無効なデータです。' });
+  }
+
+  try {
+    for (const book of books) {
+      await new Promise((resolve, reject) => {
+        db.query('UPDATE reading_books SET display_order = ? WHERE id = ? AND user_id = ?',
+          [book.display_order, book.id, userId], (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+      });
+    }
+    res.json({ success: true, message: '並び順が更新されました。' });
+  } catch (error) {
+    console.error('並び替えエラー:', error);
+    res.status(500).json({ success: false, error: '並び替え中にエラーが発生しました。' });
+  }
+});
+
+// 本の追加
+app.post('/api/reading/books', authenticateToken, upload.single('image'), (req, res) => {
+  const { id: userId } = req.user;
+  const { author_id, type, genre, title, comment, rating } = req.body;
+  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+
+  if (!author_id || !title) {
+    return res.status(400).json({ success: false, error: '必須項目が不足しています。' });
+  }
+
+  db.query('SELECT MAX(display_order) as maxOrder FROM reading_books WHERE user_id = ? AND author_id = ?', [userId, author_id], (err, results) => {
+    const nextOrder = (results && results[0] && results[0].maxOrder !== null) ? results[0].maxOrder + 1 : 0;
+
+    const query = `
+      INSERT INTO reading_books 
+      (user_id, author_id, type, genre, title, comment, rating, image_url, display_order) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    db.query(query, [userId, author_id, type, genre, title, comment, rating, image_url, nextOrder], (err, result) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+      }
+      res.json({ success: true, message: '本が追加されました。' });
+    });
+  });
+});
+
+// 本の更新
+app.put('/api/reading/books/:id', authenticateToken, upload.single('image'), (req, res) => {
+  const { id: userId } = req.user;
+  const { id: bookId } = req.params;
+  const { type, genre, title, comment, rating } = req.body;
+
+  let updates = [];
+  let params = [];
+
+  if (type) { updates.push('type = ?'); params.push(type); }
+  if (genre) { updates.push('genre = ?'); params.push(genre); }
+  if (title) { updates.push('title = ?'); params.push(title); }
+  if (comment) { updates.push('comment = ?'); params.push(comment); }
+  if (rating) { updates.push('rating = ?'); params.push(rating); }
+  if (req.file) { updates.push('image_url = ?'); params.push(`/uploads/${req.file.filename}`); }
+
+  if (updates.length === 0) return res.status(400).json({ success: false, error: '更新データがありません。' });
+
+  params.push(bookId);
+  params.push(userId);
+
+  const query = `UPDATE reading_books SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`;
+
+  db.query(query, params, (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+    res.json({ success: true, message: '本が更新されました。' });
+  });
+});
+
+// 本の削除
+app.delete('/api/reading/books/:id', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { id: bookId } = req.params;
+
+  db.query('DELETE FROM reading_books WHERE id = ? AND user_id = ?', [bookId, userId], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+    res.json({ success: true, message: '本が削除されました。' });
+  });
+});
+
+
+// --- アニメ管理機能関連API ---
+
+// アニメの取得
+app.get('/api/anime', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  db.query('SELECT * FROM anime_entries WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+    res.json({ success: true, animeList: results });
+  });
+});
+
+// アニメの追加
+app.post('/api/anime', authenticateToken, upload.single('image'), (req, res) => {
+  const { id: userId } = req.user;
+  const { title, original_author, genre, synopsis, rating, review } = req.body;
+  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+
+  if (!title) {
+    return res.status(400).json({ success: false, error: 'タイトルは必須です。' });
+  }
+
+  const query = `
+    INSERT INTO anime_entries 
+    (user_id, title, original_author, genre, synopsis, rating, review, image_url) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+  db.query(query, [userId, title, original_author, genre, synopsis, rating, review, image_url], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+    res.json({ success: true, message: 'アニメが追加されました。' });
+  });
+});
+
+// アニメの更新
+app.put('/api/anime/:id', authenticateToken, upload.single('image'), (req, res) => {
+  const { id: userId } = req.user;
+  const { id: animeId } = req.params;
+  const { title, original_author, genre, synopsis, rating, review } = req.body;
+
+  let updates = [];
+  let params = [];
+
+  if (title) { updates.push('title = ?'); params.push(title); }
+  if (original_author) { updates.push('original_author = ?'); params.push(original_author); }
+  if (genre) { updates.push('genre = ?'); params.push(genre); }
+  if (synopsis) { updates.push('synopsis = ?'); params.push(synopsis); }
+  if (rating) { updates.push('rating = ?'); params.push(rating); }
+  if (review) { updates.push('review = ?'); params.push(review); }
+  if (req.file) { updates.push('image_url = ?'); params.push(`/uploads/${req.file.filename}`); }
+
+  if (updates.length === 0) return res.status(400).json({ success: false, error: '更新データがありません。' });
+
+  params.push(animeId);
+  params.push(userId);
+
+  const query = `UPDATE anime_entries SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`;
+  db.query(query, params, (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+    res.json({ success: true, message: 'アニメが更新されました。' });
+  });
+});
+
+// アニメの削除
+app.delete('/api/anime/:id', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { id: animeId } = req.params;
+
+  db.query('DELETE FROM anime_entries WHERE id = ? AND user_id = ?', [animeId, userId], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+    res.json({ success: true, message: 'アニメが削除されました。' });
+  });
+});
+
 // --- バックアップ機能関連API ---
 
 // 1. ゲームのバックアップ
