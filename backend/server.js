@@ -2390,18 +2390,18 @@ app.put('/api/portfolios/:portfolioId/projects/:projectId', authenticateToken, (
 
         // 2. Update the project itself
         const updatedProject = {
-          title: title || null,
-          description: description || null,
-          image_data: imageData || null,
-          background_color: backgroundColor || null,
-          text_color: textColor || null,
-          size: size || null,
-          content: content || null,
-          layout_w: layout_w,
-          layout_h: layout_h,
-          font_size: font_size || null,
-          background_image: background_image || null,
-          background_position: background_position || null,
+          title: title !== undefined ? title : undefined,
+          description: description !== undefined ? description : undefined,
+          image_data: imageData !== undefined ? imageData : undefined,
+          background_color: backgroundColor !== undefined ? backgroundColor : undefined,
+          text_color: textColor !== undefined ? textColor : undefined,
+          size: size !== undefined ? size : undefined,
+          content: content !== undefined ? content : undefined,
+          layout_w: layout_w !== undefined ? layout_w : undefined,
+          layout_h: layout_h !== undefined ? layout_h : undefined,
+          font_size: font_size !== undefined ? font_size : undefined,
+          background_image: background_image !== undefined ? background_image : undefined,
+          background_position: background_position !== undefined ? background_position : undefined,
         };
         // Remove undefined properties so they don't null out existing values
         Object.keys(updatedProject).forEach(key => updatedProject[key] === undefined && delete updatedProject[key]);
@@ -3857,6 +3857,88 @@ app.post('/api/backup/anime/import', authenticateToken, async (req, res) => {
   });
 });
 
+
+
+// --- システム管理 (Maintenance & Notifications) ---
+
+// メンテナンス状態の取得 (Public)
+app.get('/api/maintenance-status', (req, res) => {
+  db.query('SELECT maintenance_mode, maintenance_message, scheduled_end_time FROM system_settings WHERE id = 1', (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      // エラー時はメンテナンスモードではないと仮定、またはエラーを返す
+      return res.json({ success: false, error: 'Database error' });
+    }
+    if (results.length > 0) {
+      const settings = results[0];
+      res.json({
+        success: true,
+        isMaintenanceMode: settings.maintenance_mode === 1, // Boolean変換
+        maintenanceMessage: settings.maintenance_message,
+        scheduledEnd: settings.scheduled_end_time
+      });
+    } else {
+      // レコードがない場合
+      res.json({ success: true, isMaintenanceMode: false });
+    }
+  });
+});
+
+// メンテナンスモード設定の更新 (Admin Only)
+app.post('/api/admin/maintenance-mode', authenticateToken, (req, res) => {
+  const { id: userId, email } = req.user;
+  const { isMaintenanceMode, maintenanceMessage, scheduledEnd } = req.body;
+
+  // 簡易的な管理者チェック (実際の運用ではロール管理を推奨)
+  if (email !== 'test.example3030@gmail.com') {
+    return res.status(403).json({ success: false, error: '権限がありません。' });
+  }
+
+  const query = `
+    UPDATE system_settings
+    SET maintenance_mode = ?, maintenance_message = ?, scheduled_end_time = ?
+    WHERE id = 1
+  `;
+
+  db.query(query, [isMaintenanceMode, maintenanceMessage, scheduledEnd], (err, result) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ success: false, error: '更新に失敗しました。' });
+    }
+    res.json({ success: true, message: 'メンテナンスモードが更新されました。' });
+  });
+});
+
+// メンテナンス通知の送信 (Admin Only)
+app.post('/api/admin/send-maintenance-notification', authenticateToken, (req, res) => {
+  const { email } = req.user;
+  const { subject, message, scheduledEnd } = req.body;
+
+  if (email !== 'test.example3030@gmail.com') {
+    return res.status(403).json({ success: false, error: '権限がありません。' });
+  }
+
+  // ここで実際にメール送信処理を行う (Nodemailerなどを使用)
+  // 今回はモックとしてログ出力のみ
+  console.log(`[Email Sending] Type: Maintenance, Subject: ${subject}, Message: ${message}, End: ${scheduledEnd}`);
+
+  // 成功を返す
+  res.json({ success: true, message: 'メンテナンス通知を送信しました（シミュレーション）。' });
+});
+
+// 新機能通知の送信 (Admin Only)
+app.post('/api/admin/send-feature-notification', authenticateToken, (req, res) => {
+  const { email } = req.user;
+  const { subject, message } = req.body;
+
+  if (email !== 'test.example3030@gmail.com') {
+    return res.status(403).json({ success: false, error: '権限がありません。' });
+  }
+
+  console.log(`[Email Sending] Type: Feature, Subject: ${subject}, Message: ${message}`);
+
+  res.json({ success: true, message: '新機能通知を送信しました（シミュレーション）。' });
+});
 
 
 // サーバー起動

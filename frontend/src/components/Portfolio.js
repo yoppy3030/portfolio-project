@@ -30,7 +30,7 @@ function AddProjectModal({ on_close, on_submit, t }) {
   // fontSize: 文字サイズ。CSSの単位付き（16pxなど）で指定可能。
   const [fontSize, setFontSize] = useState('');
   // size: カードのサイズカテゴリ（small, medium, large）。レイアウト時の幅・高さに影響。
-  const [size, setSize] = useState('medium');
+  const [size] = useState('medium');
   // tags: 選択されたタグの配列（dashboard, learning, school, other）。
   const [tags, setTags] = useState([]);
   // backgroundImage: 背景画像のURL。サーバー上のパスまたは外部URL。
@@ -222,7 +222,6 @@ function EditProjectModal({ project, on_close, on_submit, t }) {
   const [backgroundColor, setBackgroundColor] = useState(project.background_color || '#ffffff');
   const [textColor, setTextColor] = useState(project.text_color || '#000000');
   const [fontSize, setFontSize] = useState(project.font_size || '');
-  const [size, setSize] = useState(project.size || 'medium');
   const [tags, setTags] = useState(project.tags || []);
   const [backgroundImage, setBackgroundImage] = useState(project.background_image || '');
   // 背景画像がURL入力かアップロードかを判定するためのステート
@@ -246,7 +245,6 @@ function EditProjectModal({ project, on_close, on_submit, t }) {
     setBackgroundColor(project.background_color || '#ffffff');
     setTextColor(project.text_color || '#000000');
     setFontSize(project.font_size || '');
-    setSize(project.size || 'medium');
     setTags(project.tags || []);
     setBackgroundImage(project.background_image || '');
 
@@ -400,6 +398,14 @@ function AddTextModal({ on_close, on_submit, t }) {
   const [content, setContent] = useState(''); // テキスト内容
   const [backgroundColor, setBackgroundColor] = useState('#ffffff'); // 背景色
   const [textColor, setTextColor] = useState('#000000'); // 文字色
+  const [fontSize, setFontSize] = useState(''); // 文字サイズ
+  const [backgroundImage, setBackgroundImage] = useState(''); // 背景画像URL
+
+  // 背景画像の入力モード管理
+  const [bgInputMethod, setBgInputMethod] = useState('url');
+  const [bgFile, setBgFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
 
   // モーダル表示中は背景スクロールを無効化
   useEffect(() => {
@@ -409,16 +415,65 @@ function AddTextModal({ on_close, on_submit, t }) {
     };
   }, []);
 
+  const handleBgFileChange = (e) => {
+    setBgFile(e.target.files[0]);
+    setBackgroundImage(''); // ファイルが選択されたら画像URLをクリア
+    setBackgroundColor(''); // 画像ファイルが選択されたら背景色をクリア
+  };
+
   // 追加ボタンが押された時の処理
-  const handleTextSubmit = (e) => {
+  const handleTextSubmit = async (e) => {
     e.preventDefault();
-    // 空文字チェック（空白のみも不可）
     if (!content.trim()) {
       alert(t('portfolio_alert_text_content_required'));
       return;
     }
+    setError('');
+
+    let finalBackgroundImage = backgroundImage;
+    let finalBackgroundColor = backgroundColor;
+
+    // 画像アップロード処理
+    if (bgInputMethod === 'upload' && bgFile) {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('file', bgFile);
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      try {
+        const uploadRes = await fetch('http://localhost:5000/api/upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          finalBackgroundImage = `http://localhost:5000${uploadData.filePath}`;
+          finalBackgroundColor = '';
+        } else {
+          throw new Error(uploadData.error || t('portfolio_alert_bg_upload_failed'));
+        }
+      } catch (err) {
+        setError(err.message);
+        setUploading(false);
+        return;
+      } finally {
+        setUploading(false);
+      }
+    } else if (backgroundImage) {
+      finalBackgroundColor = '';
+    } else if (backgroundColor) {
+      finalBackgroundImage = '';
+    }
+
     // テキストタイプとしてデータを送信
-    on_submit({ content, backgroundColor, textColor, type: 'text' });
+    on_submit({
+      content,
+      backgroundColor: finalBackgroundColor,
+      textColor,
+      font_size: fontSize,
+      background_image: finalBackgroundImage,
+      type: 'text'
+    });
   };
 
   return (
@@ -430,10 +485,12 @@ function AddTextModal({ on_close, on_submit, t }) {
             <label htmlFor="text-content">{t('portfolio_label_text_content')}</label>
             <textarea id="text-content" value={content} onChange={(e) => setContent(e.target.value)} rows="5" />
           </div>
+
+          <h4>{t('portfolio_label_style')}</h4>
           <div className="form-group">
             <label htmlFor="text-bg-color">{t('portfolio_label_background_color')}</label>
             <div className="color-picker-wrapper" style={{ backgroundColor: backgroundColor }}>
-              <input id="text-bg-color" type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+              <input id="text-bg-color" type="color" value={backgroundColor} onChange={(e) => { setBackgroundColor(e.target.value); setBackgroundImage(''); setBgFile(null); }} />
             </div>
           </div>
           <div className="form-group">
@@ -442,8 +499,27 @@ function AddTextModal({ on_close, on_submit, t }) {
               <input id="text-color" type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
             </div>
           </div>
+          <div className="form-group">
+            <label>{t('portfolio_label_font_size')}</label>
+            <input type="text" value={fontSize || ''} onChange={(e) => setFontSize(e.target.value)} placeholder="例: 18px" />
+          </div>
+          <div className="form-group">
+            <label>{t('portfolio_label_background_image')}</label>
+            <div className="input-method-toggle">
+              <button type="button" onClick={() => setBgInputMethod('url')} className={bgInputMethod === 'url' ? 'active' : ''}>{t('portfolio_label_url')}</button>
+              <button type="button" onClick={() => setBgInputMethod('upload')} className={bgInputMethod === 'upload' ? 'active' : ''}>{t('portfolio_label_upload')}</button>
+            </div>
+            {bgInputMethod === 'upload' ? (
+              <input type="file" onChange={handleBgFileChange} accept="image/*" />
+            ) : (
+              <input type="text" value={backgroundImage || ''} onChange={(e) => { setBackgroundImage(e.target.value); setBackgroundColor(''); }} placeholder={t('portfolio_placeholder_bg_image_url')} />
+            )}
+          </div>
+
+          {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
+
           <div className="form-actions">
-            <button type="submit" className="btn-primary">{t('portfolio_add_text_button')}</button>
+            <button type="submit" className="btn-primary" disabled={uploading}>{uploading ? t('portfolio_uploading') : t('portfolio_add_text_button')}</button>
             <button type="button" className="btn-secondary" onClick={on_close}>{t('portfolio_cancel_button')}</button>
           </div>
         </form>
