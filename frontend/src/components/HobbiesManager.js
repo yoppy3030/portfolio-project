@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import MusicAppreciationManager from './MusicAppreciationManager';
 import GameLibraryModal from './GameLibraryModal';
+
 import ReadingHobbyModal from './ReadingHobbyModal';
+import AnimeHobbyModal from './AnimeHobbyModal';
 import './HobbiesDisplay.css';
 
 /**
@@ -27,7 +29,10 @@ function HobbiesManager({ isOwner }) {
   // ゲーム用モーダルを表示するかどうかのフラグ
   const [showGameLibrary, setShowGameLibrary] = useState(false);
   // 読書用モーダルを表示するかどうかのフラグ
+  // 読書用モーダルを表示するかどうかのフラグ
   const [showReadingModal, setShowReadingModal] = useState(false);
+  // アニメ用モーダルを表示するかどうかのフラグ
+  const [showAnimeModal, setShowAnimeModal] = useState(false);
 
   // 趣味リストをサーバーから取得する関数
   // useCallbackを使って関数をメモ化（再レンダリング時の無駄な再生成を防ぐ）
@@ -156,6 +161,11 @@ function HobbiesManager({ isOwner }) {
                       {t('hobbies.manageReadingButton')}
                     </button>
                   )}
+                  {hobby.name === 'アニメ' && (
+                    <button onClick={() => setShowAnimeModal(true)} className="btn-secondary-outline">
+                      {t('anime.manageButton')}
+                    </button>
+                  )}
                   <button onClick={() => handleDeleteHobby(hobby.id)} className="btn-danger-outline">
                     {t('hobbies_delete_button')}
                   </button>
@@ -189,6 +199,14 @@ function HobbiesManager({ isOwner }) {
         <ReadingHobbyModal
           isOwner={isOwner}
           onClose={() => setShowReadingModal(false)}
+        />
+      )}
+
+      {/* アニメ管理モーダルの表示 */}
+      {showAnimeModal && (
+        <AnimeHobbyModal
+          isOwner={isOwner}
+          onClose={() => setShowAnimeModal(false)}
         />
       )}
     </div>

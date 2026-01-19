@@ -1483,32 +1483,6 @@ app.delete('/api/played-games/:playedGameId', authenticateToken, (req, res) => {
   });
 });
 
-// --- 読書(Reading)関連API ---
-
-// 読書関連テーブルのSQLスキーマ (要実行)
-// CREATE TABLE reading_authors (
-//   id INT AUTO_INCREMENT PRIMARY KEY,
-//   user_id INT NOT NULL,
-//   name VARCHAR(255) NOT NULL,
-//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-//   UNIQUE KEY user_author (user_id, name)
-// );
-//
-// CREATE TABLE reading_books (
-//   id INT AUTO_INCREMENT PRIMARY KEY,
-//   user_id INT NOT NULL,
-//   author_id INT NOT NULL,
-//   type VARCHAR(50) NOT NULL,
-//   genre VARCHAR(100),
-//   title VARCHAR(255) NOT NULL,
-//   image_url VARCHAR(2083),
-//   comment TEXT,
-//   rating INT,
-//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-//   FOREIGN KEY (author_id) REFERENCES reading_authors(id) ON DELETE CASCADE
-// );
 
 // ユーザーの登録作家リストを取得
 app.get('/api/reading/authors', authenticateToken, (req, res) => {
@@ -1790,20 +1764,108 @@ app.delete('/api/reading/books/:bookId', authenticateToken, (req, res) => {
   });
 });
 
+// --- アニメ(Anime)関連API ---
+
+// アニメ一覧を取得
+app.get('/api/anime', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+
+  db.query('SELECT * FROM anime_entries WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'アニメ一覧の取得中にデータベースエラーが発生しました。' });
+    }
+    res.json({ success: true, animeList: results });
+  });
+});
+
+// 新しいアニメを追加
+app.post('/api/anime', authenticateToken, upload.single('image'), (req, res) => {
+  const { id: userId } = req.user;
+  const { title, original_author, genre, synopsis, rating, review } = req.body;
+
+  if (!title) {
+    return res.status(400).json({ success: false, error: 'タイトルは必須です。' });
+  }
+
+  const newAnime = {
+    user_id: userId,
+    title,
+    original_author: original_author || null,
+    genre: genre || null,
+    synopsis: synopsis || null,
+    rating: rating ? parseInt(rating, 10) : null,
+    review: review || null,
+    image_url: req.file ? `/uploads/${req.file.filename}` : null
+  };
+
+  db.query('INSERT INTO anime_entries SET ?', newAnime, (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'アニメの追加中にデータベースエラーが発生しました。' });
+    }
+    res.status(201).json({ success: true, message: 'アニメが追加されました。', anime: { id: result.insertId, ...newAnime } });
+  });
+});
+
+// アニメ情報を更新
+app.put('/api/anime/:animeId', authenticateToken, upload.single('image'), (req, res) => {
+  const { id: userId } = req.user;
+  const { animeId } = req.params;
+  const { title, original_author, genre, synopsis, rating, review } = req.body;
+
+  const fieldsToUpdate = {};
+  if (title) fieldsToUpdate.title = title;
+  if ('original_author' in req.body) fieldsToUpdate.original_author = original_author || null;
+  if ('genre' in req.body) fieldsToUpdate.genre = genre || null;
+  if ('synopsis' in req.body) fieldsToUpdate.synopsis = synopsis || null;
+  if ('rating' in req.body) fieldsToUpdate.rating = rating ? parseInt(rating, 10) : null;
+  if ('review' in req.body) fieldsToUpdate.review = review || null;
+  if (req.file) fieldsToUpdate.image_url = `/uploads/${req.file.filename}`;
+
+  if (Object.keys(fieldsToUpdate).length === 0) {
+    return res.status(400).json({ success: false, error: '更新するフィールドがありません。' });
+  }
+
+  db.query('UPDATE anime_entries SET ? WHERE id = ? AND user_id = ?', [fieldsToUpdate, animeId, userId], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'アニメの更新中にデータベースエラーが発生しました。' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: 'アニメが見つからないか、更新する権限がありません。' });
+    }
+
+    // 更新後のデータを取得して返す（画像URLなどが更新されている場合があるため）
+    db.query('SELECT * FROM anime_entries WHERE id = ?', [animeId], (err, results) => {
+      if (!err && results.length > 0) {
+        res.json({ success: true, message: 'アニメ情報が更新されました。', anime: results[0] });
+      } else {
+        res.json({ success: true, message: 'アニメ情報が更新されました。' });
+      }
+    });
+  });
+});
+
+// アニメを削除
+app.delete('/api/anime/:animeId', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { animeId } = req.params;
+
+  db.query('DELETE FROM anime_entries WHERE id = ? AND user_id = ?', [animeId, userId], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'アニメの削除中にデータベースエラーが発生しました。' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: 'アニメが見つからないか、削除する権限がありません。' });
+    }
+    res.json({ success: true, message: 'アニメが削除されました。' });
+  });
+});
 
 
 
-
-// 新規ポートフォリオ作成API
-// Required table schema for 'portfolios' table:
-// CREATE TABLE portfolios (
-//   id INT AUTO_INCREMENT PRIMARY KEY,
-//   user_id INT NOT NULL,
-//   title VARCHAR(255) NOT NULL,
-//   template VARCHAR(255) NOT NULL,
-//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-// );
 app.post('/api/portfolios', authenticateToken, (req, res) => {
   try {
     const { id: userId } = req.user;
@@ -2037,27 +2099,7 @@ app.delete('/api/portfolios/:portfolioId', authenticateToken, (req, res) => {
   }
 });
 
-// 新規プロジェクト追加API
-// Required table schema for 'projects' table:
-// CREATE TABLE projects (
-//   id INT AUTO_INCREMENT PRIMARY KEY,
-//   portfolio_id INT NOT NULL,
-//   title VARCHAR(255) NOT NULL,
-//   description TEXT,
-//   image_data LONGTEXT,
-//   background_color VARCHAR(7),
-//   project_url VARCHAR(2083),
-//   github_url VARCHAR(2083),
-//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//   FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE
-// );
-// NOTE FOR DATABASE MIGRATION:
-// The 'projects' table needs new columns for 'size' and 'text_color'.
-// Run the following SQL commands on your database:
-// ALTER TABLE projects ADD COLUMN size VARCHAR(20) NOT NULL DEFAULT 'medium';
-// ALTER TABLE projects ADD COLUMN text_color VARCHAR(7) DEFAULT '#000000';
-// ALTER TABLE projects ADD COLUMN font_size VARCHAR(50);
-// ALTER TABLE projects ADD COLUMN background_image VARCHAR(2083);
+
 app.post('/api/portfolios/:portfolioId/projects', authenticateToken, (req, res) => {
   const { portfolioId } = req.params;
   const { id: userId } = req.user;
@@ -2536,14 +2578,6 @@ app.put('/api/portfolios/:portfolioId/reorder-projects', authenticateToken, (req
     res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
   }
 });
-
-// NOTE FOR DATABASE MIGRATION:
-// The 'projects' table needs new columns for layout.
-// Run the following SQL commands on your database:
-// ALTER TABLE projects ADD COLUMN layout_x INT DEFAULT 0;
-// ALTER TABLE projects ADD COLUMN layout_y INT DEFAULT 0;
-// ALTER TABLE projects ADD COLUMN layout_w INT DEFAULT 1;
-// ALTER TABLE projects ADD COLUMN layout_h INT DEFAULT 1;
 
 // Update project layouts API
 app.put('/api/portfolios/:portfolioId/layout', authenticateToken, (req, res) => {
@@ -3441,6 +3475,100 @@ app.post('/api/backup/music/import', authenticateToken, async (req, res) => {
           }
           connection.release();
           res.json({ success: true, message: `インポート完了: 設定 ${importedPrefs}件, 曲 ${importedSongs}曲` });
+        });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          console.error('インポートエラー:', error);
+          res.status(500).json({ success: false, error: 'インポート中にエラーが発生しました。' });
+        });
+      }
+    });
+  });
+});
+
+// 4. アニメのバックアップ
+// エクスポート
+app.get('/api/backup/anime', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+
+  db.query('SELECT * FROM anime_entries WHERE user_id = ?', [userId], (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+    res.json({ success: true, animeData: results });
+  });
+});
+
+// インポート (Anime)
+app.post('/api/backup/anime/import', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+  const { animeData } = req.body;
+
+  if (!animeData || !Array.isArray(animeData)) {
+    return res.status(400).json({ success: false, error: '有効なアニメデータが必要です。' });
+  }
+
+  db.getConnection((err, connection) => {
+    if (err) return res.status(500).json({ success: false, error: 'データベース接続エラー' });
+
+    connection.beginTransaction(async (err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ success: false, error: 'トランザクション開始エラー' });
+      }
+
+      try {
+        let importedCount = 0;
+        let skippedCount = 0;
+
+        for (const item of animeData) {
+          // 重複チェック (タイトルが同じものはスキップとする)
+          const existing = await new Promise((resolve, reject) => {
+            connection.query('SELECT id FROM anime_entries WHERE user_id = ? AND title = ?', [userId, item.title], (err, results) => {
+              if (err) return reject(err);
+              resolve(results);
+            });
+          });
+
+          if (existing.length > 0) {
+            skippedCount++;
+            continue;
+          }
+
+          await new Promise((resolve, reject) => {
+            const data = {
+              user_id: userId,
+              title: item.title,
+              original_author: item.original_author,
+              genre: item.genre,
+              synopsis: item.synopsis,
+              rating: item.rating,
+              review: item.review,
+              image_url: item.image_url,
+              created_at: item.created_at ? new Date(item.created_at) : new Date()
+            };
+            // Remove undefined/null keys if necessary, but DB handles nulls usually
+
+            connection.query('INSERT INTO anime_entries SET ?', data, (err, res) => {
+              if (err) return reject(err);
+              resolve(res);
+            });
+          });
+          importedCount++;
+        }
+
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              res.status(500).json({ success: false, error: 'コミットエラー' });
+            });
+          }
+          connection.release();
+          res.json({ success: true, message: `インポート完了: ${importedCount}件 (スキップ: ${skippedCount}件)` });
         });
 
       } catch (error) {
