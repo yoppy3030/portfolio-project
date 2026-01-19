@@ -3,6 +3,7 @@ import './HobbiesDisplay.css';
 import GameLibraryModal from './GameLibraryModal';
 import MusicAppreciationDisplay from './MusicAppreciationDisplay';
 import ReadingHobbyDisplay from './ReadingHobbyDisplay'; // 新規作成するコンポーネント
+import AnimeHobbyDisplay from './AnimeHobbyDisplay';
 
 // ポートフォリオページで趣味・関心事を表示するコンポーネント
 function HobbiesDisplay({ isOwner, portfolioId }) {
@@ -11,10 +12,17 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
   const [playedGamesCount, setPlayedGamesCount] = useState(0); // 登録済みのゲーム数
   const [musicPreferencesCount, setMusicPreferencesCount] = useState(0); // 登録済みの音楽設定数
   const [readingBooksCount, setReadingBooksCount] = useState(0); // 登録済みの読書記録数
+  const [animeCount, setAnimeCount] = useState(0); // 登録済みのアニメ数
   const [selectedHobby, setSelectedHobby] = useState(null); // 現在選択（表示）されている趣味カテゴリ
   const [loading, setLoading] = useState(true); // 読み込み中フラグ
   const [error, setError] = useState(''); // エラーメッセージ
   const [isGameLibraryModalOpen, setGameLibraryModalOpen] = useState(false); // ゲームライブラリモーダルの表示状態
+
+  // 各種趣味が存在するかどうかのフラグ
+  const [hasGameHobby, setHasGameHobby] = useState(false);
+  const [hasMusicHobby, setHasMusicHobby] = useState(false);
+  const [hasReadingHobby, setHasReadingHobby] = useState(false);
+  const [hasAnimeHobby, setHasAnimeHobby] = useState(false);
 
   // サーバーから各種趣味データを取得する関数
   const fetchData = useCallback(async () => {
@@ -32,7 +40,8 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
         fetch('http://localhost:5000/api/hobbies', { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch('http://localhost:5000/api/played-games', { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch('http://localhost:5000/api/user-music-preferences', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('http://localhost:5000/api/reading-entries', { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch('http://localhost:5000/api/reading-entries', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('http://localhost:5000/api/anime', { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
       // 1. 一般的な趣味データの処理
@@ -40,8 +49,14 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
         const hobbiesRes = results[0].value;
         const hobbiesData = await hobbiesRes.json();
         if (hobbiesData.success) {
-          // 「音楽鑑賞」「ゲーム」「読書」は個別に管理するため、一般的な趣味リストからは除外
-          setHobbies(hobbiesData.hobbies.filter(h => h.name !== '音楽鑑賞' && h.name !== 'ゲーム' && h.name !== '読書'));
+          // 「音楽鑑賞」「ゲーム」「読書」「アニメ」が含まれているかチェック
+          setHasGameHobby(hobbiesData.hobbies.some(h => h.name === 'ゲーム'));
+          setHasMusicHobby(hobbiesData.hobbies.some(h => h.name === '音楽鑑賞'));
+          setHasReadingHobby(hobbiesData.hobbies.some(h => h.name === '読書'));
+          setHasAnimeHobby(hobbiesData.hobbies.some(h => h.name === 'アニメ'));
+
+          // 「音楽鑑賞」「ゲーム」「読書」「アニメ」は個別に管理するため、一般的な趣味リストからは除外
+          setHobbies(hobbiesData.hobbies.filter(h => h.name !== '音楽鑑賞' && h.name !== 'ゲーム' && h.name !== '読書' && h.name !== 'アニメ'));
         } else {
           console.error(hobbiesData.error || 'Failed to fetch hobbies');
         }
@@ -88,6 +103,19 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
         console.error('Reading fetch failed:', results[3].reason);
       }
 
+      // 5. アニメデータの処理
+      if (results[4].status === 'fulfilled') {
+        const animeRes = results[4].value;
+        const animeData = await animeRes.json();
+        if (animeData.success) {
+          setAnimeCount(animeData.animeList.length);
+        } else {
+          console.error(animeData.error || 'Failed to fetch anime list');
+        }
+      } else {
+        console.error('Anime fetch failed:', results[4].reason);
+      }
+
     } catch (err) {
       setError('データの読み込み中に予期せぬエラーが発生しました。');
       console.error(err);
@@ -115,7 +143,8 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
     fetchData();
   };
 
-  if (!loading && hobbies.length === 0 && playedGamesCount === 0 && musicPreferencesCount === 0 && readingBooksCount === 0) {
+  // 表示する項目が全くない場合は何も表示しない
+  if (!loading && hobbies.length === 0 && !hasGameHobby && !hasMusicHobby && !hasReadingHobby && !hasAnimeHobby) {
     return null;
   }
 
@@ -136,7 +165,7 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
             {hobby.name}
           </button>
         ))}
-        {playedGamesCount > 0 && (
+        {(playedGamesCount > 0 || hasGameHobby) && (
           <button
             className={`hobby-tag ${selectedHobby === 'ゲーム' ? 'active' : ''}`}
             onClick={() => handleHobbyClick('ゲーム')}
@@ -144,7 +173,7 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
             ゲーム
           </button>
         )}
-        {musicPreferencesCount > 0 && (
+        {(musicPreferencesCount > 0 || hasMusicHobby) && (
           <button
             className={`hobby-tag ${selectedHobby === '音楽鑑賞' ? 'active' : ''}`}
             onClick={() => handleHobbyClick('音楽鑑賞')}
@@ -152,12 +181,20 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
             音楽鑑賞
           </button>
         )}
-        {readingBooksCount > 0 && (
+        {(readingBooksCount > 0 || hasReadingHobby) && (
           <button
             className={`hobby-tag ${selectedHobby === '読書' ? 'active' : ''}`}
             onClick={() => handleHobbyClick('読書')}
           >
             読書
+          </button>
+        )}
+        {(animeCount > 0 || hasAnimeHobby) && (
+          <button
+            className={`hobby-tag ${selectedHobby === 'アニメ' ? 'active' : ''}`}
+            onClick={() => handleHobbyClick('アニメ')}
+          >
+            アニメ
           </button>
         )}
       </div>
@@ -179,6 +216,10 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
 
       {selectedHobby === '読書' && (
         <ReadingHobbyDisplay />
+      )}
+
+      {selectedHobby === 'アニメ' && (
+        <AnimeHobbyDisplay />
       )}
 
       {isGameLibraryModalOpen && <GameLibraryModal onClose={handleCloseModal} isOwner={isOwner} />}
