@@ -2061,56 +2061,85 @@ app.delete('/api/portfolios/:portfolioId', authenticateToken, (req, res) => {
         // 1. Verify ownership
         connection.query('SELECT id FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId], (err, results) => {
           if (err) {
+            console.error('DELETE PORTFOLIO: Error checking ownership', err);
             return connection.rollback(() => {
               connection.release();
-              console.error('データベースエラー:', err);
               res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
             });
           }
           if (results.length === 0) {
+            console.warn('DELETE PORTFOLIO: User does not own portfolio or it does not exist', { portfolioId, userId });
             return connection.rollback(() => {
               connection.release();
               res.status(403).json({ success: false, error: 'このポートフォリオを削除する権限がありません。' });
             });
           }
 
-          // 2. Delete associated projects
-          connection.query('DELETE FROM projects WHERE portfolio_id = ?', [portfolioId], (err, result) => {
+          console.log(`DELETE PORTFOLIO: Ownership verified for portfolio ${portfolioId}. Deleting tags...`);
+          // 2. Delete project tags
+          connection.query('DELETE FROM project_tags WHERE project_id IN (SELECT id FROM projects WHERE portfolio_id = ?)', [portfolioId], (err, result) => {
             if (err) {
+              console.error('DELETE PORTFOLIO: Error deleting project_tags', err);
               return connection.rollback(() => {
                 connection.release();
-                console.error('データベースエラー:', err);
-                res.status(500).json({ success: false, error: 'プロジェクトの削除中にエラーが発生しました。' });
+                res.status(500).json({ success: false, error: 'プロジェクトタグの削除中にエラーが発生しました。' });
               });
             }
+            console.log(`DELETE PORTFOLIO: Deleted tags. Deleting contents...`);
 
-            // 3. Delete the portfolio
-            connection.query('DELETE FROM portfolios WHERE id = ?', [portfolioId], (err, result) => {
+            // 3. Delete project contents
+            connection.query('DELETE FROM project_contents WHERE project_id IN (SELECT id FROM projects WHERE portfolio_id = ?)', [portfolioId], (err, result) => {
               if (err) {
+                console.error('DELETE PORTFOLIO: Error deleting project_contents', err);
                 return connection.rollback(() => {
                   connection.release();
-                  console.error('データベースエラー:', err);
-                  res.status(500).json({ success: false, error: 'ポートフォリオの削除中にエラーが発生しました。' });
+                  res.status(500).json({ success: false, error: 'プロジェクトコンテンツの削除中にエラーが発生しました。' });
                 });
               }
+              console.log(`DELETE PORTFOLIO: Deleted contents. Deleting projects...`);
 
-              if (result.affectedRows === 0) {
-                return connection.rollback(() => {
-                  connection.release();
-                  res.status(404).json({ success: false, error: 'ポートフォリオが見つかりません。' });
-                });
-              }
-
-              connection.commit(err => {
+              // 4. Delete associated projects
+              connection.query('DELETE FROM projects WHERE portfolio_id = ?', [portfolioId], (err, result) => {
                 if (err) {
+                  console.error('DELETE PORTFOLIO: Error deleting projects', err);
                   return connection.rollback(() => {
                     connection.release();
-                    console.error('トランザクションコミットエラー:', err);
-                    res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+                    res.status(500).json({ success: false, error: 'プロジェクトの削除中にエラーが発生しました。' });
                   });
                 }
-                connection.release();
-                res.json({ success: true, message: 'ポートフォリオが正常に削除されました。' });
+                console.log(`DELETE PORTFOLIO: Deleted projects. Deleting portfolio...`);
+
+                // 5. Delete the portfolio
+                connection.query('DELETE FROM portfolios WHERE id = ?', [portfolioId], (err, result) => {
+                  if (err) {
+                    console.error('DELETE PORTFOLIO: Error deleting portfolio', err);
+                    return connection.rollback(() => {
+                      connection.release();
+                      res.status(500).json({ success: false, error: 'ポートフォリオの削除中にエラーが発生しました。' });
+                    });
+                  }
+
+                  if (result.affectedRows === 0) {
+                    console.error('DELETE PORTFOLIO: Portfolio not found during final delete');
+                    return connection.rollback(() => {
+                      connection.release();
+                      res.status(404).json({ success: false, error: 'ポートフォリオが見つかりません。' });
+                    });
+                  }
+
+                  connection.commit(err => {
+                    if (err) {
+                      console.error('DELETE PORTFOLIO: Commit error', err);
+                      return connection.rollback(() => {
+                        connection.release();
+                        res.status(500).json({ success: false, error: 'データベースエラーが発生しました' });
+                      });
+                    }
+                    console.log(`DELETE PORTFOLIO: Success fully deleted portfolio ${portfolioId}`);
+                    connection.release();
+                    res.json({ success: true, message: 'ポートフォリオが正常に削除されました。' });
+                  });
+                });
               });
             });
           });

@@ -1,5 +1,6 @@
 // Reactの基本的な機能（フック）をインポート
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 // ドラッグ＆ドロップで並び替えをするためのライブラリ
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -30,23 +31,25 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
   // ★曲リストを同期するための副作用フック
   // useEffect: あるデータが変わった時に実行する処理を書きます
   useEffect(() => {
-    // 親から渡された曲データ（preference.songs）が変わった場合のみ更新します。
-    // 無駄な更新や、編集中・並び替え中の予期しないリセットを防ぐためのチェックを入れています。
     if (preference.songs) {
-      // 既存の曲リストと新しい曲リストのIDを比較して、違いがあるかチェック
       const currentSongIds = songs.map(s => s.id).sort().join(',');
       const newSongIds = preference.songs.map(s => s.id).sort().join(',');
 
-      // IDが違う（＝新しい曲が追加・削除された）場合、またはローカルの曲がまだない場合
-      // かつ、編集中でない場合に更新を実行します
       if ((currentSongIds !== newSongIds || songs.length === 0) && !editingSongId) {
         setSongs(preference.songs);
       }
     } else {
       setSongs([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preference.songs, editingSongId]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   // ★曲を追加する関数
   const handleAddSong = async () => {
@@ -282,7 +285,7 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
     });
   };
 
-  return (
+  return ReactDOM.createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
@@ -435,7 +438,7 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
             disabled={loading}
             className="btn-primary"
           >
-            {loading ? t('music_songs_adding') : t('music_songs_add_button')}
+            {loading ? t('music_songs_adding') : t('music_add_button')}
           </button>
           <button
             type="button"
@@ -450,7 +453,8 @@ function ManageSongsModal({ preference, onClose, onUpdate }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
