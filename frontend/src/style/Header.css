@@ -1,0 +1,380 @@
+/* Main Header container */
+.header {
+  display: flex; /* Use flexbox for the main header */
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  position: relative;
+  z-index: 100;
+}
+
+/* This is the inner container that holds left, nav, and right */
+.header-main {
+  display: flex;
+  justify-content: space-between; /* This will push logo to left and the rest to the right */
+  align-items: center;
+  width: 100%;
+}
+
+.header-right-content {
+  display: flex;
+  align-items: center;
+  gap: 24px; /* Adjust gap as needed */
+}
+
+/* Left side of the header (logo, back button) */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.logo-img {
+  height: 40px;
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.back-button {
+  background-color: #6c757d;
+  border: none;
+  cursor: pointer;
+  font-size: 1.8em;
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.back-button i {
+  color: white;
+}
+
+.back-button:hover {
+  opacity: 0.8;
+}
+
+/* Middle navigation links */
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.header-nav a {
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.header-nav a:hover {
+  color: #00bcd4;
+}
+
+/* Right side of the header (user menu, login/register) */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.header-right a {
+  text-decoration: none;
+  font-size: 1rem;
+}
+
+.header-right a:hover {
+  text-decoration: underline;
+}
+
+/* User Menu */
+.user-menu-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.user-icon {
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+}
+
+.user-menu-dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  min-width: 160px;
+  z-index: 1000;
+  padding: 8px 0;
+}
+
+.user-menu-container:hover .user-menu-dropdown {
+  display: table;
+}
+
+.user-info-in-dropdown {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 8px;
+}
+
+.user-icon-dropdown {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.user-menu-item {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+/* Language Selector */
+.language-selector {
+  margin-left: 20px;
+}
+
+.language-selector select {
+  background-color: transparent;
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 5px;
+  font-size: 0.9rem;
+}
+
+/* --- THEME STYLES --- */
+
+/* Light Theme */
+.header.light-theme {
+  background-color: #CCEEFA;
+  color: #000;
+}
+.header.light-theme a {
+  color: #000;
+}
+.header.light-theme .user-menu-dropdown {
+  background-color: white;
+}
+.header.light-theme .user-menu-item {
+  color: #333;
+}
+.header.light-theme .user-menu-item:hover {
+  background-color: #f5f5f5;
+}
+.header.light-theme .language-selector select {
+  border-color: #000;
+  color: #000;
+}
+
+/* Dark Theme */
+.header.dark-theme {
+  background-color: #222;
+  color: #eee;
+}
+.header.dark-theme a {
+  color: #eee;
+}
+.header.dark-theme .user-menu-dropdown {
+  background-color: #555;
+  border-color: #666;
+}
+.header.dark-theme .user-menu-item {
+  color: #f1f1f1;
+}
+.header.dark-theme .user-menu-item:hover {
+  background-color: #686868;
+}
+.header.dark-theme .language-selector select {
+  border-color: #eee;
+  color: #eee;
+}
+.header.dark-theme .language-selector select option {
+  background-color: #333;
+  color: #eee;
+}
+
+/* --- TEMPLATE STYLES --- */
+
+/* Modern Template (v2 - Improved Visibility) */
+.wrapper.modern-template .header {
+  background-color: #1F2937;
+  color: #D1D5DB; /* Default text color slightly brighter */
+  border-bottom: 1px solid #374151;
+}
+
+/* Make the main logo and nav links brighter */
+.wrapper.modern-template .header .logo-text,
+.wrapper.modern-template .header .header-nav a {
+  color: #FFFFFF; /* White for high contrast */
+  font-weight: 500;
+}
+
+/* Invert the logo image color only in modern-template */
+.wrapper.modern-template .header .logo-img {
+  filter: brightness(0) invert(1);
+}
+
+.wrapper.modern-template .header a:hover {
+  color: #3B82F6; /* Use the bright blue accent color on hover */
+}
+
+/* Style for other links like Login/Register */
+.wrapper.modern-template .header .header-right a {
+    color: #D1D5DB;
+}
+
+.wrapper.modern-template .header .language-selector select {
+  background-color: #374151;
+  border-color: #4B5563;
+  color: #FFFFFF; /* White text for the selector */
+}
+
+.wrapper.modern-template .header .user-menu-dropdown {
+  background-color: #1F2937;
+  border-color: #374151;
+}
+
+.wrapper.modern-template .header .user-menu-item {
+  color: #D1D5DB;
+}
+
+.wrapper.modern-template .header .user-menu-item:hover {
+  background-color: #374151;
+  color: #FFFFFF;
+}
+
+/* Classic Template */
+.header.classic-template {
+  background-color: #2C5282; /* Deep Muted Blue */
+  color: white;
+}
+.header.classic-template a {
+  color: white;
+}
+
+/* Minimalist Template */
+.header.minimalist-template {
+  background-color: #F7FAFC; /* Very Light Grey */
+  color: #1A202C; /* Darkest Charcoal */
+}
+.header.minimalist-template a {
+  color: #1A202C;
+}
+
+/* Category Dropdown Menu */
+.header-nav-item-container {
+  position: relative;
+}
+
+.header .header-nav .header-nav-item {
+  background-color: white;
+  border: 1px solid #ddd;
+  color: #333;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-decoration: none; /* for the 'Portfolio' link */
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.header .header-nav .header-nav-item:hover {
+    background-color: #f5f5f5;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.category-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  min-width: 200px;
+  z-index: 1000;
+  padding: 8px 0;
+  margin-top: 8px;
+}
+
+.category-menu-item {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  text-decoration: none;
+  color: #333;
+}
+
+.category-menu-item:hover {
+  background-color: #f5f5f5;
+}
+
+/* Dark theme adjustments */
+.header.dark-theme .category-dropdown {
+  background-color: #555;
+  border-color: #666;
+}
+
+.header.dark-theme .category-menu-item {
+  color: #f1f1f1;
+}
+
+.header.dark-theme .category-menu-item:hover {
+  background-color: #686868;
+}
+
+/* Modern template adjustments */
+.wrapper.modern-template .header .category-dropdown {
+  background-color: #1F2937;
+  border-color: #374151;
+}
+
+.wrapper.modern-template .header .category-menu-item {
+  color: #D1D5DB;
+}
+
+.wrapper.modern-template .header .category-menu-item:hover {
+  background-color: #374151;
+  color: #FFFFFF;
+}
+
+.header.dark-theme .header-nav .header-nav-item {
+  background-color: #444;
+  border-color: #666;
+  color: #f1f1f1;
+}
+
+.header.dark-theme .header-nav .header-nav-item:hover {
+  background-color: #555;
+}
+

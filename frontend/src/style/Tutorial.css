@@ -1,0 +1,242 @@
+/* frontend/src/Tutorial.css */
+.tutorial-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.tutorial-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1.5rem;
+}
+
+.tutorial-header h1 {
+  font-size: 2.5rem;
+  color: #1a237e;
+  margin-bottom: 0.5rem;
+}
+
+.tutorial-header p {
+  font-size: 1.1rem;
+  color: #555;
+}
+
+.tutorial-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.tutorial-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.step-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #1a237e;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.step-content h2 {
+  font-size: 1.8rem;
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.step-content p {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.step-image {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  margin: 1rem auto;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+}
+
+.step-image:hover {
+  transform: scale(1.02);
+}
+
+.step-image:hover {
+  transform: scale(1.02);
+}
+
+.tutorial-button {
+  display: inline-block;
+  padding: 0.8rem 1.5rem;
+  background-color: #f0f0f0;
+  color: #333;
+  text-decoration: none;
+  border-radius: 5px;
+  font-weight: bold;
+  transition: background-color 0.3s, color 0.3s;
+  border: 1px solid #ddd;
+}
+
+.tutorial-button:hover {
+  background-color: #e0e0e0;
+}
+
+.tutorial-button.primary {
+  background-color: #1a237e;
+  color: white;
+  border: none;
+}
+
+.tutorial-button.primary:hover {
+  background-color: #283593;
+}
+
+.tutorial-footer {
+  text-align: center;
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid #eee;
+}
+
+.tutorial-footer p {
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+.modal-content-image {
+  position: relative;
+  padding: 10px;
+  background-color: #fff;
+  border-radius: 8px;
+  max-width: 90vw;
+  max-height: 90vh;
+  cursor: default;
+}
+
+.modal-image {
+  width: 100%;
+  height: auto;
+  max-width: 85vw;
+  max-height: 85vh;
+  object-fit: contain;
+  display: block;
+}
+
+.close-button {
+  position: absolute;
+  top: -15px;
+  right: -15px;
+  background: #fff;
+  color: #333;
+  border: 2px solid #333;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 24px;
+  line-height: 32px;
+  text-align: center;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  transform: scale(1.1);
+  background: #333;
+  color: #fff;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+.modal-content-image {
+  position: relative;
+  padding: 10px;
+  background-color: #fff;
+  border-radius: 8px;
+  max-width: 90vw;
+  max-height: 90vh;
+  cursor: default;
+}
+
+.modal-image {
+  width: 100%;
+  height: auto;
+  max-width: 85vw;
+  max-height: 85vh;
+  object-fit: contain;
+  display: block;
+}
+
+.close-button {
+  position: absolute;
+  top: -15px;
+  right: -15px;
+  background: #fff;
+  color: #333;
+  border: 2px solid #333;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 24px;
+  line-height: 32px;
+  text-align: center;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  transform: scale(1.1);
+  background: #333;
+  color: #fff;
+}

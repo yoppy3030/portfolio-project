@@ -1,0 +1,222 @@
+.admin-panel-container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.admin-panel-container h1 {
+    font-size: 2.5rem;
+    color: #333;
+    margin-bottom: 30px;
+    text-align: center;
+    font-weight: 700;
+}
+
+.admin-message {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.admin-message.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.admin-message.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.admin-section {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.admin-section h2 {
+    font-size: 1.8rem;
+    color: #444;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.section-description {
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="datetime-local"],
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="datetime-local"]:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.toggle-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.admin-button {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.admin-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.admin-button.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.admin-button.primary:hover {
+    background: linear-gradient(135deg, #5568d3 0%, #65408b 100%);
+}
+
+.admin-button.warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.admin-button.warning:hover {
+    background: linear-gradient(135deg, #e082ea 0%, #e4465b 100%);
+}
+
+.admin-button.success {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.admin-button.success:hover {
+    background: linear-gradient(135deg, #3e9bed 0%, #00e1ed 100%);
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+    .admin-panel-container {
+        padding: 15px;
+        margin: 20px auto;
+    }
+
+    .admin-panel-container h1 {
+        font-size: 2rem;
+    }
+
+    .admin-section {
+        padding: 20px;
+    }
+
+    .admin-section h2 {
+        font-size: 1.5rem;
+    }
+
+    .admin-button {
+        width: 100%;
+    }
+}
+
+/* Dark Theme Overrides */
+body.dark-theme .admin-panel-container h1 {
+    color: #eee;
+}
+
+body.dark-theme .admin-section {
+    background-color: #333;
+    color: #eee;
+}
+
+body.dark-theme .admin-section h2 {
+    color: #fff;
+}
+
+body.dark-theme .section-description {
+    color: #ccc;
+}
+
+body.dark-theme .form-group label {
+    color: #ddd;
+}
+
+body.dark-theme .form-group input[type="text"],
+body.dark-theme .form-group input[type="datetime-local"],
+body.dark-theme .form-group textarea {
+    background-color: #555;
+    border-color: #666;
+    color: #eee;
+}
+
+body.dark-theme .form-group input[type="text"]:focus,
+body.dark-theme .form-group input[type="datetime-local"]:focus,
+body.dark-theme .form-group textarea:focus {
+    border-color: #4facfe;
+}
+
+body.dark-theme .admin-message.success {
+    background-color: #054e26;
+    /* Darker green */
+    color: #d4edda;
+    border-color: #0f5132;
+}
+
+body.dark-theme .admin-message.error {
+    background-color: #5c181e;
+    /* Darker red */
+    color: #f8d7da;
+    border-color: #842029;
+}

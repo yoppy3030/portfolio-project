@@ -1,0 +1,819 @@
+/* GameLibraryModal.css */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+}
+
+.modal-backdrop .game-library-modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  /* 大幅に縮小 */
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  /* 追加 */
+  position: relative;
+  /* Add this line */
+}
+
+.game-library-modal-content .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.game-library-modal-content .modal-header h2 {
+  margin: 0;
+}
+
+.game-library-modal-content .close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  color: #555;
+  padding: 5px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.game-library-modal-content .close-button:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.modal-body {
+  /* overflow-y: auto; を削除 */
+}
+
+.search-input-wrapper {
+  position: relative;
+}
+
+.search-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.search-controls input {
+  flex-grow: 1;
+}
+
+.search-controls select {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: white;
+  cursor: pointer;
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+.spinner {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+/* 検索中の読み込みアイコン用のコンテナ */
+.search-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  min-height: 200px;
+}
+
+/* 中央配置用のスピナー */
+.spinner-centered {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin-centered 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: translateY(-50%) rotate(0deg);
+  }
+
+  100% {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+@keyframes spin-centered {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.search-results {
+  margin-top: 15px;
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 4px;
+}
+
+.game-result-item,
+.library-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  gap: 15px;
+}
+
+.game-result-item:not(:last-child) {
+  border-bottom: 1px solid #eee;
+}
+
+.game-image {
+  width: 80px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.game-info {
+  flex-grow: 1;
+}
+
+.game-info p {
+  margin: 0;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.game-info small {
+  color: #666;
+  display: block;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.btn-add-game,
+.btn-remove-game {
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid;
+}
+
+.btn-add-game {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+.btn-add-game:disabled {
+  background-color: #ccc;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+.btn-remove-game {
+  background-color: transparent;
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-remove-game:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+.my-library-section h4 {
+  margin-top: 0;
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  /* Always two columns */
+  gap: 15px;
+}
+
+.library-item {
+  flex-direction: column;
+  align-items: stretch;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  border: 1px solid #eee;
+  padding: 0;
+  position: relative;
+  transition: box-shadow 0.2s, transform 0.2s;
+  /* Add transition for smooth effect */
+}
+
+.library-item .game-image {
+  width: 100%;
+  height: 120px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.library-item .game-info {
+  padding: 10px;
+}
+
+.library-item .btn-remove-game {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.error-message {
+  color: #dc3545;
+  margin-bottom: 1rem;
+}
+
+/* Rating and Comment Styles */
+.star-rating {
+  display: inline-flex;
+  gap: 1px;
+  margin-left: 5px;
+  white-space: nowrap;
+  /* Ensure stars stay on one line */
+}
+
+.star {
+  font-size: 1.1rem;
+  color: #ddd;
+  transition: color 0.2s;
+}
+
+.star.filled {
+  color: #ffc107;
+}
+
+.star.interactive:hover {
+  color: #ffc107;
+  transform: scale(1.2);
+}
+
+.game-details {
+  margin-top: 10px;
+}
+
+.rating-display,
+.rating-section {
+  margin-bottom: 10px;
+}
+
+.rating-display label,
+.rating-section label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-right: 5px;
+}
+
+.comment-display {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.comment-display p {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 0;
+  padding: 8px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  /* Add this line to preserve line breaks */
+}
+
+.no-details {
+  font-size: 0.85rem;
+  color: #999;
+  font-style: italic;
+  margin: 5px 0;
+}
+
+.edit-form {
+  margin-top: 10px;
+}
+
+.playtime-section,
+.comment-section {
+  margin-top: 10px;
+}
+
+.playtime-display {
+  margin-bottom: 10px;
+}
+
+.playtime-display label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-right: 5px;
+}
+
+.comment-section label {
+  display: block;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.comment-section textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.btn-save,
+.btn-cancel,
+.btn-edit {
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid;
+  font-size: 0.85rem;
+}
+
+.btn-save {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+.btn-save:hover {
+  background-color: #218838;
+}
+
+.btn-cancel {
+  background-color: transparent;
+  color: #6c757d;
+  border-color: #6c757d;
+}
+
+.btn-cancel:hover {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-edit {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  margin-top: 5px;
+}
+
+.btn-edit:hover {
+  background-color: #0056b3;
+}
+
+/* Drag and Drop UX Improvements */
+.library-item.draggable {
+  position: relative;
+}
+
+.drag-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s;
+  z-index: 1;
+}
+
+.drag-handle:hover {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+.drag-handle>.material-icons {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.library-item.draggable:active {
+  cursor: grabbing;
+}
+
+.library-item.draggable .game-info,
+.library-item.draggable .game-image {
+  margin-left: 30px;
+}
+
+/* Highlight for droppable area */
+.series-folder .library-grid {
+  transition: background-color 0.3s;
+}
+
+.series-folder .library-grid[style*="background-color: rgb(240, 240, 240)"] {
+  /* This targets the inline style from dnd library */
+  outline: 2px dashed #007bff;
+  background-color: #e9f4ff !important;
+}
+
+/* BGM Entry Styles */
+.bgm-entry {
+  display: flex;
+  /* Keep flex for overall layout */
+  align-items: flex-start;
+  /* Align items to the start (top) */
+  gap: 10px;
+  /* Space between drag handle, inputs, and remove button */
+  margin-bottom: 5px;
+  padding: 5px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  position: relative;
+}
+
+.bgm-entry .material-icons {
+  cursor: grab;
+  color: #666;
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 8px;
+  /* Align with the top of the first input group */
+}
+
+.bgm-entry-content {
+  flex-grow: 1;
+  /* Allow content area to take available space */
+  display: flex;
+  flex-direction: column;
+  /* Stack input groups vertically */
+  gap: 5px;
+  /* Space between input groups */
+}
+
+.bgm-input-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.bgm-input-group label {
+  font-size: 0.8rem;
+  color: #555;
+  margin-bottom: 2px;
+}
+
+.bgm-input-group input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.bgm-entry .btn-remove-bgm {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 8px;
+  /* Align with the top of the first input group */
+}
+
+.bgm-entry .btn-remove-bgm:hover {
+  background-color: #c82333;
+}
+
+/* Remove old specific input styles */
+.bgm-entry input[type="text"],
+.bgm-entry textarea {
+  /* These styles are now handled by .bgm-input-group input[type="text"] */
+  /* min-width: 0; */
+  /* flex-basis: 0; */
+}
+
+.bgm-entry input[type="text"]:nth-of-type(1) {
+  /* flex-grow: 1; */
+}
+
+.bgm-entry textarea {
+  /* flex-grow: 2; */
+  /* resize: vertical; */
+}
+
+/* Layout Toggle */
+.layout-toggle {
+  display: flex;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.layout-toggle button {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layout-toggle button:not(:last-child) {
+  border-right: 1px solid #ccc;
+}
+
+.layout-toggle button.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.layout-toggle button:hover:not(.active) {
+  background-color: #f0f0f0;
+}
+
+/* Grid/List Layout Styles */
+.library-grid.list {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.library-item.list {
+  flex-direction: row;
+  align-items: center;
+}
+
+.library-item.list .game-image {
+  width: 120px;
+  height: 90px;
+  border-radius: 4px 0 0 4px;
+}
+
+.library-item.list .game-info {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.library-item.list .btn-remove-game {
+  position: static;
+  margin-left: auto;
+  margin-right: 15px;
+}
+
+/* Song Selection Modal */
+.song-search-bar {
+  margin-bottom: 15px;
+}
+
+.song-search-bar input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.song-selection-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.song-selection-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.song-selection-item:hover {
+  background-color: #f5f5f5;
+}
+
+.song-selection-item .song-info .song-title {
+  font-weight: 600;
+  margin: 0;
+}
+
+.song-selection-item .song-info .song-artist {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0;
+}
+
+.song-selection-item .btn-add-song {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Manual Add Form Styles */
+.manual-add-form {
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  border: 1px solid #eee;
+}
+
+.manual-add-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.manual-add-form input[type="text"],
+.manual-add-form input[type="url"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.tab-button {
+  transition: all 0.2s ease;
+}
+
+
+/* Dark Theme Overrides */
+body.dark-theme .game-library-modal-content {
+  background-color: #333;
+  color: #eee;
+}
+
+body.dark-theme .game-library-modal-content .modal-header {
+  border-bottom-color: #555;
+}
+
+body.dark-theme .game-library-modal-content .close-button {
+  color: #bbb;
+}
+
+body.dark-theme .game-library-modal-content .close-button:hover {
+  background-color: #444;
+  color: #fff;
+}
+
+body.dark-theme .search-input-wrapper input,
+body.dark-theme .search-controls select,
+body.dark-theme .manual-add-form input[type="text"],
+body.dark-theme .manual-add-form input[type="url"],
+body.dark-theme .comment-section textarea,
+body.dark-theme .bgm-entry input[type="text"],
+body.dark-theme .song-search-bar input {
+  background-color: #555;
+  border-color: #666;
+  color: #eee;
+}
+
+body.dark-theme .library-item,
+body.dark-theme .bgm-entry,
+body.dark-theme .manual-add-form {
+  background-color: #424242;
+  border-color: #555;
+}
+
+body.dark-theme .library-item .game-info small,
+body.dark-theme .game-info small {
+  color: #aaa;
+}
+
+body.dark-theme .comment-display p {
+  background-color: #424242;
+  color: #ddd;
+}
+
+body.dark-theme .game-result-item {
+  border-bottom-color: #555;
+}
+
+body.dark-theme .game-result-item:hover,
+body.dark-theme .song-selection-item:hover {
+  background-color: #444;
+}
+
+body.dark-theme .song-selection-item {
+  border-bottom-color: #555;
+}
+
+body.dark-theme .song-selection-item .song-info .song-artist {
+  color: #aaa;
+}
+
+body.dark-theme .layout-toggle {
+  border-color: #555;
+}
+
+body.dark-theme .layout-toggle button {
+  color: #aaa;
+}
+
+body.dark-theme .layout-toggle button:not(:last-child) {
+  border-right-color: #555;
+}
+
+body.dark-theme .layout-toggle button:hover:not(.active) {
+  background-color: #444;
+}
+
+body.dark-theme .layout-toggle button.active {
+  background-color: #007bff;
+  color: white;
+}
+
+body.dark-theme .drag-handle {
+  background-color: rgba(255, 255, 255, 0.05);
+  /* Lighter on dark */
+  border-right-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .drag-handle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .drag-handle>.material-icons,
+body.dark-theme .bgm-entry .material-icons {
+  color: #aaa;
+}
+
+body.dark-theme .no-details {
+  color: #888;
+}
+
+body.dark-theme .btn-cancel {
+  color: #aaa;
+  border-color: #aaa;
+}
+
+body.dark-theme .btn-cancel:hover {
+  background-color: #aaa;
+  color: #333;
+}
