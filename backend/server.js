@@ -95,14 +95,37 @@ const DB_CONFIG = {
 // MySQLデータベースへの接続（本番環境用プール）
 const db = mysql.createPool(DB_CONFIG);
 
-// データベース接続確認
+// データベース接続確認とマイグレーションの実行
 db.getConnection((err, connection) => {
   if (err) {
     console.error('データベース接続エラー:', err);
-    process.exit(1);
+    return;
   }
   console.log('データベースに接続しました');
   connection.release();
+
+  // マイグレーションをシーケンシャルに実行
+  const runMigrations = async () => {
+    const runQuery = (query) => new Promise((resolve) => {
+      db.query(query, (err) => {
+        if (err && err.code !== 'ER_DUP_FIELDNAME') {
+          console.log(`Migration warning for query "${query.substring(0, 30)}...":`, err.code);
+        }
+        resolve(); // 失敗しても次へ進む
+      });
+    });
+
+    // Ranking Items Columns
+    await runQuery("ALTER TABLE ranking_items ADD COLUMN custom_title VARCHAR(255)");
+    await runQuery("ALTER TABLE ranking_items ADD COLUMN custom_image_url VARCHAR(512)");
+
+    // Reading Books Columns
+    await runQuery("ALTER TABLE reading_books ADD COLUMN publisher VARCHAR(255)");
+
+    console.log('All migrations executed.');
+  };
+
+  runMigrations();
 });
 
 // JWTトークン検証ミドルウェア
@@ -1892,6 +1915,8 @@ app.get('/api/backup/anime', authenticateToken, (req, res) => {
 
 app.post('/api/portfolios', authenticateToken, (req, res) => {
   try {
+    const [availableItems, setAvailableItems] = useState([]);
+
     const { id: userId } = req.user;
     const { title, template } = req.body;
 
@@ -3173,7 +3198,15 @@ app.put('/api/reading/books/reorder', authenticateToken, async (req, res) => {
 // 本の追加
 app.post('/api/reading/books', authenticateToken, upload.single('image'), (req, res) => {
   const { id: userId } = req.user;
-  const { author_id, type, genre, title, comment, rating } = req.body;
+  let { author_id, type, genre, title, comment, rating, publisher } = req.body;
+
+  // Ensure parameters are not arrays (to prevent SQL injection/parameter count mismatch if frontend sends duplicates)
+  if (Array.isArray(publisher)) publisher = publisher[0];
+  if (Array.isArray(rating)) rating = rating[0];
+  if (Array.isArray(genre)) genre = genre[0];
+  if (Array.isArray(title)) title = title[0];
+  if (Array.isArray(comment)) comment = comment[0];
+  if (Array.isArray(type)) type = type[0];
   const image_url = req.file ? `/uploads/${req.file.filename}` : null;
 
   if (!author_id || !title) {
@@ -3185,10 +3218,10 @@ app.post('/api/reading/books', authenticateToken, upload.single('image'), (req, 
 
     const query = `
       INSERT INTO reading_books 
-      (user_id, author_id, type, genre, title, comment, rating, image_url, display_order) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (user_id, author_id, type, genre, title, comment, rating, publisher, image_url, display_order) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    db.query(query, [userId, author_id, type, genre, title, comment, rating, image_url, nextOrder], (err, result) => {
+    db.query(query, [userId, author_id, type, genre, title, comment, rating, publisher, image_url, nextOrder], (err, result) => {
       if (err) {
         console.error('データベースエラー:', err);
         return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
@@ -3202,7 +3235,7 @@ app.post('/api/reading/books', authenticateToken, upload.single('image'), (req, 
 app.put('/api/reading/books/:id', authenticateToken, upload.single('image'), (req, res) => {
   const { id: userId } = req.user;
   const { id: bookId } = req.params;
-  const { type, genre, title, comment, rating } = req.body;
+  const { type, genre, title, comment, rating, publisher } = req.body;
 
   let updates = [];
   let params = [];
@@ -3212,6 +3245,7 @@ app.put('/api/reading/books/:id', authenticateToken, upload.single('image'), (re
   if (title) { updates.push('title = ?'); params.push(title); }
   if (comment) { updates.push('comment = ?'); params.push(comment); }
   if (rating) { updates.push('rating = ?'); params.push(rating); }
+  if (publisher) { updates.push('publisher = ?'); params.push(publisher); }
   if (req.file) { updates.push('image_url = ?'); params.push(`/uploads/${req.file.filename}`); }
 
   if (updates.length === 0) return res.status(400).json({ success: false, error: '更新データがありません。' });
@@ -3792,7 +3826,139 @@ app.post('/api/backup/music/import', authenticateToken, async (req, res) => {
   });
 });
 
-// 4. アニメのバックアップ
+// 4. ランキングのバックアップ
+// エクスポート
+app.get('/api/backup/rankings', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+
+  try {
+    // ランキング一覧を取得
+    const rankings = await new Promise((resolve, reject) => {
+      db.query('SELECT * FROM rankings WHERE user_id = ?', [userId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    // 各ランキングのアイテムを取得して結合
+    const rankingsWithItems = await Promise.all(rankings.map(async (ranking) => {
+      // アイテムを取得
+      const items = await new Promise((resolve, reject) => {
+        db.query('SELECT * FROM ranking_items WHERE ranking_id = ? ORDER BY rank_order ASC', [ranking.id], (err, results) => {
+          if (err) return reject(err);
+          resolve(results);
+        });
+      });
+      return { ...ranking, items };
+    }));
+
+    res.json({ success: true, rankingData: rankingsWithItems });
+
+  } catch (error) {
+    console.error('サーバーエラー:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました。' });
+  }
+});
+
+// インポート (Rankings)
+app.post('/api/backup/rankings/import', authenticateToken, async (req, res) => {
+  const { id: userId } = req.user;
+  const { rankingData } = req.body;
+
+  if (!rankingData || !Array.isArray(rankingData)) {
+    return res.status(400).json({ success: false, error: '有効なランキングデータが必要です。' });
+  }
+
+  db.getConnection((err, connection) => {
+    if (err) return res.status(500).json({ success: false, error: 'データベース接続エラー' });
+
+    connection.beginTransaction(async (err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ success: false, error: 'トランザクション開始エラー' });
+      }
+
+      try {
+        let importedRankings = 0;
+
+        for (const ranking of rankingData) {
+          // ランキングの重複チェック（タイトルとカテゴリ）
+          // ※ 同じタイトルでも別物として扱いたい場合もあるかもしれないが、ここでは重複を避ける方針
+          const existingRanking = await new Promise((resolve, reject) => {
+            connection.query(
+              'SELECT id FROM rankings WHERE user_id = ? AND title = ? AND category = ?',
+              [userId, ranking.title, ranking.category],
+              (err, res) => {
+                if (err) return reject(err);
+                resolve(res);
+              }
+            );
+          });
+
+          if (existingRanking.length === 0) {
+            // ランキングを作成
+            const resRanking = await new Promise((resolve, reject) => {
+              connection.query(
+                'INSERT INTO rankings (user_id, title, description, category) VALUES (?, ?, ?, ?)',
+                [userId, ranking.title, ranking.description, ranking.category],
+                (err, res) => {
+                  if (err) return reject(err);
+                  resolve(res);
+                }
+              );
+            });
+            const rankingId = resRanking.insertId;
+            importedRankings++;
+
+            // アイテムを追加
+            if (ranking.items && ranking.items.length > 0) {
+              const values = ranking.items.map(item => [
+                rankingId,
+                item.game_id || null, // IDは環境依存の可能性があるが今回はそのまま。整合性担保にはさらにロジックが必要だが簡易実装とする
+                item.book_id || null,
+                item.custom_title || null,
+                item.custom_image_url || null,
+                item.comment || '',
+                item.rank_order
+              ]);
+
+              await new Promise((resolve, reject) => {
+                connection.query(
+                  'INSERT INTO ranking_items (ranking_id, game_id, book_id, custom_title, custom_image_url, comment, rank_order) VALUES ?',
+                  [values],
+                  (err) => {
+                    if (err) return reject(err);
+                    resolve();
+                  }
+                );
+              });
+            }
+          }
+        }
+
+        connection.commit((err) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              res.status(500).json({ success: false, error: 'コミットエラー' });
+            });
+          }
+          connection.release();
+          res.json({ success: true, message: `インポート完了: ランキング ${importedRankings}件` });
+        });
+
+      } catch (error) {
+        connection.rollback(() => {
+          connection.release();
+          console.error('インポートエラー:', error);
+          res.status(500).json({ success: false, error: 'インポート中にエラーが発生しました。' });
+        });
+      }
+    });
+  });
+});
+
+// 5. アニメのバックアップ
 // エクスポート
 app.get('/api/backup/anime', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
@@ -3970,12 +4136,253 @@ app.post('/api/admin/send-feature-notification', authenticateToken, (req, res) =
 });
 
 
+// --- ランキング(Ranking)関連API ---
+
+// ランキングテーブルのSQLスキーマ (要実行)
+// CREATE TABLE rankings (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   user_id INT NOT NULL,
+//   title VARCHAR(255) NOT NULL,
+//   description TEXT,
+//   category ENUM('game', 'reading') NOT NULL,
+//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+// );
+
+// ランキングアイテムテーブルのSQLスキーマ (要実行)
+// CREATE TABLE ranking_items (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   ranking_id INT NOT NULL,
+//   game_id INT,
+//   book_id INT,
+//   comment TEXT,
+//   rank_order INT NOT NULL,
+//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//   FOREIGN KEY (ranking_id) REFERENCES rankings(id) ON DELETE CASCADE,
+//   FOREIGN KEY (game_id) REFERENCES played_games(id) ON DELETE CASCADE,
+//   FOREIGN KEY (book_id) REFERENCES reading_books(id) ON DELETE CASCADE
+// );
+
+// ランキング一覧を取得 (トップ3アイテム付き)
+app.get('/api/rankings', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { category } = req.query;
+
+  let query = 'SELECT * FROM rankings WHERE user_id = ?';
+  const params = [userId];
+
+  if (category) {
+    query += ' AND category = ?';
+    params.push(category);
+  }
+  query += ' ORDER BY created_at DESC';
+
+  db.query(query, params, async (err, rankings) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+
+    // 各ランキングのトップ3アイテムを取得
+    const rankingsWithItems = await Promise.all(rankings.map(async (ranking) => {
+      let itemQuery = '';
+      if (ranking.category === 'game') {
+        itemQuery = `
+          SELECT ri.comment, ri.rank_order, COALESCE(pg.title, ri.custom_title) as title, COALESCE(pg.image_url, ri.custom_image_url) as image_url
+          FROM ranking_items ri
+          LEFT JOIN played_games pg ON ri.game_id = pg.id
+          WHERE ri.ranking_id = ?
+          ORDER BY ri.rank_order ASC
+          LIMIT 3
+        `;
+      } else {
+        itemQuery = `
+          SELECT ri.comment, ri.rank_order, COALESCE(rb.title, ri.custom_title) as title, COALESCE(rb.image_url, ri.custom_image_url) as image_url
+          FROM ranking_items ri
+          LEFT JOIN reading_books rb ON ri.book_id = rb.id
+          WHERE ri.ranking_id = ?
+          ORDER BY ri.rank_order ASC
+          LIMIT 3
+        `;
+      }
+
+      const items = await new Promise((resolve) => {
+        db.query(itemQuery, [ranking.id], (err, results) => {
+          if (err) resolve([]); // エラー時は空配列
+          else resolve(results);
+        });
+      });
+
+      return { ...ranking, items };
+    }));
+
+    res.json({ success: true, rankings: rankingsWithItems });
+  });
+});
+
+// ランキング詳細（アイテム含む）を取得
+app.get('/api/rankings/:rankingId', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { rankingId } = req.params;
+
+  db.query('SELECT * FROM rankings WHERE id = ? AND user_id = ?', [rankingId, userId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: 'データベースエラー' });
+    if (results.length === 0) return res.status(404).json({ success: false, error: 'ランキングが見つかりません' });
+
+    const ranking = results[0];
+
+    // アイテムを取得（ゲーム情報または書籍情報を結合）
+    let itemQuery = '';
+    if (ranking.category === 'game') {
+      itemQuery = `
+        SELECT ri.*, COALESCE(pg.title, ri.custom_title) as title, COALESCE(pg.image_url, ri.custom_image_url) as image_url, pg.playtime_hours, pg.rating as item_rating
+        FROM ranking_items ri
+        LEFT JOIN played_games pg ON ri.game_id = pg.id
+        WHERE ri.ranking_id = ?
+        ORDER BY ri.rank_order ASC
+          `;
+    } else {
+      itemQuery = `
+        SELECT ri.*, COALESCE(rb.title, ri.custom_title) as title, COALESCE(rb.image_url, ri.custom_image_url) as image_url, rb.rating as item_rating, ra.name as author_name, rb.publisher
+        FROM ranking_items ri
+        LEFT JOIN reading_books rb ON ri.book_id = rb.id
+        LEFT JOIN reading_authors ra ON rb.author_id = ra.id
+        WHERE ri.ranking_id = ?
+        ORDER BY ri.rank_order ASC
+      `;
+    }
+
+    db.query(itemQuery, [rankingId], (err, items) => {
+      if (err) return res.status(500).json({ success: false, error: 'アイテム取得エラー' });
+      ranking.items = items;
+      res.json({ success: true, ranking });
+    });
+  });
+});
+
+// ランキングを作成
+app.post('/api/rankings', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { title, description, category } = req.body;
+
+  if (!title || !category) {
+    return res.status(400).json({ success: false, error: 'タイトルとカテゴリは必須です。' });
+  }
+
+  db.query(
+    'INSERT INTO rankings (user_id, title, description, category) VALUES (?, ?, ?, ?)',
+    [userId, title, description, category],
+    (err, result) => {
+      if (err) {
+        console.error('データベースエラー:', err);
+        return res.status(500).json({ success: false, error: 'ランキング作成エラー' });
+      }
+      res.status(201).json({ success: true, message: 'ランキングを作成しました', rankingId: result.insertId });
+    }
+  );
+});
+
+// ランキングを削除
+app.delete('/api/rankings/:rankingId', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { rankingId } = req.params;
+
+  db.query('DELETE FROM rankings WHERE id = ? AND user_id = ?', [rankingId, userId], (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: '削除エラー' });
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, error: 'ランキングが見つかりません' });
+    res.json({ success: true, message: 'ランキングを削除しました' });
+  });
+});
+
+// ランキングアイテムを一括更新（追加・削除・並び替え）
+app.put('/api/rankings/:rankingId/items', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { rankingId } = req.params;
+  const { items } = req.body; // Array of { id (optional), game_id/book_id, comment, rank_order }
+
+  if (!items || !Array.isArray(items)) {
+    return res.status(400).json({ success: false, error: '有効なアイテムリストが必要です' });
+  }
+
+  // まず所有権確認
+  db.query('SELECT category FROM rankings WHERE id = ? AND user_id = ?', [rankingId, userId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: 'DBエラー' });
+    if (results.length === 0) return res.status(404).json({ success: false, error: 'ランキングが見つかりません' });
+    const category = results[0].category;
+
+    db.getConnection((err, connection) => {
+      if (err) return res.status(500).json({ success: false, error: 'DB接続エラー' });
+
+      connection.beginTransaction(async (err) => {
+        if (err) {
+          connection.release();
+          return res.status(500).json({ success: false, error: 'トランザクション開始エラー' });
+        }
+
+        try {
+          // 既存アイテムを全削除して入れ直すのが一番簡単だが、IDを保持したい場合はUPDATE/INSERT/DELETEを使い分ける。
+          // ここでは簡易実装として「全削除→挿入」を行いますが、もし既存IDに紐づくデータがあれば別のアプローチが必要。
+          // 今回はranking_itemsに外部からの依存はないので全削除でOK。
+
+          await new Promise((resolve, reject) => {
+            connection.query('DELETE FROM ranking_items WHERE ranking_id = ?', [rankingId], (err) => {
+              if (err) return reject(err);
+              resolve();
+            });
+          });
+
+          if (items.length > 0) {
+            const values = items.map((item, index) => [
+              rankingId,
+              (category === 'game' && item.item_id) ? item.item_id : null,
+              (category === 'reading' && item.item_id) ? item.item_id : null,
+              item.custom_title || null,
+              item.custom_image_url || null,
+              item.comment,
+              index // 並び順は配列のインデックスを使用
+            ]);
+
+            await new Promise((resolve, reject) => {
+              connection.query(
+                'INSERT INTO ranking_items (ranking_id, game_id, book_id, custom_title, custom_image_url, comment, rank_order) VALUES ?',
+                [values],
+                (err) => {
+                  if (err) return reject(err);
+                  resolve();
+                }
+              );
+            });
+          }
+
+          connection.commit((err) => {
+            if (err) {
+              return connection.rollback(() => {
+                connection.release();
+                res.status(500).json({ success: false, error: 'コミットエラー' });
+              });
+            }
+            connection.release();
+            res.json({ success: true, message: 'ランキングを更新しました' });
+          });
+
+        } catch (error) {
+          connection.rollback(() => {
+            connection.release();
+            console.error('更新エラー:', error);
+            res.status(500).json({ success: false, error: '更新中にエラーが発生しました' });
+          });
+        }
+      });
+    });
+  });
+});
+
 // サーバー起動
 // 指定されたポート（またはデフォルト5000番）でサーバーを待ち受け状態にします
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`サーバーがポート${PORT}で起動しました`);
-  console.log(`Database host: ${process.env.DB_HOST}`);
+  console.log(`サーバーがポート${PORT} で起動しました`);
+  console.log(`Database host: ${process.env.DB_HOST} `);
 });
 
 

@@ -5,6 +5,8 @@ import GameLibraryModal from './GameLibraryModal';
 
 import ReadingHobbyModal from './ReadingHobbyModal';
 import AnimeHobbyModal from './AnimeHobbyModal';
+
+import RankingManager from './RankingManager';
 import '../style/HobbiesDisplay.css';
 
 /**
@@ -29,10 +31,13 @@ function HobbiesManager({ isOwner }) {
   // ゲーム用モーダルを表示するかどうかのフラグ
   const [showGameLibrary, setShowGameLibrary] = useState(false);
   // 読書用モーダルを表示するかどうかのフラグ
-  // 読書用モーダルを表示するかどうかのフラグ
+
   const [showReadingModal, setShowReadingModal] = useState(false);
   // アニメ用モーダルを表示するかどうかのフラグ
   const [showAnimeModal, setShowAnimeModal] = useState(false);
+
+  // ランキング管理モーダルを表示するかどうかのフラグ
+  const [showRankingManager, setShowRankingManager] = useState(false);
 
   // 趣味リストをサーバーから取得する関数
   // useCallbackを使って関数をメモ化（再レンダリング時の無駄な再生成を防ぐ）
@@ -144,6 +149,10 @@ function HobbiesManager({ isOwner }) {
         </div>
       </div>
 
+      <div style={{ marginBottom: '1rem', textAlign: 'right' }}>
+        <button onClick={() => setShowRankingManager(true)}>マイランキング管理</button>
+      </div>
+
       <div className="hobbies-list">
         {loading ? <p>{t('loading')}</p> : (
           hobbies.length > 0 ? (
@@ -208,6 +217,11 @@ function HobbiesManager({ isOwner }) {
           isOwner={isOwner}
           onClose={() => setShowAnimeModal(false)}
         />
+      )}
+
+      {/* ランキング管理モーダル */}
+      {showRankingManager && (
+        <RankingManager onClose={() => setShowRankingManager(false)} />
       )}
     </div>
   );

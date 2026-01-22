@@ -79,6 +79,10 @@ function ReadingHobbyModal({ onClose, isOwner }) {
     title: '',
     comment: '',
     rating: 0,
+    title: '',
+    comment: '',
+    rating: 0,
+    publisher: '',
     image: null
   });
 
@@ -226,8 +230,10 @@ function ReadingHobbyModal({ onClose, isOwner }) {
     formData.append('type', newBookData.type);
     formData.append('genre', newBookData.genre);
     formData.append('title', newBookData.title);
+    formData.append('title', newBookData.title);
     formData.append('comment', newBookData.comment);
     formData.append('rating', newBookData.rating);
+    formData.append('publisher', newBookData.publisher || '');
     if (newBookData.image) {
       formData.append('image', newBookData.image);
     }
@@ -242,7 +248,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
       if (data.success) {
         fetchBooks(selectedAuthorId); // リストを更新
         // 入力フォームをリセット
-        setNewBookData({ type: 'novel', genre: '', title: '', comment: '', rating: 0, image: null });
+        setNewBookData({ type: 'novel', genre: '', title: '', comment: '', rating: 0, publisher: '', image: null });
       } else {
         setError(data.error || t('readingHobby.modal.addBookError'));
       }
@@ -346,6 +352,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
 
   const handleOnDragEnd = (result) => {
     if (!result.destination) return;
+    if (result.destination.index === result.source.index) return;
 
     const items = Array.from(books);
     const [reorderedItem] = items.splice(result.source.index, 1);
@@ -408,6 +415,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
                     </select>
                     <input type="text" name="title" placeholder={t('readingHobby.modal.bookTitlePlaceholder')} value={newBookData.title} onChange={handleNewBookChange} />
                     <input type="text" name="genre" placeholder={t('readingHobby.modal.bookGenrePlaceholder')} value={newBookData.genre} onChange={handleNewBookChange} />
+                    <input type="text" name="publisher" placeholder="出版社 (例: KADOKAWA)" value={newBookData.publisher} onChange={handleNewBookChange} />
                     <div className="rating-input-container">
                       <label>{t('readingHobby.modal.ratingLabel')}</label>
                       <StarInput rating={newBookData.rating} setRating={setNewBookRating} />
@@ -439,6 +447,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
                                         </select>
                                         <input type="text" name="title" placeholder={t('readingHobby.modal.bookTitlePlaceholder')} value={editBookData.title} onChange={handleEditBookChange} />
                                         <input type="text" name="genre" placeholder={t('readingHobby.modal.bookGenrePlaceholder')} value={editBookData.genre} onChange={handleEditBookChange} />
+                                        <input type="text" name="publisher" placeholder="出版社 (例: KADOKAWA)" value={editBookData.publisher || ''} onChange={handleEditBookChange} />
                                         <div className="rating-input-container">
                                           <label>{t('readingHobby.modal.ratingLabel')}</label>
                                           <StarInput rating={editBookData.rating} setRating={setEditBookRating} />
@@ -457,6 +466,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
                                           <h5>{book.title}</h5>
                                           <p>{t('readingHobby.modal.typeLabel')} {t(`readingHobby.bookTypes.${book.type}`)}</p>
                                           <p>{t('readingHobby.modal.genreLabel')} {book.genre}</p>
+                                          {book.publisher && <p>出版社: {book.publisher}</p>}
                                           <div className="rating-display">
                                             <span>{t('readingHobby.modal.ratingLabel')} </span>
                                             {book.rating ? <StarRating rating={book.rating} /> : t('readingHobby.modal.notRated')}

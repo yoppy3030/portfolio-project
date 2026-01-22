@@ -748,11 +748,78 @@ function Settings({ user, onUpdateUser, onLogout, t, i18n, onLanguageChange, lan
                   </label>
                 </div>
               </div>
+              <hr />
+
+              {/* ランキングのバックアップセクション */}
+              <div className="backup-section">
+                <h4>{t('settings_backup_rankings_title', 'ランキング')}</h4>
+                <p>{t('settings_backup_rankings_desc', '作成したランキングデータを保存します。')}</p>
+                <div className="backup-actions">
+                  <button onClick={() => {
+                    setMessage('');
+                    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+                    fetch('http://localhost:5000/api/backup/rankings', {
+                      headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                      .then(res => res.json())
+                      .then(data => {
+                        if (data.success) {
+                          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                          const url = window.URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `rankings_backup_${new Date().toISOString().slice(0, 10)}.json`;
+                          a.click();
+                          window.URL.revokeObjectURL(url);
+                          setMessage(t('settings_backup_export_success', 'エクスポートが完了しました。'));
+                        } else {
+                          setMessage(t('settings_backup_export_error', 'エクスポートに失敗しました: ') + data.error);
+                        }
+                      })
+                      .catch(err => setMessage(t('settings_backup_export_error', 'エクスポートに失敗しました。')));
+                  }}>{t('settings_backup_export_button', 'エクスポート')}</button>
+
+                  <label className="import-button">
+                    {t('settings_backup_import_button', 'インポート')}
+                    <input type="file" style={{ display: 'none' }} accept=".json" onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = async (e) => {
+                        try {
+                          const json = JSON.parse(e.target.result);
+                          if (!json.rankingData) throw new Error('Invalid format');
+
+                          const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+                          const res = await fetch('http://localhost:5000/api/backup/rankings/import', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ rankingData: json.rankingData })
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            setMessage(data.message);
+                          } else {
+                            setMessage(t('settings_backup_import_error', 'インポートに失敗しました: ') + data.error);
+                          }
+                        } catch (err) {
+                          setMessage(t('settings_backup_import_invalid', '無効なファイル形式です。'));
+                        }
+                      };
+                      reader.readAsText(file);
+                      e.target.value = '';
+                    }} />
+                  </label>
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 }
 
