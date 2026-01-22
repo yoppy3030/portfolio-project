@@ -4,6 +4,7 @@ import GameLibraryModal from './GameLibraryModal';
 import MusicAppreciationDisplay from './MusicAppreciationDisplay';
 import ReadingHobbyDisplay from './ReadingHobbyDisplay'; // 新規作成するコンポーネント
 import AnimeHobbyDisplay from './AnimeHobbyDisplay';
+import RankingList from './RankingList';
 
 // ポートフォリオページで趣味・関心事を表示するコンポーネント
 function HobbiesDisplay({ isOwner, portfolioId }) {
@@ -13,6 +14,7 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
   const [musicPreferencesCount, setMusicPreferencesCount] = useState(0); // 登録済みの音楽設定数
   const [readingBooksCount, setReadingBooksCount] = useState(0); // 登録済みの読書記録数
   const [animeCount, setAnimeCount] = useState(0); // 登録済みのアニメ数
+  const [rankingCount, setRankingCount] = useState(0); // 登録済みのランキング数
   const [selectedHobby, setSelectedHobby] = useState(null); // 現在選択（表示）されている趣味カテゴリ
   const [loading, setLoading] = useState(true); // 読み込み中フラグ
   const [error, setError] = useState(''); // エラーメッセージ
@@ -23,6 +25,7 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
   const [hasMusicHobby, setHasMusicHobby] = useState(false);
   const [hasReadingHobby, setHasReadingHobby] = useState(false);
   const [hasAnimeHobby, setHasAnimeHobby] = useState(false);
+
 
   // サーバーから各種趣味データを取得する関数
   const fetchData = useCallback(async () => {
@@ -41,7 +44,8 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
         fetch('http://localhost:5000/api/played-games', { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch('http://localhost:5000/api/user-music-preferences', { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch('http://localhost:5000/api/reading-entries', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('http://localhost:5000/api/anime', { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch('http://localhost:5000/api/anime', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('http://localhost:5000/api/rankings', { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
       // 1. 一般的な趣味データの処理
@@ -54,7 +58,6 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
           setHasMusicHobby(hobbiesData.hobbies.some(h => h.name === '音楽鑑賞'));
           setHasReadingHobby(hobbiesData.hobbies.some(h => h.name === '読書'));
           setHasAnimeHobby(hobbiesData.hobbies.some(h => h.name === 'アニメ'));
-
           // 「音楽鑑賞」「ゲーム」「読書」「アニメ」は個別に管理するため、一般的な趣味リストからは除外
           setHobbies(hobbiesData.hobbies.filter(h => h.name !== '音楽鑑賞' && h.name !== 'ゲーム' && h.name !== '読書' && h.name !== 'アニメ'));
         } else {
@@ -116,6 +119,19 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
         console.error('Anime fetch failed:', results[4].reason);
       }
 
+      // 6. ランキングデータの処理
+      if (results[5].status === 'fulfilled') {
+        const rankingRes = results[5].value;
+        const rankingData = await rankingRes.json();
+        if (rankingData.success) {
+          setRankingCount(rankingData.rankings.length);
+        } else {
+          console.error(rankingData.error || 'Failed to fetch rankings');
+        }
+      } else {
+        console.error('Ranking fetch failed:', results[5].reason);
+      }
+
     } catch (err) {
       setError('データの読み込み中に予期せぬエラーが発生しました。');
       console.error(err);
@@ -144,7 +160,7 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
   };
 
   // 表示する項目が全くない場合は何も表示しない
-  if (!loading && hobbies.length === 0 && !hasGameHobby && !hasMusicHobby && !hasReadingHobby && !hasAnimeHobby) {
+  if (!loading && hobbies.length === 0 && !hasGameHobby && !hasMusicHobby && !hasReadingHobby && !hasAnimeHobby && rankingCount === 0) {
     return null;
   }
 
@@ -197,6 +213,14 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
             アニメ
           </button>
         )}
+        {(rankingCount > 0) && (
+          <button
+            className={`hobby-tag ${selectedHobby === 'ランキング' ? 'active' : ''}`}
+            onClick={() => handleHobbyClick('ランキング')}
+          >
+            ランキング
+          </button>
+        )}
       </div>
 
       {selectedHobby === 'ゲーム' && (
@@ -220,6 +244,10 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
 
       {selectedHobby === 'アニメ' && (
         <AnimeHobbyDisplay />
+      )}
+
+      {selectedHobby === 'ランキング' && (
+        <RankingList />
       )}
 
       {isGameLibraryModalOpen && <GameLibraryModal onClose={handleCloseModal} isOwner={isOwner} />}

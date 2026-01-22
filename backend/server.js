@@ -108,19 +108,50 @@ db.getConnection((err, connection) => {
   const runMigrations = async () => {
     const runQuery = (query) => new Promise((resolve) => {
       db.query(query, (err) => {
-        if (err && err.code !== 'ER_DUP_FIELDNAME') {
+        // テーブル作成の警告は無視する
+        if (err && err.code !== 'ER_DUP_FIELDNAME' && err.code !== 'ER_TABLE_EXISTS_ERROR') {
           console.log(`Migration warning for query "${query.substring(0, 30)}...":`, err.code);
         }
         resolve(); // 失敗しても次へ進む
       });
     });
 
+    // Create Tables if not exists
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS reading_authors (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY user_author (user_id, name)
+      )
+    `);
+
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS reading_entries (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        author_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        type VARCHAR(50) NOT NULL COMMENT 'manga, novel, technical, other',
+        genre VARCHAR(100),
+        publisher VARCHAR(255),
+        rating INT CHECK (rating >= 1 AND rating <= 5),
+        comment TEXT,
+        entry_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (author_id) REFERENCES reading_authors(id) ON DELETE CASCADE
+      )
+    `);
+
     // Ranking Items Columns
     await runQuery("ALTER TABLE ranking_items ADD COLUMN custom_title VARCHAR(255)");
     await runQuery("ALTER TABLE ranking_items ADD COLUMN custom_image_url VARCHAR(512)");
 
-    // Reading Books Columns
-    await runQuery("ALTER TABLE reading_books ADD COLUMN publisher VARCHAR(255)");
+    // Reading Books Columns (Corrected table name from reading_books to reading_entries)
+    await runQuery("ALTER TABLE reading_entries ADD COLUMN publisher VARCHAR(255)");
 
     console.log('All migrations executed.');
   };
@@ -4205,7 +4236,6 @@ app.get('/api/rankings', authenticateToken, (req, res) => {
           LEFT JOIN played_games pg ON ri.game_id = pg.id
           WHERE ri.ranking_id = ?
           ORDER BY ri.rank_order ASC
-          LIMIT 3
         `;
       } else if (ranking.category === 'anime') {
         itemQuery = `
@@ -4214,7 +4244,6 @@ app.get('/api/rankings', authenticateToken, (req, res) => {
           LEFT JOIN anime_entries ae ON ri.anime_id = ae.id
           WHERE ri.ranking_id = ?
           ORDER BY ri.rank_order ASC
-          LIMIT 3
         `;
       } else {
         itemQuery = `
@@ -4223,7 +4252,6 @@ app.get('/api/rankings', authenticateToken, (req, res) => {
           LEFT JOIN reading_books rb ON ri.book_id = rb.id
           WHERE ri.ranking_id = ?
           ORDER BY ri.rank_order ASC
-          LIMIT 3
         `;
       }
 
@@ -4309,6 +4337,35 @@ app.post('/api/rankings', authenticateToken, (req, res) => {
       res.status(201).json({ success: true, message: 'ランキングを作成しました', rankingId: result.insertId });
     }
   );
+});
+
+// ランキング基本情報を更新 (タイトル、説明、カテゴリ)
+app.put('/api/rankings/:rankingId', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { rankingId } = req.params;
+  const { title, description, category } = req.body;
+
+  if (!title || !category) {
+    return res.status(400).json({ success: false, error: 'タイトルとカテゴリは必須です。' });
+  }
+
+  // まず所有権確認
+  db.query('SELECT id FROM rankings WHERE id = ? AND user_id = ?', [rankingId, userId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: 'DBエラー' });
+    if (results.length === 0) return res.status(404).json({ success: false, error: 'ランキングが見つかりません' });
+
+    db.query(
+      'UPDATE rankings SET title = ?, description = ?, category = ? WHERE id = ?',
+      [title, description, category, rankingId],
+      (err, result) => {
+        if (err) {
+          console.error('更新エラー:', err);
+          return res.status(500).json({ success: false, error: '更新エラー' });
+        }
+        res.json({ success: true, message: 'ランキング情報を更新しました' });
+      }
+    );
+  });
 });
 
 // ランキングを削除
