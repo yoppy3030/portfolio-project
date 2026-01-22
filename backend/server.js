@@ -3959,6 +3959,18 @@ app.post('/api/backup/rankings/import', authenticateToken, async (req, res) => {
 });
 
 // 5. アニメのバックアップ
+// アニメ一覧取得
+app.get('/api/anime', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  db.query('SELECT * FROM anime_entries WHERE user_id = ? ORDER BY title', [userId], (err, results) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
+    }
+    res.json({ success: true, anime: results });
+  });
+});
+
 // エクスポート
 app.get('/api/backup/anime', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
@@ -4195,6 +4207,15 @@ app.get('/api/rankings', authenticateToken, (req, res) => {
           ORDER BY ri.rank_order ASC
           LIMIT 3
         `;
+      } else if (ranking.category === 'anime') {
+        itemQuery = `
+          SELECT ri.comment, ri.rank_order, COALESCE(ae.title, ri.custom_title) as title, COALESCE(ae.image_url, ri.custom_image_url) as image_url
+          FROM ranking_items ri
+          LEFT JOIN anime_entries ae ON ri.anime_id = ae.id
+          WHERE ri.ranking_id = ?
+          ORDER BY ri.rank_order ASC
+          LIMIT 3
+        `;
       } else {
         itemQuery = `
           SELECT ri.comment, ri.rank_order, COALESCE(rb.title, ri.custom_title) as title, COALESCE(rb.image_url, ri.custom_image_url) as image_url
@@ -4241,6 +4262,14 @@ app.get('/api/rankings/:rankingId', authenticateToken, (req, res) => {
         WHERE ri.ranking_id = ?
         ORDER BY ri.rank_order ASC
           `;
+    } else if (ranking.category === 'anime') {
+      itemQuery = `
+        SELECT ri.*, COALESCE(ae.title, ri.custom_title) as title, COALESCE(ae.image_url, ri.custom_image_url) as image_url, ae.rating as item_rating, ae.genre
+        FROM ranking_items ri
+        LEFT JOIN anime_entries ae ON ri.anime_id = ae.id
+        WHERE ri.ranking_id = ?
+        ORDER BY ri.rank_order ASC
+      `;
     } else {
       itemQuery = `
         SELECT ri.*, COALESCE(rb.title, ri.custom_title) as title, COALESCE(rb.image_url, ri.custom_image_url) as image_url, rb.rating as item_rating, ra.name as author_name, rb.publisher
