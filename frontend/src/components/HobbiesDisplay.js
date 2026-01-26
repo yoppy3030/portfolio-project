@@ -111,7 +111,7 @@ function HobbiesDisplay({ isOwner, portfolioId }) {
         const animeRes = results[4].value;
         const animeData = await animeRes.json();
         if (animeData.success) {
-          setAnimeCount(animeData.animeList.length);
+          setAnimeCount((animeData.anime || []).length);
         } else {
           console.error(animeData.error || 'Failed to fetch anime list');
         }

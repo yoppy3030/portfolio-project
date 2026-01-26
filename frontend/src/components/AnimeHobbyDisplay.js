@@ -24,7 +24,7 @@ function AnimeHobbyDisplay() {
             });
             const data = await response.json();
             if (data.success) {
-                setAnimeList(data.animeList);
+                setAnimeList(data.anime || []);
             } else {
                 setError(data.error || t('anime.fetchError'));
             }
