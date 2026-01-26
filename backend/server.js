@@ -1761,8 +1761,8 @@ app.get('/api/reading-entries', authenticateToken, (req, res) => {
   } else if (sort === 'oldest') {
     query += ' ORDER BY re.created_at ASC'; // 古い順
   } else {
-    // デフォルトは「本の順番（entry_order）」順、かつ作成日順
-    query += ' ORDER BY re.entry_order ASC, re.created_at DESC';
+    // デフォルトは「本の順番（display_order）」順、かつ作成日順
+    query += ' ORDER BY re.display_order ASC, re.created_at DESC';
   }
 
   db.query(query, params, (err, results) => {
@@ -1783,8 +1783,8 @@ app.post('/api/reading-entries', authenticateToken, (req, res) => {
     return res.status(400).json({ success: false, error: 'タイトル、作家、種類は必須です。' });
   }
 
-  // 現在のリストの最後に本を追加したいので、最大の並び順（entry_order）を取得
-  db.query('SELECT COALESCE(MAX(entry_order), -1) as max_order FROM reading_entries WHERE user_id = ?', [userId], (err, results) => {
+  // 現在のリストの最後に本を追加したいので、最大の並び順（display_order）を取得
+  db.query('SELECT COALESCE(MAX(display_order), -1) as max_order FROM reading_entries WHERE user_id = ?', [userId], (err, results) => {
     if (err) {
       console.error('データベースエラー:', err);
       return res.status(500).json({ success: false, error: '順序の取得中にデータベースエラーが発生しました。' });
@@ -1793,7 +1793,7 @@ app.post('/api/reading-entries', authenticateToken, (req, res) => {
     const nextOrder = results[0].max_order + 1;
 
     // データベースに新しい本を登録
-    const query = 'INSERT INTO reading_entries (user_id, title, author_id, type, genre, rating, comment, entry_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO reading_entries (user_id, title, author_id, type, genre, rating, comment, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
     db.query(query, [userId, title, author_id, type, genre, rating, comment, nextOrder], (err, result) => {
       if (err) {
         console.error('データベースエラー:', err);
