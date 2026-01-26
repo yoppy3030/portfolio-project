@@ -60,10 +60,10 @@ function SelectSongModal({ songs, existingBgms, onSelect, onClose }) {
     // モーダルの背景（暗くなっている部分）。ここをクリックすると閉じます。
     <div className="modal-backdrop" onClick={onClose}>
       {/* モーダルの中身。stopPropagation() は、中身をクリックした時に背景のクリックイベント（閉じる処理）が発生しないようにします */}
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content game-library-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>曲を選択</h2>
-          <button onClick={onClose} className="close-button"><i className="material-icons">close</i></button>
+          <button onClick={onClose} className="game-library-close-button">&times;</button>
         </div>
         <div className="modal-body">
           <div className="song-search-bar">
@@ -1597,7 +1597,7 @@ function GameLibraryModal({ onClose, isOwner }) {
       <div className="modal-content game-library-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>ゲームライブラリを管理</h2>
-          <button onClick={onClose} className="close-button">&times;</button>
+          <button onClick={onClose} className="game-library-close-button">&times;</button>
         </div>
         <div className="modal-body">
           {/* エラーメッセージがあれば表示 */}

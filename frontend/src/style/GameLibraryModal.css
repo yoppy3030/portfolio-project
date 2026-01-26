@@ -41,22 +41,29 @@
   margin: 0;
 }
 
-.game-library-modal-content .close-button {
-  position: absolute;
-  top: 15px;
-  right: 15px;
+.game-library-close-button {
   background: none;
   border: none;
-  font-size: 1.8rem;
+  font-size: 2rem;
+  font-weight: bold;
   cursor: pointer;
-  color: #555;
-  padding: 5px;
+  color: #666;
+  position: absolute;
+  right: 20px;
+  top: 15px;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
+  z-index: 10;
   transition: background-color 0.2s ease;
 }
 
-.game-library-modal-content .close-button:hover {
-  background-color: #f0f0f0;
+.game-library-close-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
   color: #333;
 }
 
@@ -203,13 +210,16 @@
 .btn-add-game {
   background-color: #28a745;
   color: white;
-  border-color: #28a745;
+  border: none;
+  padding: 8px 12px;
+  font-weight: bold;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .btn-add-game:disabled {
   background-color: #ccc;
-  border-color: #ccc;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-remove-game {

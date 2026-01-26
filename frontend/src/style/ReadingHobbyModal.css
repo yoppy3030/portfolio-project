@@ -1,453 +1,420 @@
-/* ReadingHobbyModal.css */
-
-/* Root backdrop for this specific modal */
 .reading-hobby-modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  /* Removed 'Kosugi Maru' font family */
 }
 
-/* Content area for this specific modal */
-.reading-hobby-modal-backdrop .modal-content {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 1600px;
+.reading-hobby-modal-backdrop .reading-modal-content {
+  background-color: #f9f9f9;
+  width: 95%;
+  max-width: 1400px;
+  /* Increased size again */
   height: 90vh;
+  /* Increased height */
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
   position: relative;
+  /* Ensure relative positioning context */
 }
 
-.reading-hobby-modal-backdrop .modal-header {
+.modal-header {
+  padding: 15px 20px;
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
-  padding-right: 40px;
+  position: relative;
+  /* Anchor for absolute button */
 }
 
-.reading-hobby-modal-backdrop .modal-header h2 {
+.modal-header h2 {
   margin: 0;
   font-size: 1.5rem;
-}
-
-.reading-hobby-modal-backdrop .close-button {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: none;
-  border: none;
-  font-size: 1.8rem;
-  cursor: pointer;
-  color: #555;
-  padding: 5px;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
-}
-
-.reading-hobby-modal-backdrop .close-button:hover {
-  background-color: #f0f0f0;
   color: #333;
 }
 
-.reading-hobby-modal-backdrop .modal-body {
-  flex-grow: 1;
-  overflow-y: auto;
+/* Dark mode support for title */
+.dark-mode .modal-header h2 {
+  color: #e0e0e0;
 }
 
-.reading-hobby-modal-backdrop .error-message {
-  color: #D32F2F;
-  background-color: #FFCDD2;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 15px;
+.close-button {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: #666;
+  position: absolute;
+  right: 20px;
+  top: 15px;
+  /* Adjusted position */
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  z-index: 10;
 }
 
-.reading-hobby-modal-backdrop .reading-hobby-manager {
-  display: grid;
-  grid-template-columns: 250px 1fr;
-  gap: 20px;
+.close-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+.modal-body {
+  flex: 1;
+  padding: 20px;
+  overflow: hidden;
+  /* Prevent body scroll, use inner scroll */
+  display: flex;
+  flex-direction: column;
+}
+
+.reading-hobby-manager {
+  display: flex;
+  flex: 1;
   height: 100%;
+  gap: 20px;
 }
 
-.reading-hobby-modal-backdrop .author-management-section {
-  border-right: 1px solid #eee;
-  padding-right: 20px;
+/* --- Layout Sections --- */
+
+.author-management-section {
+  width: 300px;
+  /* Fixed width for sidebar */
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
 }
 
-.reading-hobby-modal-backdrop .add-author-form {
+.book-management-section {
+  flex: 1;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  /* Scrollable book area */
+}
+
+/* Sidebar Tabs */
+.sidebar-tabs {
+  display: flex;
+  margin-bottom: 10px;
+  border-bottom: 2px solid #ddd;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 8px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-weight: bold;
+  color: #666;
+  margin-bottom: -2px;
+  /* Bottom border override */
+  transition: all 0.3s;
+}
+
+.tab-button.active {
+  color: #007bff;
+  /* Primary Color */
+  border-bottom: 2px solid #007bff;
+}
+
+.tab-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* --- Author List --- */
+
+.add-author-form {
+  display: flex;
   gap: 5px;
   margin-bottom: 15px;
 }
 
-.reading-hobby-modal-backdrop .add-author-form input {
-  width: 100%;
-  padding: 4px 8px;
-  border: 1px solid #ccc;
+.add-author-form input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  box-sizing: border-box;
 }
 
-.reading-hobby-modal-backdrop .add-author-form button {
-  padding: 4px 10px;
-  border: none;
-  background-color: #1976D2;
+.add-author-form button {
+  padding: 8px 12px;
+  background-color: #007bff;
   color: white;
+  border: none;
   border-radius: 4px;
   cursor: pointer;
-  align-self: flex-end;
+  white-space: nowrap;
 }
 
-.reading-hobby-modal-backdrop .author-list {
-  flex-grow: 1;
+.author-list {
+  flex: 1;
   overflow-y: auto;
+  border-top: 1px solid #eee;
 }
 
-.reading-hobby-modal-backdrop .author-item {
+.author-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 10px;
   border-bottom: 1px solid #f0f0f0;
   cursor: pointer;
-  border-radius: 4px;
+  transition: background-color 0.2s;
 }
 
-.reading-hobby-modal-backdrop .author-item:hover {
+.author-item:hover {
   background-color: #f5f5f5;
 }
 
-.reading-hobby-modal-backdrop .author-item.selected {
-  background-color: #E3F2FD;
-  font-weight: bold;
+.author-item.selected {
+  background-color: #e6f2ff;
+  /* Light blue highlight */
+  border-left: 4px solid #007bff;
 }
 
-.reading-hobby-modal-backdrop .book-management-section {
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
+.author-item button {
+  font-size: 0.8rem;
+  padding: 4px 8px;
 }
 
-.reading-hobby-modal-backdrop .book-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
+/* --- Book List & Form --- */
 
-.reading-hobby-modal-backdrop .book-item-wrapper {
-  padding: 10px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background-color: #fafafa;
-}
-
-.reading-hobby-modal-backdrop .book-item {
-  display: flex;
-  gap: 15px;
-  align-items: flex-start;
-}
-
-.reading-hobby-modal-backdrop .book-item img {
-  width: 80px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.reading-hobby-modal-backdrop .book-info {
-  flex-grow: 1;
-}
-
-.reading-hobby-modal-backdrop .book-info h5 {
-  margin: 0 0 5px 0;
-  font-size: 1.1rem;
-}
-
-.reading-hobby-modal-backdrop .book-info p {
-  margin: 0 0 5px 0;
-  font-size: 0.9rem;
-  color: #555;
-}
-
-.reading-hobby-modal-backdrop .book-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-left: auto;
-}
-
-.reading-hobby-modal-backdrop .book-actions button {
-  white-space: nowrap;
-}
-
-.reading-hobby-modal-backdrop .add-book-form,
-.reading-hobby-modal-backdrop .edit-book-form {
+.add-book-form {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  /* Two column layout */
   gap: 15px;
-  padding: 15px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
   margin-bottom: 20px;
-  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
 }
 
-.reading-hobby-modal-backdrop .add-book-form h5,
-.reading-hobby-modal-backdrop .edit-book-form h5 {
+.add-book-form h5 {
   grid-column: 1 / -1;
-  margin: 0 0 10px 0;
-  font-size: 1.2rem;
-}
-
-.reading-hobby-modal-backdrop .add-book-form input,
-.reading-hobby-modal-backdrop .add-book-form select,
-.reading-hobby-modal-backdrop .add-book-form textarea,
-.reading-hobby-modal-backdrop .edit-book-form input,
-.reading-hobby-modal-backdrop .edit-book-form select,
-.reading-hobby-modal-backdrop .edit-book-form textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
-  box-sizing: border-box;
-}
-
-.reading-hobby-modal-backdrop .add-book-form textarea,
-.reading-hobby-modal-backdrop .edit-book-form textarea {
-  grid-column: 1 / -1;
-  min-height: 60px;
-}
-
-.reading-hobby-modal-backdrop .add-book-form input[type="file"],
-.reading-hobby-modal-backdrop .edit-book-form input[type="file"] {
-  grid-column: 1 / -1;
-}
-
-.reading-hobby-modal-backdrop .add-book-form button {
-  grid-column: 1 / -1;
-  padding: 10px 15px;
-  border: none;
-  background-color: #1976D2;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  justify-self: flex-start;
-}
-
-.reading-hobby-modal-backdrop .book-management-section hr {
-  border: none;
-  border-top: 1px solid #e0e0e0;
-  margin: 20px 0;
-}
-
-.reading-hobby-modal-backdrop .edit-book-form .edit-actions {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  margin-top: 10px;
-  justify-content: flex-start;
-}
-
-.reading-hobby-modal-backdrop .edit-book-form .edit-actions button {
-  padding: 10px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-  min-width: 100px;
-  text-align: center;
-}
-
-.reading-hobby-modal-backdrop .edit-book-form .edit-actions button:first-child {
-  background-color: #1976D2;
-  color: white;
-}
-
-.reading-hobby-modal-backdrop .edit-book-form .edit-actions button:last-child {
-  background-color: #e0e0e0;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
   color: #333;
 }
 
-/* General button styles */
-.reading-hobby-modal-backdrop .btn-danger-outline {
-  background-color: transparent;
-  border: 1px solid #D32F2F;
-  color: #D32F2F;
-  padding: 4px 8px;
+.add-book-form input,
+.add-book-form select,
+.add-book-form textarea {
+  padding: 10px;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.reading-hobby-modal-backdrop .btn-danger-outline:hover {
-  background-color: #FFEBEE;
-}
-
-.reading-hobby-modal-backdrop .btn-secondary-outline {
-  background-color: transparent;
-  border: 1px solid #757575;
-  color: #757575;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8rem;
-}
-
-.reading-hobby-modal-backdrop .btn-secondary-outline:hover {
-  background-color: #f5f5f5;
-}
-
-/* Star Rating Styles */
-.star-rating {
-  display: inline-block;
-}
-
-.star-rating .star {
-  font-size: 1.2rem;
-  color: #ccc;
-}
-
-.star-rating .star.filled {
-  color: #FFC107;
-}
-
-.rating-display {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.add-book-form textarea {
+  grid-column: 1 / -1;
+  resize: vertical;
+  min-height: 80px;
 }
 
 .rating-input-container {
-  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.star-input {
-  display: inline-block;
+.add-book-form button {
+  grid-column: 1 / -1;
+  padding: 10px;
+  background-color: #28a745;
+  /* Green for add */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
 }
 
-.star-input .star {
-  font-size: 1.8rem;
-  color: #ccc;
+.book-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.book-item-wrapper {
+  /* Wrapper for drag handle */
+}
+
+.book-item {
+  display: flex;
+  background-color: #fdfdfd;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 15px;
+  gap: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.book-item img {
+  width: 80px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.book-info {
+  flex: 1;
+}
+
+.book-info h5 {
+  margin: 0 0 5px 0;
+  font-size: 1.2rem;
+}
+
+.book-info p {
+  margin: 3px 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.book-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: center;
+}
+
+.edit-book-form {
+  background-color: #fff;
+  border: 2px solid #007bff;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* --- Utility Classes --- */
+.btn-danger-outline {
+  background: white;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+  padding: 5px 10px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: color 0.2s;
+}
+
+.btn-danger-outline:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-secondary-outline {
+  background: white;
+  color: #6c757d;
+  border: 1px solid #6c757d;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.star-rating {
+  color: gold;
+}
+
+.star-input {
+  cursor: pointer;
+  color: #ccc;
+  font-size: 1.2rem;
 }
 
 .star-input .star.filled {
-  color: #FFC107;
+  color: gold;
 }
 
+/* Dark Mode Overrides */
+.dark-mode .reading-modal-content {
+  background-color: #1e1e1e;
+  border: 1px solid #555;
+}
 
-/* Dark Theme Overrides */
-body.dark-theme .reading-hobby-modal-backdrop .modal-content {
+.dark-mode .modal-header,
+.dark-mode .author-management-section,
+.dark-mode .book-management-section,
+.dark-mode .book-item,
+.dark-mode .edit-book-form {
+  background-color: #2c2c2c;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.dark-mode .add-author-form input,
+.dark-mode .add-book-form input,
+.dark-mode .add-book-form select,
+.dark-mode .add-book-form textarea {
   background-color: #333;
-  color: #eee;
-}
-
-body.dark-theme .reading-hobby-modal-backdrop .modal-header {
-  border-bottom-color: #555;
-}
-
-body.dark-theme .reading-hobby-modal-backdrop .close-button {
-  color: #bbb;
-}
-
-body.dark-theme .reading-hobby-modal-backdrop .close-button:hover {
-  background-color: #444;
   color: #fff;
-}
-
-body.dark-theme .reading-hobby-modal-backdrop .author-management-section {
-  border-right-color: #555;
-}
-
-body.dark-theme .reading-hobby-modal-backdrop .add-author-form input,
-body.dark-theme .reading-hobby-modal-backdrop .add-book-form input,
-body.dark-theme .reading-hobby-modal-backdrop .add-book-form select,
-body.dark-theme .reading-hobby-modal-backdrop .add-book-form textarea,
-body.dark-theme .reading-hobby-modal-backdrop .edit-book-form input,
-body.dark-theme .reading-hobby-modal-backdrop .edit-book-form select,
-body.dark-theme .reading-hobby-modal-backdrop .edit-book-form textarea {
-  background-color: #555;
-  border-color: #666;
-  color: #eee;
-}
-
-body.dark-theme .reading-hobby-modal-backdrop .author-item {
-  border-bottom-color: #444;
-}
-
-body.dark-theme .reading-hobby-modal-backdrop .author-item:hover {
-  background-color: #444;
-}
-
-body.dark-theme .reading-hobby-modal-backdrop .author-item.selected {
-  background-color: #1a3c5a;
-  /* Darker blue for selection */
-  color: #fff;
-}
-
-body.dark-theme .reading-hobby-modal-backdrop .book-item-wrapper {
-  background-color: #424242;
   border-color: #555;
 }
 
-body.dark-theme .reading-hobby-modal-backdrop .book-info p {
-  color: #ccc;
-}
-
-body.dark-theme .reading-hobby-modal-backdrop .add-book-form,
-body.dark-theme .reading-hobby-modal-backdrop .edit-book-form {
-  border-color: #555;
-}
-
-body.dark-theme .reading-hobby-modal-backdrop .book-management-section hr {
-  border-top-color: #555;
-}
-
-body.dark-theme .reading-hobby-modal-backdrop .btn-secondary-outline {
-  border-color: #888;
+.dark-mode input::placeholder {
   color: #aaa;
 }
 
-body.dark-theme .reading-hobby-modal-backdrop .btn-secondary-outline:hover {
-  background-color: #555;
+.dark-mode .author-item:hover {
+  background-color: #383838;
+}
+
+.dark-mode .author-item.selected {
+  background-color: #2a3a4a;
+  border-left-color: #4da3ff;
+}
+
+.dark-mode .book-info h5 {
   color: #fff;
 }
 
-body.dark-theme .reading-hobby-modal-backdrop .edit-book-form .edit-actions button:last-child {
-  background-color: #555;
-  color: #eee;
+.dark-mode .book-info p {
+  color: #bbb;
 }
 
-body.dark-theme .suggested-genres button {
-  background-color: #444 !important;
-  color: #ccc !important;
-  border-color: #555 !important;
+.dark-mode .tab-button {
+  color: #bbb;
 }
 
-body.dark-theme .suggested-genres button:hover {
-  background-color: #555 !important;
+.dark-mode .tab-button.active {
+  color: #4da3ff;
+  border-bottom-color: #4da3ff;
 }
 
-/* Specific override for selected genre if needed, though inline styles might take precedence */
+.dark-mode .sidebar-tabs {
+  border-bottom-color: #444;
+}

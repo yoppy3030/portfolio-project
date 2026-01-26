@@ -23,6 +23,9 @@ const RankingEditor = ({ ranking, onClose, onSave, allGames, allBooks, allAnime 
 
     useEffect(() => {
         // 選択可能なアイテムリストを設定
+        console.log('[DEBUG] RankingEditor Category:', category);
+        console.log('[DEBUG] RankingEditor Dependencies:', { games: allGames?.length, books: allBooks?.length, anime: allAnime?.length });
+
         if (category === 'game') {
             setAvailableItems(allGames);
         } else if (category === 'reading') {
@@ -30,6 +33,7 @@ const RankingEditor = ({ ranking, onClose, onSave, allGames, allBooks, allAnime 
             // Assuming allBooks is a flat list for simplicity, or we flatten it here.
             setAvailableItems(allBooks);
         } else if (category === 'anime') {
+            console.log('[DEBUG] Setting availableItems to allAnime:', allAnime);
             setAvailableItems(allAnime);
         }
     }, [category, allGames, allBooks, allAnime]);
@@ -377,7 +381,9 @@ const RankingManager = ({ onClose }) => {
                 headers: { 'Authorization': `Bearer ${getToken()}` }
             });
             const animeData = await animeRes.json();
-            if (animeData.success) setAllAnime(animeData.anime || []);
+            if (animeData.success) {
+                setAllAnime(animeData.anime || []);
+            }
         } catch (e) { console.error(e) }
 
     }, []);

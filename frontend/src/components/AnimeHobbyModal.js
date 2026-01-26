@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import '../style/ReadingHobbyModal.css'; // Reuse CSS
-// import './AnimeHobbyModal.css'; // Removed if not exists or update path
-// Reuse CSS or create new one if needed, for now reuse as it has modal styles
+import '../style/AnimeHobbyModal.css'; // Use distinct CSS
 
 const StarRating = ({ rating }) => {
     const totalStars = 10;
@@ -76,7 +74,8 @@ function AnimeHobbyModal({ onClose, isOwner }) {
             });
             const data = await response.json();
             if (data.success) {
-                setAnimeList(data.animeList);
+                // Support both keys just in case
+                setAnimeList(data.anime || data.animeList || []);
             } else {
                 setError(data.error || t('anime.fetchError'));
             }
@@ -144,6 +143,7 @@ function AnimeHobbyModal({ onClose, isOwner }) {
                 body: formData
             });
             const data = await response.json();
+
             if (data.success) {
                 setNewAnime({ title: '', original_author: '', genre: '', synopsis: '', rating: 0, review: '', image: null });
                 fetchAnime();
@@ -218,8 +218,8 @@ function AnimeHobbyModal({ onClose, isOwner }) {
     };
 
     return (
-        <div className="reading-hobby-modal-backdrop" onClick={onClose}>
-            <div className="modal-content reading-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="anime-hobby-modal-backdrop" onClick={onClose}>
+            <div className="modal-content anime-modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2>{t('anime.title')}</h2>
                     <button onClick={onClose} className="close-button">&times;</button>

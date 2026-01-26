@@ -137,12 +137,29 @@ db.getConnection((err, connection) => {
         type VARCHAR(50) NOT NULL COMMENT 'manga, novel, technical, other',
         genre VARCHAR(100),
         publisher VARCHAR(255),
-        rating INT CHECK (rating >= 1 AND rating <= 5),
+        image_url VARCHAR(512),
+        rating INT CHECK (rating >= 1 AND rating <= 10),
         comment TEXT,
-        entry_order INT DEFAULT 0,
+        display_order INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (author_id) REFERENCES reading_authors(id) ON DELETE CASCADE
+      )
+    `);
+
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS anime_entries (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        original_author VARCHAR(255),
+        genre VARCHAR(100),
+        synopsis TEXT,
+        rating INT DEFAULT 0,
+        review TEXT,
+        image_url VARCHAR(512),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
 
@@ -150,8 +167,41 @@ db.getConnection((err, connection) => {
     await runQuery("ALTER TABLE ranking_items ADD COLUMN custom_title VARCHAR(255)");
     await runQuery("ALTER TABLE ranking_items ADD COLUMN custom_image_url VARCHAR(512)");
 
-    // Reading Books Columns (Corrected table name from reading_books to reading_entries)
+    // Reading Entries Columns Migrations
+    // Ensure display_order exists (rename entry_order if it exists)
+    await runQuery("ALTER TABLE reading_entries CHANGE entry_order display_order INT DEFAULT 0").catch(err => { });
+    await runQuery("ALTER TABLE reading_entries ADD COLUMN display_order INT DEFAULT 0"); // If it didn't exist
+
+    // Ensure image_url exists
+    await runQuery("ALTER TABLE reading_entries ADD COLUMN image_url VARCHAR(512)");
+
+    // Ensure publisher exists
     await runQuery("ALTER TABLE reading_entries ADD COLUMN publisher VARCHAR(255)");
+
+    // Update Rating Constraint (1-5 -> 1-10)
+    // Try to drop the old constraint (it might be named reading_entries_chk_1 or similar)
+    // We use a general approach to add the new check if possible, or alter it.
+    // simpler to just try replacing it.
+    await runQuery("ALTER TABLE reading_entries DROP CHECK reading_entries_chk_1").catch(err => { });
+    // Add new constraint
+    // Note: If a constraint with the same name exists or if we dropped it, we can add a new one.
+    // We'll give it a strict name to avoid ambiguity
+    await runQuery("ALTER TABLE reading_entries ADD CONSTRAINT reading_entries_rating_chk CHECK (rating >= 1 AND rating <= 10)").catch(err => { });
+
+
+    // Reading Authors Type (author vs genre)
+    await runQuery("ALTER TABLE reading_authors ADD COLUMN type ENUM('author', 'genre') DEFAULT 'author'");
+
+    // Update unique constraint to include type
+    // Update unique constraint to include type
+    // First try to drop the old index if it exists (ignoring error if it doesn't)
+    await runQuery("DROP INDEX user_author ON reading_authors").catch(err => { });
+    // Add new unique index including type
+    await runQuery("ALTER TABLE reading_authors ADD UNIQUE KEY user_author_type (user_id, name, type)");
+
+    // Ensure anime_id exists in ranking_items
+    await runQuery("ALTER TABLE ranking_items ADD COLUMN anime_id INT");
+    await runQuery("ALTER TABLE ranking_items ADD CONSTRAINT fk_ranking_anime FOREIGN KEY (anime_id) REFERENCES anime_entries(id) ON DELETE CASCADE").catch(err => { });
 
     console.log('All migrations executed.');
   };
@@ -1626,7 +1676,7 @@ app.delete('/api/played-games/:playedGameId', authenticateToken, (req, res) => {
 app.get('/api/reading/authors', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
 
-  db.query('SELECT id, name FROM reading_authors WHERE user_id = ? ORDER BY name', [userId], (err, results) => {
+  db.query('SELECT id, name, type FROM reading_authors WHERE user_id = ? ORDER BY name', [userId], (err, results) => {
     if (err) {
       console.error('データベースエラー:', err);
       return res.status(500).json({ success: false, error: '作家リストの取得中にデータベースエラーが発生しました。' });
@@ -1636,15 +1686,20 @@ app.get('/api/reading/authors', authenticateToken, (req, res) => {
 });
 
 // 新しい作家を追加
+// 新しい作家を追加
 app.post('/api/reading/authors', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
-  const { name } = req.body;
+  const { name, type } = req.body; // type: 'author' or 'genre'
+
+  console.log('Adding new author/genre:', { name, type, userId }); // Debug log
 
   if (!name || name.trim() === '') {
     return res.status(400).json({ success: false, error: '作家名は必須です。' });
   }
 
-  db.query('INSERT INTO reading_authors (user_id, name) VALUES (?, ?)', [userId, name.trim()], (err, result) => {
+  const authorType = type || 'author';
+
+  db.query('INSERT INTO reading_authors (user_id, name, type) VALUES (?, ?, ?)', [userId, name.trim(), authorType], (err, result) => {
     if (err) {
       if (err.code === 'ER_DUP_ENTRY') {
         return res.status(409).json({ success: false, error: 'その作家は既に追加されています。' });
@@ -1652,7 +1707,8 @@ app.post('/api/reading/authors', authenticateToken, (req, res) => {
       console.error('データベースエラー:', err);
       return res.status(500).json({ success: false, error: '作家の追加中にデータベースエラーが発生しました。' });
     }
-    res.status(201).json({ success: true, message: '作家が追加されました。', author: { id: result.insertId, name: name.trim() } });
+    console.log('Added successfully:', { id: result.insertId, name: name.trim(), type: authorType }); // Debug log
+    res.status(201).json({ success: true, message: '作家が追加されました。', author: { id: result.insertId, name: name.trim(), type: authorType } });
   });
 });
 
@@ -1781,7 +1837,7 @@ app.put('/api/reading/books/reorder', authenticateToken, async (req, res) => {
 
           await new Promise((resolve, reject) => {
             connection.query(
-              'UPDATE reading_books SET display_order = ? WHERE id = ? AND user_id = ?',
+              'UPDATE reading_entries SET display_order = ? WHERE id = ? AND user_id = ?',
               [newDisplayOrder, bookId, userId],
               (err, result) => {
                 if (err) return reject(err);
@@ -1840,7 +1896,7 @@ app.put('/api/reading/books/:bookId', authenticateToken, upload.single('image'),
     return res.status(400).json({ success: false, error: '更新するフィールドがありません。' });
   }
 
-  db.query('UPDATE reading_books SET ? WHERE id = ? AND user_id = ?', [fieldsToUpdate, bookId, userId], (err, result) => {
+  db.query('UPDATE reading_entries SET ? WHERE id = ? AND user_id = ?', [fieldsToUpdate, bookId, userId], (err, result) => {
     if (err) {
       console.error('データベースエラー:', err);
       return res.status(500).json({ success: false, error: '書籍の更新中にデータベースエラーが発生しました。' });
@@ -1926,7 +1982,7 @@ app.get('/api/backup/games', authenticateToken, (req, res) => {
 });
 
 // 読書記録のバックアップ
-// 読書記録は reading_books テーブル（または reading_entries）と reading_authors テーブルに分かれている場合があるため注意
+// 読書記録は reading_entries テーブル（または reading_entries）と reading_authors テーブルに分かれている場合があるため注意
 // ここでは reading_entries を対象とします
 app.get('/api/backup/reading', authenticateToken, (req, res) => {
   handleExport(req, res, 'reading_entries', 'reading_backup');
@@ -3136,32 +3192,8 @@ app.post('/api/reset-password', async (req, res) => {
 });
 // --- 読書管理機能関連API ---
 
-// 著者の取得
-app.get('/api/reading/authors', authenticateToken, (req, res) => {
-  const { id: userId } = req.user;
-  db.query('SELECT * FROM reading_authors WHERE user_id = ? ORDER BY id DESC', [userId], (err, results) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
-    }
-    res.json({ success: true, authors: results });
-  });
-});
 
-// 著者の追加
-app.post('/api/reading/authors', authenticateToken, (req, res) => {
-  const { id: userId } = req.user;
-  const { name } = req.body;
-  if (!name) return res.status(400).json({ success: false, error: '著者名は必須です。' });
 
-  db.query('INSERT INTO reading_authors (user_id, name) VALUES (?, ?)', [userId, name], (err, result) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
-    }
-    res.json({ success: true, message: '著者が追加されました。' });
-  });
-});
 
 // 著者の削除
 app.delete('/api/reading/authors/:id', authenticateToken, (req, res) => {
@@ -3182,7 +3214,7 @@ app.get('/api/reading/books', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
   const { author_id } = req.query;
 
-  let query = 'SELECT * FROM reading_books WHERE user_id = ?';
+  let query = 'SELECT * FROM reading_entries WHERE user_id = ?';
   const params = [userId];
 
   if (author_id) {
@@ -3212,7 +3244,7 @@ app.put('/api/reading/books/reorder', authenticateToken, async (req, res) => {
   try {
     for (const book of books) {
       await new Promise((resolve, reject) => {
-        db.query('UPDATE reading_books SET display_order = ? WHERE id = ? AND user_id = ?',
+        db.query('UPDATE reading_entries SET display_order = ? WHERE id = ? AND user_id = ?',
           [book.display_order, book.id, userId], (err) => {
             if (err) reject(err);
             else resolve();
@@ -3231,7 +3263,7 @@ app.post('/api/reading/books', authenticateToken, upload.single('image'), (req, 
   const { id: userId } = req.user;
   let { author_id, type, genre, title, comment, rating, publisher } = req.body;
 
-  // Ensure parameters are not arrays (to prevent SQL injection/parameter count mismatch if frontend sends duplicates)
+  // Ensure parameters are not arrays
   if (Array.isArray(publisher)) publisher = publisher[0];
   if (Array.isArray(rating)) rating = rating[0];
   if (Array.isArray(genre)) genre = genre[0];
@@ -3244,11 +3276,16 @@ app.post('/api/reading/books', authenticateToken, upload.single('image'), (req, 
     return res.status(400).json({ success: false, error: '必須項目が不足しています。' });
   }
 
-  db.query('SELECT MAX(display_order) as maxOrder FROM reading_books WHERE user_id = ? AND author_id = ?', [userId, author_id], (err, results) => {
+  // Handle rating: if 0 or invalid, set to null (because DB check constraint is 1-5)
+  if (rating == 0 || rating === '0' || !rating) {
+    rating = null;
+  }
+
+  db.query('SELECT MAX(display_order) as maxOrder FROM reading_entries WHERE user_id = ? AND author_id = ?', [userId, author_id], (err, results) => {
     const nextOrder = (results && results[0] && results[0].maxOrder !== null) ? results[0].maxOrder + 1 : 0;
 
     const query = `
-      INSERT INTO reading_books 
+      INSERT INTO reading_entries 
       (user_id, author_id, type, genre, title, comment, rating, publisher, image_url, display_order) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
@@ -3284,7 +3321,7 @@ app.put('/api/reading/books/:id', authenticateToken, upload.single('image'), (re
   params.push(bookId);
   params.push(userId);
 
-  const query = `UPDATE reading_books SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`;
+  const query = `UPDATE reading_entries SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`;
 
   db.query(query, params, (err, result) => {
     if (err) {
@@ -3300,7 +3337,7 @@ app.delete('/api/reading/books/:id', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
   const { id: bookId } = req.params;
 
-  db.query('DELETE FROM reading_books WHERE id = ? AND user_id = ?', [bookId, userId], (err, result) => {
+  db.query('DELETE FROM reading_entries WHERE id = ? AND user_id = ?', [bookId, userId], (err, result) => {
     if (err) {
       console.error('データベースエラー:', err);
       return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
@@ -3310,89 +3347,9 @@ app.delete('/api/reading/books/:id', authenticateToken, (req, res) => {
 });
 
 
-// --- アニメ管理機能関連API ---
 
-// アニメの取得
-app.get('/api/anime', authenticateToken, (req, res) => {
-  const { id: userId } = req.user;
-  db.query('SELECT * FROM anime_entries WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, results) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
-    }
-    res.json({ success: true, animeList: results });
-  });
-});
+// (Duplicate Anime endpoints removed)
 
-// アニメの追加
-app.post('/api/anime', authenticateToken, upload.single('image'), (req, res) => {
-  const { id: userId } = req.user;
-  const { title, original_author, genre, synopsis, rating, review } = req.body;
-  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
-
-  if (!title) {
-    return res.status(400).json({ success: false, error: 'タイトルは必須です。' });
-  }
-
-  const query = `
-    INSERT INTO anime_entries 
-    (user_id, title, original_author, genre, synopsis, rating, review, image_url) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-  db.query(query, [userId, title, original_author, genre, synopsis, rating, review, image_url], (err, result) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
-    }
-    res.json({ success: true, message: 'アニメが追加されました。' });
-  });
-});
-
-// アニメの更新
-app.put('/api/anime/:id', authenticateToken, upload.single('image'), (req, res) => {
-  const { id: userId } = req.user;
-  const { id: animeId } = req.params;
-  const { title, original_author, genre, synopsis, rating, review } = req.body;
-
-  let updates = [];
-  let params = [];
-
-  if (title) { updates.push('title = ?'); params.push(title); }
-  if (original_author) { updates.push('original_author = ?'); params.push(original_author); }
-  if (genre) { updates.push('genre = ?'); params.push(genre); }
-  if (synopsis) { updates.push('synopsis = ?'); params.push(synopsis); }
-  if (rating) { updates.push('rating = ?'); params.push(rating); }
-  if (review) { updates.push('review = ?'); params.push(review); }
-  if (req.file) { updates.push('image_url = ?'); params.push(`/uploads/${req.file.filename}`); }
-
-  if (updates.length === 0) return res.status(400).json({ success: false, error: '更新データがありません。' });
-
-  params.push(animeId);
-  params.push(userId);
-
-  const query = `UPDATE anime_entries SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`;
-  db.query(query, params, (err, result) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
-    }
-    res.json({ success: true, message: 'アニメが更新されました。' });
-  });
-});
-
-// アニメの削除
-app.delete('/api/anime/:id', authenticateToken, (req, res) => {
-  const { id: userId } = req.user;
-  const { id: animeId } = req.params;
-
-  db.query('DELETE FROM anime_entries WHERE id = ? AND user_id = ?', [animeId, userId], (err, result) => {
-    if (err) {
-      console.error('データベースエラー:', err);
-      return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
-    }
-    res.json({ success: true, message: 'アニメが削除されました。' });
-  });
-});
 
 // --- バックアップ機能関連API ---
 
@@ -3547,7 +3504,7 @@ app.get('/api/backup/reading', authenticateToken, async (req, res) => {
 
     // 書籍を取得
     const books = await new Promise((resolve, reject) => {
-      db.query('SELECT * FROM reading_books WHERE user_id = ?', [userId], (err, results) => {
+      db.query('SELECT * FROM reading_entries WHERE user_id = ?', [userId], (err, results) => {
         if (err) return reject(err);
         resolve(results);
       });
@@ -3604,7 +3561,8 @@ app.post('/api/backup/reading/import', authenticateToken, async (req, res) => {
           } else {
             // 著者を新規作成
             const result = await new Promise((resolve, reject) => {
-              connection.query('INSERT INTO reading_authors (user_id, name) VALUES (?, ?)', [userId, author.name], (err, res) => {
+              const authorType = author.type || 'author';
+              connection.query('INSERT INTO reading_authors (user_id, name, type) VALUES (?, ?, ?)', [userId, author.name, authorType], (err, res) => {
                 if (err) return reject(err);
                 resolve(res);
               });
@@ -3619,7 +3577,7 @@ app.post('/api/backup/reading/import', authenticateToken, async (req, res) => {
               // 書籍の重複チェック (タイトル + 著者IDで簡易チェック)
               const existingBook = await new Promise((resolve, reject) => {
                 connection.query(
-                  'SELECT id FROM reading_books WHERE user_id = ? AND author_id = ? AND title = ?',
+                  'SELECT id FROM reading_entries WHERE user_id = ? AND author_id = ? AND title = ?',
                   [userId, authorId, book.title],
                   (err, results) => {
                     if (err) return reject(err);
@@ -3645,7 +3603,7 @@ app.post('/api/backup/reading/import', authenticateToken, async (req, res) => {
                   // undefined を null に
                   Object.keys(bookData).forEach(k => bookData[k] === undefined && (bookData[k] = null));
 
-                  connection.query('INSERT INTO reading_books SET ?', bookData, (err, res) => {
+                  connection.query('INSERT INTO reading_entries SET ?', bookData, (err, res) => {
                     if (err) return reject(err);
                     resolve(res);
                   });
@@ -4002,6 +3960,77 @@ app.get('/api/anime', authenticateToken, (req, res) => {
   });
 });
 
+// アニメ追加
+app.post('/api/anime', authenticateToken, upload.single('image'), (req, res) => {
+  const { id: userId } = req.user;
+  const { title, original_author, genre, synopsis, rating, review } = req.body;
+  let image_url = null;
+  if (req.file) {
+    image_url = `/uploads/${req.file.filename}`;
+  }
+
+  if (!title) {
+    return res.status(400).json({ success: false, error: 'タイトルは必須です。' });
+  }
+
+  const query = `
+    INSERT INTO anime_entries (user_id, title, original_author, genre, synopsis, rating, review, image_url)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(query, [userId, title, original_author, genre, synopsis, rating, review, image_url], (err, result) => {
+    if (err) {
+      console.error('データベースエラー:', err);
+      return res.status(500).json({ success: false, error: '保存できませんでした。' });
+    }
+    res.json({ success: true, message: 'アニメを追加しました。', id: result.insertId });
+  });
+});
+
+// アニメ更新
+app.put('/api/anime/:id', authenticateToken, upload.single('image'), (req, res) => {
+  const { id: userId } = req.user;
+  const { id: animeId } = req.params;
+  const { title, original_author, genre, synopsis, rating, review } = req.body;
+
+  // まず既存のデータを取得して所有権確認
+  db.query('SELECT image_url FROM anime_entries WHERE id = ? AND user_id = ?', [animeId, userId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: 'DBエラー' });
+    if (results.length === 0) return res.status(404).json({ success: false, error: 'アニメが見つかりません' });
+
+    let image_url = results[0].image_url;
+    if (req.file) {
+      image_url = `/uploads/${req.file.filename}`;
+    }
+
+    const updateQuery = `
+      UPDATE anime_entries
+      SET title = ?, original_author = ?, genre = ?, synopsis = ?, rating = ?, review = ?, image_url = ?
+      WHERE id = ? AND user_id = ?
+    `;
+
+    db.query(updateQuery, [title, original_author, genre, synopsis, rating, review, image_url, animeId, userId], (err, result) => {
+      if (err) {
+        console.error('更新エラー:', err);
+        return res.status(500).json({ success: false, error: '更新できませんでした。' });
+      }
+      res.json({ success: true, message: 'アニメ情報を更新しました。' });
+    });
+  });
+});
+
+// アニメ削除
+app.delete('/api/anime/:id', authenticateToken, (req, res) => {
+  const { id: userId } = req.user;
+  const { id: animeId } = req.params;
+
+  db.query('DELETE FROM anime_entries WHERE id = ? AND user_id = ?', [animeId, userId], (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: '削除エラー' });
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, error: 'アニメが見つかりません' });
+    res.json({ success: true, message: 'アニメを削除しました。' });
+  });
+});
+
 // エクスポート
 app.get('/api/backup/anime', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
@@ -4203,7 +4232,7 @@ app.post('/api/admin/send-feature-notification', authenticateToken, (req, res) =
 //   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 //   FOREIGN KEY (ranking_id) REFERENCES rankings(id) ON DELETE CASCADE,
 //   FOREIGN KEY (game_id) REFERENCES played_games(id) ON DELETE CASCADE,
-//   FOREIGN KEY (book_id) REFERENCES reading_books(id) ON DELETE CASCADE
+//   FOREIGN KEY (book_id) REFERENCES reading_entries(id) ON DELETE CASCADE
 // );
 
 // ランキング一覧を取得 (トップ3アイテム付き)
@@ -4249,7 +4278,7 @@ app.get('/api/rankings', authenticateToken, (req, res) => {
         itemQuery = `
           SELECT ri.comment, ri.rank_order, COALESCE(rb.title, ri.custom_title) as title, COALESCE(rb.image_url, ri.custom_image_url) as image_url
           FROM ranking_items ri
-          LEFT JOIN reading_books rb ON ri.book_id = rb.id
+          LEFT JOIN reading_entries rb ON ri.book_id = rb.id
           WHERE ri.ranking_id = ?
           ORDER BY ri.rank_order ASC
         `;
@@ -4302,7 +4331,7 @@ app.get('/api/rankings/:rankingId', authenticateToken, (req, res) => {
       itemQuery = `
         SELECT ri.*, COALESCE(rb.title, ri.custom_title) as title, COALESCE(rb.image_url, ri.custom_image_url) as image_url, rb.rating as item_rating, ra.name as author_name, rb.publisher
         FROM ranking_items ri
-        LEFT JOIN reading_books rb ON ri.book_id = rb.id
+        LEFT JOIN reading_entries rb ON ri.book_id = rb.id
         LEFT JOIN reading_authors ra ON rb.author_id = ra.id
         WHERE ri.ranking_id = ?
         ORDER BY ri.rank_order ASC
@@ -4422,6 +4451,7 @@ app.put('/api/rankings/:rankingId/items', authenticateToken, (req, res) => {
               rankingId,
               (category === 'game' && item.item_id) ? item.item_id : null,
               (category === 'reading' && item.item_id) ? item.item_id : null,
+              (category === 'anime' && item.item_id) ? item.item_id : null, // Add anime_id
               item.custom_title || null,
               item.custom_image_url || null,
               item.comment,
@@ -4430,7 +4460,7 @@ app.put('/api/rankings/:rankingId/items', authenticateToken, (req, res) => {
 
             await new Promise((resolve, reject) => {
               connection.query(
-                'INSERT INTO ranking_items (ranking_id, game_id, book_id, custom_title, custom_image_url, comment, rank_order) VALUES ?',
+                'INSERT INTO ranking_items (ranking_id, game_id, book_id, anime_id, custom_title, custom_image_url, comment, rank_order) VALUES ?',
                 [values],
                 (err) => {
                   if (err) return reject(err);

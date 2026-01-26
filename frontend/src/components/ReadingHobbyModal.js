@@ -57,6 +57,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
   // --- 状態（State）の管理 ---
   // APIから取得したデータを保存する変数
   const [authors, setAuthors] = useState([]); // 著者のリスト
+  const [activeTab, setActiveTab] = useState('author'); // 'author' or 'genre'
   const [books, setBooks] = useState([]);     // 本のリスト
 
   // 現在選択されている著者のID
@@ -164,7 +165,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
           'Authorization': `Bearer ${getToken()}`
         },
         // 送信するデータをJSON文字列に変換
-        body: JSON.stringify({ name: newAuthorName })
+        body: JSON.stringify({ name: newAuthorName, type: activeTab })
       });
       const data = await response.json();
 
@@ -379,33 +380,55 @@ function ReadingHobbyModal({ onClose, isOwner }) {
 
           <div className="reading-hobby-manager">
             <div className="author-management-section">
-              <h4>{t('readingHobby.modal.authorManagementTitle')}</h4>
+              <div className="sidebar-tabs">
+                <button
+                  className={`tab-button ${activeTab === 'author' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('author'); setSelectedAuthorId(null); }}
+                >
+                  {t('readingHobby.modal.tabAuthors', '作家')}
+                </button>
+                <button
+                  className={`tab-button ${activeTab === 'genre' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('genre'); setSelectedAuthorId(null); }}
+                >
+                  {t('readingHobby.modal.tabGenres', 'ジャンル')}
+                </button>
+              </div>
+              <h4>{activeTab === 'author' ? t('readingHobby.modal.authorManagementTitle') : t('readingHobby.modal.genreManagementTitle', 'ジャンルの管理')}</h4>
               <div className="add-author-form">
                 <input
                   type="text"
                   value={newAuthorName}
                   onChange={(e) => setNewAuthorName(e.target.value)}
-                  placeholder={t('readingHobby.modal.newAuthorPlaceholder')}
+                  placeholder={activeTab === 'author' ? t('readingHobby.modal.newAuthorPlaceholder') : t('readingHobby.modal.newGenrePlaceholder', '新しいジャンル名')}
                 />
-                <button onClick={handleAddAuthor}>{t('readingHobby.modal.addAuthorButton')}</button>
+                <button onClick={handleAddAuthor}>
+                  {activeTab === 'author' ? t('readingHobby.modal.addAuthorButton') : t('readingHobby.modal.addGenreButton', 'ジャンルを追加')}
+                </button>
               </div>
               <div className="author-list">
                 {loading ? <p>{t('readingHobby.modal.loading')}</p> : (
-                  authors.map(author => (
-                    <div
-                      key={author.id}
-                      className={`author-item ${selectedAuthorId === author.id ? 'selected' : ''}`}
-                      onClick={() => setSelectedAuthorId(author.id)}
-                    >
-                      <span>{author.name}</span>
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteAuthor(author.id); }} className="btn-danger-outline">{t('readingHobby.modal.deleteButton')}</button>
-                    </div>
-                  ))
+                  authors
+                    .filter(author => (author.type || 'author') === activeTab)
+                    .map(author => (
+                      <div
+                        key={author.id}
+                        className={`author-item ${selectedAuthorId === author.id ? 'selected' : ''}`}
+                        onClick={() => setSelectedAuthorId(author.id)}
+                      >
+                        <span>{author.name}</span>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteAuthor(author.id); }} className="btn-danger-outline">{t('readingHobby.modal.deleteButton')}</button>
+                      </div>
+                    ))
                 )}
               </div>
             </div>
             <div className="book-management-section">
-              <h4>{t('readingHobby.modal.bookManagementTitle')}</h4>
+              <h4>
+                {selectedAuthorId
+                  ? `${authors.find(a => a.id === selectedAuthorId)?.name} の${activeTab === 'author' ? '本' : '本'}`
+                  : t('readingHobby.modal.bookManagementTitle')}
+              </h4>
               {selectedAuthorId ? (
                 <>
                   <div className="add-book-form">
@@ -414,7 +437,19 @@ function ReadingHobbyModal({ onClose, isOwner }) {
                       {bookTypeKeys.map(key => <option key={key} value={key}>{t(`readingHobby.bookTypes.${key}`)}</option>)}
                     </select>
                     <input type="text" name="title" placeholder={t('readingHobby.modal.bookTitlePlaceholder')} value={newBookData.title} onChange={handleNewBookChange} />
+                    {/* User requested manual input only for Add Book, so removed list="genre-options" */}
                     <input type="text" name="genre" placeholder={t('readingHobby.modal.bookGenrePlaceholder')} value={newBookData.genre} onChange={handleNewBookChange} />
+                    <datalist id="genre-options">
+                      <option value="百合" />
+                      <option value="ラブコメ" />
+                      <option value="ファンタジー" />
+                      <option value="SF" />
+                      <option value="ミステリー" />
+                      <option value="ホラー" />
+                      <option value="歴史" />
+                      <option value="ビジネス" />
+                      <option value="技術書" />
+                    </datalist>
                     <input type="text" name="publisher" placeholder="出版社 (例: KADOKAWA)" value={newBookData.publisher} onChange={handleNewBookChange} />
                     <div className="rating-input-container">
                       <label>{t('readingHobby.modal.ratingLabel')}</label>
@@ -446,7 +481,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
                                           {bookTypeKeys.map(key => <option key={key} value={key}>{t(`readingHobby.bookTypes.${key}`)}</option>)}
                                         </select>
                                         <input type="text" name="title" placeholder={t('readingHobby.modal.bookTitlePlaceholder')} value={editBookData.title} onChange={handleEditBookChange} />
-                                        <input type="text" name="genre" placeholder={t('readingHobby.modal.bookGenrePlaceholder')} value={editBookData.genre} onChange={handleEditBookChange} />
+                                        <input type="text" name="genre" placeholder={t('readingHobby.modal.bookGenrePlaceholder')} value={editBookData.genre} onChange={handleEditBookChange} list="genre-options" />
                                         <input type="text" name="publisher" placeholder="出版社 (例: KADOKAWA)" value={editBookData.publisher || ''} onChange={handleEditBookChange} />
                                         <div className="rating-input-container">
                                           <label>{t('readingHobby.modal.ratingLabel')}</label>
@@ -491,7 +526,7 @@ function ReadingHobbyModal({ onClose, isOwner }) {
                   )}
                 </>
               ) : (
-                <p>{t('readingHobby.modal.selectAuthorPrompt')}</p>
+                <p>{activeTab === 'author' ? t('readingHobby.modal.selectAuthorPrompt') : t('readingHobby.modal.selectGenrePrompt', 'ジャンルを選択すると、ここに本が表示されます。')}</p>
               )}
             </div>
           </div>

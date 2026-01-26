@@ -63,6 +63,8 @@ function ReadingHobbyDisplay() {
               <div className="book-card-content">
                 <h5 className="book-card-title">{book.title}</h5>
                 <p className="book-card-author">{book.author_name}</p>
+                <p className="book-card-type">{t(`readingHobby.bookTypes.${book.type}`)}</p>
+                {book.genre && <p className="book-card-genre">{t('readingHobby.modal.genreLabel')} {book.genre}</p>}
                 {book.rating && (
                   <p className="book-card-rating">{t('readingHobby.display.ratingLabel')}{'★'.repeat(book.rating)}{'☆'.repeat(10 - book.rating)}</p>
                 )}
