@@ -1,152 +1,215 @@
-// 必要なライブラリ（便利な道具）の読み込み
-require('dotenv').config(); // .envファイルに書かれた秘密の鍵や設定（環境変数）を読み込みます
-const express = require('express'); // サーバーを作るためのメインのフレームワーク
-const mysql = require('mysql'); // データベース（MySQL）とやり取りするための道具
-const bcrypt = require('bcryptjs'); // パスワードを暗号化（ハッシュ化）して安全に守るための道具
-const cors = require('cors'); // 別の場所（フロントエンド）からのアクセスを許可するための道具
-const crypto = require('crypto'); // 暗号などのセキュリティ機能を使うための道具
-const jwt = require('jsonwebtoken'); // ログイン状態を管理する「トークン」を作るための道具
-const helmet = require('helmet'); // アプリのセキュリティを強化する（ヘルメットをかぶるようなイメージ）
-const rateLimit = require('express-rate-limit'); // アクセス回数を制限して、攻撃から守るための道具
-const path = require('path'); // ファイルの場所（パス）を操作するための道具
-const multer = require('multer'); // 画像などのファイルをアップロードするための道具
+// =========================================================
+// サーバーサイド（バックエンド）のメインファイル: server.js
+// =========================================================
 
-// Expressアプリを作成（これがサーバーの実体になります）
+// --- 必要なライブラリ（便利な道具）の読み込み ---
+// require('xxx') というのは、Node.jsでライブラリを使うための決まり文句です。
+
+// dotenv: .envファイルという「秘密のメモ」に書かれた設定（パスワードなど）を読み込むライブラリです。
+// コードの中に直接パスワードを書くと危険なので、外部ファイルに分けて管理します。
+require('dotenv').config();
+
+// express: Webサーバーを簡単に作るためのメインのフレームワーク（枠組み）です。
+// これを使うと、APIを作ったりページを表示したりする機能が簡単に書けます。
+const express = require('express');
+
+// mysql: データベース（MySQL）とやり取りするためのドライバ（接続キット）です。
+// データの保存や読み出しに使います。
+const mysql = require('mysql');
+
+// bcryptjs: パスワードを暗号化（ハッシュ化）して安全に守るためのライブラリです。
+// 「password123」のような文字列を「$2a$10$Xy...」のような解読不可能な文字列に変換します。
+const bcrypt = require('bcryptjs');
+
+// cors: Cross-Origin Resource Sharing（オリジン間リソース共有）の設定ライブラリです。
+// フロントエンド（React）とバックエンド（Express）が違う場所（ポート）にある場合、
+// セキュリティのために通信がブロックされるのを防ぎます。
+const cors = require('cors');
+
+// crypto: ランダムな文字列を作ったり、暗号処理をしたりするNode.js標準の機能です。
+const crypto = require('crypto');
+
+// jwt (jsonwebtoken): ログイン状態で使う「証明書（トークン）」を発行・検証するライブラリです。
+// ユーザーがログインするとトークンが渡され、次回からそれを見せるだけでアクセスできるようになります。
+const jwt = require('jsonwebtoken');
+
+// helmet: HTTPヘッダーという通信情報を適切に設定して、セキュリティを高めるためのライブラリです。
+// 「ヘルメットをかぶって防御力を上げる」イメージです。
+const helmet = require('helmet');
+
+// express-rate-limit: 短時間に大量のアクセスが来る攻撃（Dos攻撃など）を防ぐためのライブラリです。
+// 「1分間に〇回まで」といった制限をかけられます。
+const rateLimit = require('express-rate-limit');
+
+// path: ファイルやフォルダの場所（パス）を操作するためのNode.js標準機能です。
+const path = require('path');
+
+// multer: 画像などのファイルをアップロードするためのライブラリです。
+const multer = require('multer');
+
+
+// --- Expressアプリケーションの作成 ---
+// これがサーバーの実体になります。この app に対して設定を追加していきます。
 const app = express();
 
-// 最大BGMエントリ数
+// --- 定数の設定 ---
+// MAX_BGM_ENTRIES: 1つのゲームに登録できるBGMの最大数（制限をかけてデータを守ります）。
 const MAX_BGM_ENTRIES = 30;
 
-// 本番環境用のセキュリティ設定（開発環境では無効化）
+// --- セキュリティ設定 (Helmet) ---
+// 本番環境（実際に公開する環境）の場合のみ、セキュリティを強化します。
+// 開発中はエラーの原因になったりするので、あえて無効にすることもあります。
 if (process.env.NODE_ENV === 'production') {
   app.use(helmet());
 }
 
-// レート制限設定（開発環境では緩く設定）
+// --- アクセス制限 (Rate Limiting) の設定 ---
+// 一般的なAPIアクセスに対する制限
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15分
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 本番環境では厳しく
+  windowMs: 15 * 60 * 1000, // 15分間という時間の枠
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // その枠の中で許可する最大アクセス数（本番は厳しく100回）
   message: {
     success: false,
     error: 'リクエストが多すぎます。しばらく待ってから再試行してください。'
   }
 });
+// 作った制限設定をアプリ全体に適用します。
 app.use(limiter);
 
-// ログイン用の厳しいレート制限
+// ログインAPI専用の厳しい制限
+// パスワード総当たり攻撃などを防ぐため、ログイン試行は回数をかなり絞ります。
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15分
-  max: process.env.NODE_ENV === 'production' ? 5 : 50, // 開発環境では緩く
+  windowMs: 15 * 60 * 1000, // 15分間
+  max: process.env.NODE_ENV === 'production' ? 5 : 50, // 15分で5回失敗したらブロック（本番）
   message: {
     success: false,
     error: 'ログイン試行回数が多すぎます。15分後に再試行してください。'
   }
 });
 
-// リクエストの内容を読み取れるようにする設定（JSON形式とURLエンコード形式）
-app.use(express.json({ limit: '10mb' })); // 画像なども送れるようにサイズ制限を緩和
+// --- データ受信設定 ---
+// クライアントから送られてくるデータをサーバーが読める形式に変換（パース）します。
+
+// JSONデータ（{ "key": "value" } の形）を受け取れるようにします。
+// limit: '10mb' は、大きなデータ（画像を含むJSONなど）も受け取れるようにサイズ制限を緩和しています。
+app.use(express.json({ limit: '10mb' }));
+
+// URLエンコードされたデータ（フォーム送信など）を受け取れるようにします。
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// CORS（Cross-Origin Resource Sharing）の設定
-// フロントエンド（Reactなど）が別のURLにある場合、許可しないと通信できません
+// --- CORS（通信許可）の設定 ---
+// Reactアプリ（フロントエンド）からのアクセスを許可します。
 app.use(cors({
-  // 許可するオリジン（アクセス元）のURLリスト
+  // origin: 許可するアクセス元のURLリスト
+  // 環境変数 FRONTEND_URL や、ローカル開発用のURLを指定しています。
   origin: [process.env.FRONTEND_URL, 'http://localhost:3000', 'http://localhost:5001'].filter(Boolean),
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // 許可する通信の種類
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // 許可するHTTPメソッド（通信の種類）
   credentials: true // クッキーや認証情報の送信を許可するかどうか
 }));
 
-// Serve uploaded files statically from the 'uploads' directory
-app.use('/uploads', cors()); // Apply CORS for static files
+// --- 静的ファイルの公開設定 ---
+// アップロードされた画像ファイルなどが保存される 'uploads' フォルダを、
+// ブラウザから直接アクセスできるように公開します。
+// 例: http://localhost:5000/uploads/gazou.jpg で画像が見られるようになります。
+app.use('/uploads', cors()); // 画像ファイルへのアクセスにもCORSを適用
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Multer設定（ファイルアップロード用）
+// --- Multer設定（ファイルアップロードの詳細設定） ---
 const storage = multer.diskStorage({
+  // destination: ファイルをどこに保存するか決める関数
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, 'uploads/'); // 'uploads/' フォルダに保存します
   },
+  // filename: 保存する時のファイル名を決める関数
   filename: function (req, file, cb) {
-    // ファイル名をサニタイズして、安全な文字のみを使用する
+    // ファイル名に変な文字が入っていると困るので、安全な文字（英数字など）だけに置き換えます（サニタイズ）。
     const sanitizedOriginalName = file.originalname.replace(/[^a-zA-Z0-9-._]/g, '_');
-    // ファイル名の重複を避けるため、タイムスタンプを先頭に追加
+    // ファイル名が被らないように、現在の時間（ミリ秒）を頭につけます。
     cb(null, Date.now() + '-' + sanitizedOriginalName);
   }
 });
 
+// 設定を使ってアップロード機能を準備します。
 const upload = multer({ storage: storage });
 
-// 環境変数から設定を取得
+// --- 秘密鍵の設定 ---
+// JWTトークンを作るための「印鑑」のようなものです。
+// これがバレると偽造トークンを作られてしまうので、.envファイルで厳重に管理します。
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-development';
 
-// データベース（MySQL）への接続設定
-// 環境変数（.env）から読み込みますが、無ければデフォルト値（||の後ろ）を使います
+// --- データベース接続設定 ---
 const DB_CONFIG = {
-  host: process.env.DB_HOST || 'localhost', // データベースの場所（自分のPCならlocalhost）
-  user: process.env.DB_USER || 'portfolio_user', // データベースのユーザー名
-  password: process.env.DB_PASSWORD || 'pfBuilder2025', // データベースのパスワード
-  database: process.env.DB_NAME || 'portfolio_db', // データベースの名前
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false, // セキュリティ通信の設定（本番用）
-  connectionLimit: 10, // 同時に接続できる最大数
+  host: process.env.DB_HOST || 'localhost', // データベースの住所（自分のPCならlocalhost）
+  user: process.env.DB_USER || 'portfolio_user', // データベースにログインするユーザー名
+  password: process.env.DB_PASSWORD || 'pfBuilder2025', // パスワード
+  database: process.env.DB_NAME || 'portfolio_db', // 使用するデータベースの名前
+  // ssl: 本番環境などで暗号化通信が必要な場合の設定
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionLimit: 10, // 一度に接続できる最大数（プール機能）
   acquireTimeout: 60000,
   timeout: 60000,
   reconnect: true
 };
 
-// MySQLデータベースへの接続（本番環境用プール）
+// 接続プールを作成（接続を使い回して効率よく処理するための仕組み）
 const db = mysql.createPool(DB_CONFIG);
 
-// データベース接続確認とマイグレーションの実行
+// --- データベース初期化処理 ---
+// サーバー起動時に一回だけ実行され、必要なテーブル（データの入れ物）があるか確認し、なければ作ります。
 db.getConnection((err, connection) => {
   if (err) {
     console.error('データベース接続エラー:', err);
     return;
   }
   console.log('データベースに接続しました');
-  connection.release();
+  connection.release(); // 接続確認だけなので、すぐに接続を解放します
 
-  // マイグレーションをシーケンシャルに実行
+  // マイグレーション（テーブル作成などの更新処理）を実行する関数
   const runMigrations = async () => {
+    // クエリ（命令）を実行して、終わるのを待つ（Promise）ためのヘルパー関数
     const runQuery = (query) => new Promise((resolve) => {
       db.query(query, (err) => {
-        // テーブル作成の警告は無視する
+        // テーブルが既にある場合のエラーなどは無視して、次に進みます
         if (err && err.code !== 'ER_DUP_FIELDNAME' && err.code !== 'ER_TABLE_EXISTS_ERROR') {
-          console.log(`Migration warning for query "${query.substring(0, 30)}...":`, err.code);
+          console.log(`マイグレーション警告: "${query.substring(0, 30)}...":`, err.code);
         }
-        resolve(); // 失敗しても次へ進む
+        resolve();
       });
     });
 
-    // Create Tables if not exists
+    // 1. 読書の「著者」テーブル作成
     await runQuery(`
       CREATE TABLE IF NOT EXISTS reading_authors (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        UNIQUE KEY user_author (user_id, name)
+        id INT AUTO_INCREMENT PRIMARY KEY, -- 自動で番号が振られるID
+        user_id INT NOT NULL,              -- 誰が登録したか
+        name VARCHAR(255) NOT NULL,        -- 著者名
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 作成日時
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, -- ユーザーが消えたらデータも消す設定
+        UNIQUE KEY user_author (user_id, name) -- 同じユーザーが同じ著者を重複登録できないようにする
       )
     `);
 
+    // 2. 読書の「本」テーブル作成
     await runQuery(`
       CREATE TABLE IF NOT EXISTS reading_entries (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
         author_id INT NOT NULL,
         title VARCHAR(255) NOT NULL,
-        type VARCHAR(50) NOT NULL COMMENT 'manga, novel, technical, other',
+        type VARCHAR(50) NOT NULL COMMENT 'manga, novel, technical, other', -- 本の種類（マンガ、小説など）
         genre VARCHAR(100),
         publisher VARCHAR(255),
         image_url VARCHAR(512),
-        rating INT CHECK (rating >= 1 AND rating <= 10),
+        rating INT CHECK (rating >= 1 AND rating <= 10), -- 評価は1〜10の範囲
         comment TEXT,
-        display_order INT DEFAULT 0,
+        display_order INT DEFAULT 0, -- 表示順序
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (author_id) REFERENCES reading_authors(id) ON DELETE CASCADE
       )
     `);
 
+    // 3. アニメ情報テーブル作成
     await runQuery(`
       CREATE TABLE IF NOT EXISTS anime_entries (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -154,56 +217,61 @@ db.getConnection((err, connection) => {
         title VARCHAR(255) NOT NULL,
         original_author VARCHAR(255),
         genre VARCHAR(100),
-        synopsis TEXT,
+        synopsis TEXT, -- あらすじ
         rating INT DEFAULT 0,
-        review TEXT,
+        review TEXT,   -- 感想・レビュー
         image_url VARCHAR(512),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
 
-    // Ranking Items Columns
-    await runQuery("ALTER TABLE ranking_items ADD COLUMN custom_title VARCHAR(255)");
-    await runQuery("ALTER TABLE ranking_items ADD COLUMN custom_image_url VARCHAR(512)");
+    // 4. システム設定テーブル作成（メンテナンスモード管理用）
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS system_settings (
+        id INT PRIMARY KEY,
+        maintenance_mode BOOLEAN DEFAULT FALSE, -- メンテナンス中かどうか（Yes/No）
+        maintenance_message TEXT,               -- 表示するメッセージ
+        scheduled_end_time DATETIME             -- 終了予定時刻
+      )
+    `);
 
-    // Reading Entries Columns Migrations
-    // Ensure display_order exists (rename entry_order if it exists)
+    // システム設定の初期データ投入（なければ作る）
+    await runQuery(`
+      INSERT IGNORE INTO system_settings (id, maintenance_mode, maintenance_message)
+      VALUES (1, FALSE, '現在メンテナンス中です。しばらくお待ちください。')
+    `);
+
+    // --- 既存テーブルへのカラム（項目）追加 ---
+    // アプリのバージョンアップで項目が増えた場合に、データベースも更新します。
+    // エラーが出ても（既にある場合など）、catch(err => {}) で無視して進みます。
+
+    // ランキング機能の拡張
+    await runQuery("ALTER TABLE ranking_items ADD COLUMN custom_title VARCHAR(255)").catch(err => { });
+    await runQuery("ALTER TABLE ranking_items ADD COLUMN custom_image_url VARCHAR(512)").catch(err => { });
+
+    // 読書機能の拡張
     await runQuery("ALTER TABLE reading_entries CHANGE entry_order display_order INT DEFAULT 0").catch(err => { });
-    await runQuery("ALTER TABLE reading_entries ADD COLUMN display_order INT DEFAULT 0"); // If it didn't exist
+    await runQuery("ALTER TABLE reading_entries ADD COLUMN display_order INT DEFAULT 0").catch(err => { });
+    await runQuery("ALTER TABLE reading_entries ADD COLUMN image_url VARCHAR(512)").catch(err => { });
+    await runQuery("ALTER TABLE reading_entries ADD COLUMN publisher VARCHAR(255)").catch(err => { });
 
-    // Ensure image_url exists
-    await runQuery("ALTER TABLE reading_entries ADD COLUMN image_url VARCHAR(512)");
-
-    // Ensure publisher exists
-    await runQuery("ALTER TABLE reading_entries ADD COLUMN publisher VARCHAR(255)");
-
-    // Update Rating Constraint (1-5 -> 1-10)
-    // Try to drop the old constraint (it might be named reading_entries_chk_1 or similar)
-    // We use a general approach to add the new check if possible, or alter it.
-    // simpler to just try replacing it.
+    // 評価の制約変更（古いルールを消して新しいルールを入れる）
     await runQuery("ALTER TABLE reading_entries DROP CHECK reading_entries_chk_1").catch(err => { });
-    // Add new constraint
-    // Note: If a constraint with the same name exists or if we dropped it, we can add a new one.
-    // We'll give it a strict name to avoid ambiguity
     await runQuery("ALTER TABLE reading_entries ADD CONSTRAINT reading_entries_rating_chk CHECK (rating >= 1 AND rating <= 10)").catch(err => { });
 
+    // 著者テーブルに「タイプ（著者/ジャンル）」を追加
+    await runQuery("ALTER TABLE reading_authors ADD COLUMN type ENUM('author', 'genre') DEFAULT 'author'").catch(err => { });
 
-    // Reading Authors Type (author vs genre)
-    await runQuery("ALTER TABLE reading_authors ADD COLUMN type ENUM('author', 'genre') DEFAULT 'author'");
-
-    // Update unique constraint to include type
-    // Update unique constraint to include type
-    // First try to drop the old index if it exists (ignoring error if it doesn't)
+    // ユニーク制約の作り直し
     await runQuery("DROP INDEX user_author ON reading_authors").catch(err => { });
-    // Add new unique index including type
-    await runQuery("ALTER TABLE reading_authors ADD UNIQUE KEY user_author_type (user_id, name, type)");
+    await runQuery("ALTER TABLE reading_authors ADD UNIQUE KEY user_author_type (user_id, name, type)").catch(err => { });
 
-    // Ensure anime_id exists in ranking_items
-    await runQuery("ALTER TABLE ranking_items ADD COLUMN anime_id INT");
+    // ランキングにアニメ対応を追加
+    await runQuery("ALTER TABLE ranking_items ADD COLUMN anime_id INT").catch(err => { });
     await runQuery("ALTER TABLE ranking_items ADD CONSTRAINT fk_ranking_anime FOREIGN KEY (anime_id) REFERENCES anime_entries(id) ON DELETE CASCADE").catch(err => { });
 
-    console.log('All migrations executed.');
+    console.log('データベースの準備が完了しました。（マイグレーション完了）');
   };
 
   runMigrations();
@@ -4128,37 +4196,40 @@ app.post('/api/backup/anime/import', authenticateToken, async (req, res) => {
 
 // --- システム管理 (Maintenance & Notifications) ---
 
-// メンテナンス状態の取得 (Public)
+// メンテナンス状態の取得 (一般公開API)
+// 誰でもアクセスして、現在メンテナンス中かどうかを確認できます
 app.get('/api/maintenance-status', (req, res) => {
   db.query('SELECT maintenance_mode, maintenance_message, scheduled_end_time FROM system_settings WHERE id = 1', (err, results) => {
     if (err) {
       console.error('Database error:', err);
-      // エラー時はメンテナンスモードではないと仮定、またはエラーを返す
+      // エラー時はメンテナンスモードではないと仮定して、エラーメッセージを返します
       return res.json({ success: false, error: 'Database error' });
     }
     if (results.length > 0) {
       const settings = results[0];
       res.json({
         success: true,
-        isMaintenanceMode: settings.maintenance_mode === 1, // Boolean変換
+        isMaintenanceMode: settings.maintenance_mode === 1, // 1ならtrue、0ならfalseに変換
         maintenanceMessage: settings.maintenance_message,
         scheduledEnd: settings.scheduled_end_time
       });
     } else {
-      // レコードがない場合
+      // 設定データが見つからない場合は、メンテナンスモードではないとします
       res.json({ success: true, isMaintenanceMode: false });
     }
   });
 });
 
-// メンテナンスモード設定の更新 (Admin Only)
+// メンテナンスモード設定の更新（管理者専用）
+// メンテナンスのオン/オフやメッセージを変更します
 app.post('/api/admin/maintenance-mode', authenticateToken, (req, res) => {
   const { id: userId, email } = req.user;
   const { isMaintenanceMode, maintenanceMessage, scheduledEnd } = req.body;
 
-  // 簡易的な管理者チェック (実際の運用ではロール管理を推奨)
+  // 管理者かどうかのチェック（簡易版）
+  // 実際の運用ではデータベースに管理者フラグを持たせるのが一般的ですが、今回は特定のメールアドレスで判定しています
   if (email !== 'test.example3030@gmail.com') {
-    return res.status(403).json({ success: false, error: '権限がありません。' });
+    return res.status(403).json({ success: false, error: '権限がありません。管理者のみ操作可能です。' });
   }
 
   const query = `
@@ -4172,11 +4243,12 @@ app.post('/api/admin/maintenance-mode', authenticateToken, (req, res) => {
       console.error('Database error:', err);
       return res.status(500).json({ success: false, error: '更新に失敗しました。' });
     }
-    res.json({ success: true, message: 'メンテナンスモードが更新されました。' });
+    res.json({ success: true, message: 'メンテナンスモードの設定が更新されました。' });
   });
 });
 
-// メンテナンス通知の送信 (Admin Only)
+// メンテナンス通知の送信（管理者専用）
+// 登録ユーザーにメールでメンテナンスのお知らせを送ります（シミュレーション）
 app.post('/api/admin/send-maintenance-notification', authenticateToken, (req, res) => {
   const { email } = req.user;
   const { subject, message, scheduledEnd } = req.body;
@@ -4185,15 +4257,14 @@ app.post('/api/admin/send-maintenance-notification', authenticateToken, (req, re
     return res.status(403).json({ success: false, error: '権限がありません。' });
   }
 
-  // ここで実際にメール送信処理を行う (Nodemailerなどを使用)
-  // 今回はモックとしてログ出力のみ
-  console.log(`[Email Sending] Type: Maintenance, Subject: ${subject}, Message: ${message}, End: ${scheduledEnd}`);
+  // ここで実際にメール送信処理を行います（今回はログ出力のみ）
+  console.log(`[メール送信シミュレーション] タイプ: メンテナンス, 件名: ${subject}, 本文: ${message}, 終了予定: ${scheduledEnd}`);
 
-  // 成功を返す
   res.json({ success: true, message: 'メンテナンス通知を送信しました（シミュレーション）。' });
 });
 
-// 新機能通知の送信 (Admin Only)
+// 新機能通知の送信（管理者専用）
+// 新しい機能のお知らせなどを送ります（シミュレーション）
 app.post('/api/admin/send-feature-notification', authenticateToken, (req, res) => {
   const { email } = req.user;
   const { subject, message } = req.body;
@@ -4202,7 +4273,7 @@ app.post('/api/admin/send-feature-notification', authenticateToken, (req, res) =
     return res.status(403).json({ success: false, error: '権限がありません。' });
   }
 
-  console.log(`[Email Sending] Type: Feature, Subject: ${subject}, Message: ${message}`);
+  console.log(`[メール送信シミュレーション] タイプ: 新機能, 件名: ${subject}, 本文: ${message}`);
 
   res.json({ success: true, message: '新機能通知を送信しました（シミュレーション）。' });
 });
@@ -4210,7 +4281,7 @@ app.post('/api/admin/send-feature-notification', authenticateToken, (req, res) =
 
 // --- ランキング(Ranking)関連API ---
 
-// ランキングテーブルのSQLスキーマ (要実行)
+// ランキングテーブルのSQLスキーマ（参考）
 // CREATE TABLE rankings (
 //   id INT AUTO_INCREMENT PRIMARY KEY,
 //   user_id INT NOT NULL,
@@ -4221,7 +4292,7 @@ app.post('/api/admin/send-feature-notification', authenticateToken, (req, res) =
 //   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 // );
 
-// ランキングアイテムテーブルのSQLスキーマ (要実行)
+// ランキングアイテムテーブルのSQLスキーマ（参考）
 // CREATE TABLE ranking_items (
 //   id INT AUTO_INCREMENT PRIMARY KEY,
 //   ranking_id INT NOT NULL,
@@ -4235,10 +4306,10 @@ app.post('/api/admin/send-feature-notification', authenticateToken, (req, res) =
 //   FOREIGN KEY (book_id) REFERENCES reading_entries(id) ON DELETE CASCADE
 // );
 
-// ランキング一覧を取得 (トップ3アイテム付き)
+// ランキング一覧を取得（各ランキングのトップ3アイテムも一緒に取得）
 app.get('/api/rankings', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
-  const { category } = req.query;
+  const { category } = req.query; // ゲームか読書か、カテゴリで絞り込む場合
 
   let query = 'SELECT * FROM rankings WHERE user_id = ?';
   const params = [userId];
@@ -4255,9 +4326,10 @@ app.get('/api/rankings', authenticateToken, (req, res) => {
       return res.status(500).json({ success: false, error: 'データベースエラーが発生しました。' });
     }
 
-    // 各ランキングのトップ3アイテムを取得
+    // 各ランキングのトップ3アイテムを取得して、一覧に情報を追加します
     const rankingsWithItems = await Promise.all(rankings.map(async (ranking) => {
       let itemQuery = '';
+      // カテゴリによって取得するテーブルを変えます
       if (ranking.category === 'game') {
         itemQuery = `
           SELECT ri.comment, ri.rank_order, COALESCE(pg.title, ri.custom_title) as title, COALESCE(pg.image_url, ri.custom_image_url) as image_url
@@ -4284,10 +4356,11 @@ app.get('/api/rankings', authenticateToken, (req, res) => {
         `;
       }
 
-      const items = await new Promise((resolve) => {
-        db.query(itemQuery, [ranking.id], (err, results) => {
-          if (err) resolve([]); // エラー時は空配列
-          else resolve(results);
+      // トップ3だけ取得
+      const items = await new Promise((resolve, reject) => {
+        db.query(itemQuery + ' LIMIT 3', [ranking.id], (err, results) => {
+          if (err) return reject(err);
+          resolve(results);
         });
       });
 
@@ -4298,7 +4371,7 @@ app.get('/api/rankings', authenticateToken, (req, res) => {
   });
 });
 
-// ランキング詳細（アイテム含む）を取得
+// ランキング詳細（登録されている全アイテム含む）を取得
 app.get('/api/rankings/:rankingId', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
   const { rankingId } = req.params;
@@ -4309,7 +4382,7 @@ app.get('/api/rankings/:rankingId', authenticateToken, (req, res) => {
 
     const ranking = results[0];
 
-    // アイテムを取得（ゲーム情報または書籍情報を結合）
+    // アイテムの詳細情報を取得（ゲーム情報または書籍情報を結合）
     let itemQuery = '';
     if (ranking.category === 'game') {
       itemQuery = `
@@ -4346,7 +4419,7 @@ app.get('/api/rankings/:rankingId', authenticateToken, (req, res) => {
   });
 });
 
-// ランキングを作成
+// 新しいランキングを作成
 app.post('/api/rankings', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
   const { title, description, category } = req.body;
@@ -4378,7 +4451,7 @@ app.put('/api/rankings/:rankingId', authenticateToken, (req, res) => {
     return res.status(400).json({ success: false, error: 'タイトルとカテゴリは必須です。' });
   }
 
-  // まず所有権確認
+  // まず所有権確認（自分のランキングかどうか）
   db.query('SELECT id FROM rankings WHERE id = ? AND user_id = ?', [rankingId, userId], (err, results) => {
     if (err) return res.status(500).json({ success: false, error: 'DBエラー' });
     if (results.length === 0) return res.status(404).json({ success: false, error: 'ランキングが見つかりません' });
@@ -4409,11 +4482,12 @@ app.delete('/api/rankings/:rankingId', authenticateToken, (req, res) => {
   });
 });
 
-// ランキングアイテムを一括更新（追加・削除・並び替え）
+// ランキングアイテムを一括更新（追加・削除・並び替え含む）
+// フロントエンドから送られてきた最新の状態（items）で、データベースを書き換えます
 app.put('/api/rankings/:rankingId/items', authenticateToken, (req, res) => {
   const { id: userId } = req.user;
   const { rankingId } = req.params;
-  const { items } = req.body; // Array of { id (optional), game_id/book_id, comment, rank_order }
+  const { items } = req.body; // { item_id, comment, rank_order } などのリストを受け取ります
 
   if (!items || !Array.isArray(items)) {
     return res.status(400).json({ success: false, error: '有効なアイテムリストが必要です' });
@@ -4428,6 +4502,7 @@ app.put('/api/rankings/:rankingId/items', authenticateToken, (req, res) => {
     db.getConnection((err, connection) => {
       if (err) return res.status(500).json({ success: false, error: 'DB接続エラー' });
 
+      // トランザクション開始（複数の書き込みを一気に安全に行うため）
       connection.beginTransaction(async (err) => {
         if (err) {
           connection.release();
@@ -4435,10 +4510,7 @@ app.put('/api/rankings/:rankingId/items', authenticateToken, (req, res) => {
         }
 
         try {
-          // 既存アイテムを全削除して入れ直すのが一番簡単だが、IDを保持したい場合はUPDATE/INSERT/DELETEを使い分ける。
-          // ここでは簡易実装として「全削除→挿入」を行いますが、もし既存IDに紐づくデータがあれば別のアプローチが必要。
-          // 今回はranking_itemsに外部からの依存はないので全削除でOK。
-
+          // 既存のアイテムを一度すべて削除して、新しいリストで挿入し直すシンプルな方法をとります
           await new Promise((resolve, reject) => {
             connection.query('DELETE FROM ranking_items WHERE ranking_id = ?', [rankingId], (err) => {
               if (err) return reject(err);
@@ -4447,6 +4519,7 @@ app.put('/api/rankings/:rankingId/items', authenticateToken, (req, res) => {
           });
 
           if (items.length > 0) {
+            // 挿入するデータを作成
             const values = items.map((item, index) => [
               rankingId,
               (category === 'game' && item.item_id) ? item.item_id : null,
@@ -4455,9 +4528,10 @@ app.put('/api/rankings/:rankingId/items', authenticateToken, (req, res) => {
               item.custom_title || null,
               item.custom_image_url || null,
               item.comment,
-              index // 並び順は配列のインデックスを使用
+              index // 配列の順番をそのままランキングの順位として保存
             ]);
 
+            // 一括挿入
             await new Promise((resolve, reject) => {
               connection.query(
                 'INSERT INTO ranking_items (ranking_id, game_id, book_id, anime_id, custom_title, custom_image_url, comment, rank_order) VALUES ?',
@@ -4470,6 +4544,7 @@ app.put('/api/rankings/:rankingId/items', authenticateToken, (req, res) => {
             });
           }
 
+          // 全て成功したら確定（コミット）
           connection.commit((err) => {
             if (err) {
               return connection.rollback(() => {

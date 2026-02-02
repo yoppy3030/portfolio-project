@@ -1,0 +1,295 @@
+/* Base Modal Backdrop */
+.anime-hobby-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal Content Container */
+.anime-hobby-modal-backdrop .anime-modal-content {
+  background-color: #f9f9f9;
+  width: 95%;
+  max-width: 1400px;
+  height: 90vh;
+  /* Fixed height relative to viewport */
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Prevent body scroll override */
+  position: relative;
+}
+
+/* Header */
+.modal-header {
+  padding: 15px 20px;
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  /* Anchor for absolute button */
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #E91E63;
+  /* Pink/Red accent for Anime to distinguish from Reading */
+}
+
+/* Dark mode support for title */
+.dark-mode .modal-header h2 {
+  color: #ff80ab;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: #666;
+  position: absolute;
+  /* Restore absolute positioning */
+  right: 20px;
+  top: 15px;
+  /* Adjusted position */
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  z-index: 10;
+}
+
+.close-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+/* Modal Body */
+.modal-body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  /* Enable scrolling for the body content */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Content Layout */
+.reading-hobby-manager {
+  /* Keeping class name for layout consistency or refactor? Let's use generic or keep it but scope it */
+  display: flex;
+  flex: 1;
+  height: 100%;
+  gap: 20px;
+  flex-direction: column;
+  /* Anime modal seems to be single column mostly? */
+}
+
+/* In AnimeModal, we used a single column layout in the code: style={{ display: 'block' }} */
+/* So we should style the book-management-section to take full width */
+
+.book-management-section {
+  flex: 1;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  /* overflow-y: auto; Removed here, let modal-body scroll or keep it? */
+  /* If modal-body scrolls, this should extend */
+  overflow: visible;
+}
+
+/* Form Styles */
+.add-book-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.add-book-form h5 {
+  grid-column: 1 / -1;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.add-book-form input,
+.add-book-form select,
+.add-book-form textarea {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.add-book-form textarea {
+  grid-column: 1 / -1;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.rating-input-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.add-book-form button {
+  grid-column: 1 / -1;
+  padding: 10px;
+  background-color: #E91E63;
+  /* Pink/Red for Anime add button */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.add-book-form button:hover {
+  background-color: #D81B60;
+}
+
+/* Entry List */
+.book-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.book-item {
+  display: flex;
+  background-color: #fdfdfd;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 15px;
+  gap: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.book-item img {
+  width: 80px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.book-info {
+  flex: 1;
+}
+
+.book-info h5 {
+  margin: 0 0 5px 0;
+  font-size: 1.2rem;
+}
+
+.book-info p {
+  margin: 3px 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.book-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: center;
+}
+
+.edit-book-form {
+  background-color: #fff;
+  border: 2px solid #E91E63;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Utilities */
+.btn-danger-outline {
+  background: white;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-danger-outline:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-secondary-outline {
+  background: white;
+  color: #6c757d;
+  border: 1px solid #6c757d;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.star-rating {
+  color: gold;
+}
+
+.star-input {
+  cursor: pointer;
+  color: #ccc;
+  font-size: 1.2rem;
+}
+
+.star-input .star.filled {
+  color: gold;
+}
+
+/* Dark Mode */
+.dark-mode .anime-modal-content {
+  background-color: #1e1e1e;
+  border: 1px solid #555;
+}
+
+.dark-mode .modal-header,
+.dark-mode .book-management-section,
+.dark-mode .book-item,
+.dark-mode .edit-book-form {
+  background-color: #2c2c2c;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.dark-mode .add-book-form input,
+.dark-mode .add-book-form select,
+.dark-mode .add-book-form textarea {
+  background-color: #333;
+  color: #fff;
+  border-color: #555;
+}

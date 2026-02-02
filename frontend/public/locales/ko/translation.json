@@ -264,6 +264,48 @@
       "q2": "해결되지 않은 문제가 있습니다. / 피드백이나 요청을 보내고 싶습니다.",
       "a2": "불편을 끼쳐 죄송합니다. 상황에 대한 자세한 설명과 함께 지원 데스크({{email}})에 문의하세요. 서비스 개선을 위한 의견과 요청도 환영합니다."
     }
+  },
+  "anime": {
+    "notLoggedIn": "로그인되어 있지 않습니다."
+  },
+  "settings_backup_rankings_title": "랭킹",
+  "settings_backup_rankings_desc": "작성한 랭킹 데이터를 백업합니다.",
+  "ranking": {
+    "title": "내 랭킹",
+    "editorTitle": "랭킹 편집",
+    "createTitle": "새 랭킹 만들기",
+    "titleLabel": "제목",
+    "titlePlaceholder": "예: 추천 RPG 베스트 10",
+    "descriptionLabel": "설명",
+    "descriptionPlaceholder": "랭킹 설명 입력...",
+    "categoryLabel": "카테고리",
+    "categoryGame": "게임",
+    "categoryReading": "독서",
+    "categoryAnime": "애니메이션",
+    "itemsLabel": "랭킹 항목",
+    "addItemButton": "항목 추가",
+    "rankSuffix": "위",
+    "commentPlaceholder": "코멘트...",
+    "saveButton": "저장",
+    "cancelButton": "취소",
+    "deleteButton": "삭제",
+    "editButton": "편집",
+    "selectItemTitle": "항목 선택",
+    "manualInputTitle": "수동 입력",
+    "manualInputTitlePlaceholder": "제목",
+    "manualInputImagePlaceholder": "이미지 URL (선택)",
+    "manualInputAddButton": "이 내용으로 추가",
+    "confirmDelete": "정말 이 랭킹을 삭제하시겠습니까?",
+    "alertDeleted": "랭킹이 삭제되었습니다",
+    "alertDeleteFailed": "삭제에 실패했습니다",
+    "alertCreateError": "생성 오류: ",
+    "alertUpdateError": "업데이트 오류: ",
+    "alertItemsUpdateError": "항목 업데이트 오류: ",
+    "alertSaveError": "저장 중 오류가 발생했습니다",
+    "alertUploadFailed": "업로드 실패: ",
+    "alertUploadError": "업로드 중 오류가 발생했습니다",
+    "alertTitleRequired": "제목을 입력해주세요",
+    "noItems": "항목 없음",
+    "noRankings": "아직 랭킹이 없습니다."
   }
 }
-

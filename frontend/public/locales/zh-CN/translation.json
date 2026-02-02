@@ -264,6 +264,48 @@
       "q2": "我有一个未解决的问题。/ 我想发送反馈或请求。",
       "a2": "我们为给您带来的不便深表歉意。请通过{{email}}联系我们的支持台，并提供详细的情况描述。我们也欢迎您对服务改进的意见和请求。"
     }
+  },
+  "anime": {
+    "notLoggedIn": "您尚未登录。"
+  },
+  "settings_backup_rankings_title": "排行榜",
+  "settings_backup_rankings_desc": "备份您创建的排行榜数据。",
+  "ranking": {
+    "title": "我的排行榜",
+    "editorTitle": "编辑排行榜",
+    "createTitle": "创建新排行榜",
+    "titleLabel": "标题",
+    "titlePlaceholder": "例如：十大RPG游戏",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "输入排行榜描述...",
+    "categoryLabel": "类别",
+    "categoryGame": "游戏",
+    "categoryReading": "阅读",
+    "categoryAnime": "动漫",
+    "itemsLabel": "排行榜项目",
+    "addItemButton": "添加项目",
+    "rankSuffix": "位",
+    "commentPlaceholder": "评论...",
+    "saveButton": "保存",
+    "cancelButton": "取消",
+    "deleteButton": "删除",
+    "editButton": "编辑",
+    "selectItemTitle": "选择项目",
+    "manualInputTitle": "手动输入",
+    "manualInputTitlePlaceholder": "标题",
+    "manualInputImagePlaceholder": "图片URL (可选)",
+    "manualInputAddButton": "添加自定义项目",
+    "confirmDelete": "确定要删除此排行榜吗？",
+    "alertDeleted": "排行榜已删除",
+    "alertDeleteFailed": "删除排行榜失败",
+    "alertCreateError": "创建错误：",
+    "alertUpdateError": "更新错误：",
+    "alertItemsUpdateError": "项目更新错误：",
+    "alertSaveError": "保存时发生错误",
+    "alertUploadFailed": "上传失败：",
+    "alertUploadError": "上传时发生错误",
+    "alertTitleRequired": "请输入标题",
+    "noItems": "无项目",
+    "noRankings": "暂无排行榜。"
   }
 }
-

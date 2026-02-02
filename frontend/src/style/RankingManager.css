@@ -286,3 +286,118 @@
     object-fit: cover;
     border-radius: 3px;
 }
+
+/* --- Dark Theme Support --- */
+body.dark-theme .ranking-manager-content,
+body.dark-theme .ranking-editor-modal,
+body.dark-theme .item-selector-modal {
+    background-color: #333;
+    color: #eee;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme .manager-header {
+    border-bottom: 1px solid #444;
+}
+
+body.dark-theme .ranking-card {
+    border: 1px solid #444;
+    background-color: #2a2a2a;
+}
+
+body.dark-theme .badge {
+    background: #444;
+    color: #ccc;
+}
+
+body.dark-theme .ranking-preview {
+    background: #3a3a3a;
+}
+
+body.dark-theme .preview-item {
+    border-bottom: 1px solid #444;
+}
+
+body.dark-theme .preview-item-title {
+    color: #eee;
+}
+
+body.dark-theme .preview-item-comment {
+    color: #bbb;
+}
+
+body.dark-theme .preview-item .rank-badge {
+    background: #555;
+    color: #fff;
+}
+
+body.dark-theme .no-items {
+    color: #777;
+}
+
+/* Editor Specifics in Dark Mode */
+body.dark-theme .form-group input,
+body.dark-theme .form-group textarea,
+body.dark-theme .form-group select {
+    background-color: #444;
+    border: 1px solid #555;
+    color: #eee;
+}
+
+body.dark-theme .ranking-item-row {
+    background: #2a2a2a;
+    border: 1px solid #444;
+}
+
+body.dark-theme .item-comment-input {
+    background-color: #444;
+    border: 1px solid #555;
+    color: #eee;
+}
+
+body.dark-theme .remove-btn {
+    color: #777;
+}
+
+body.dark-theme .remove-btn:hover {
+    color: #ff6666;
+}
+
+/* Selector Specifics in Dark Mode */
+body.dark-theme .custom-item-input {
+    background: #2a2a2a !important;
+}
+
+body.dark-theme .selector-item:hover {
+    background: #444;
+}
+
+body.dark-theme .selector-item span {
+    color: #eee;
+}
+
+/* Scrollbars for dark mode (Chrome/Safari/Edge) */
+body.dark-theme .manager-body::-webkit-scrollbar,
+body.dark-theme .ranking-editor-modal::-webkit-scrollbar,
+body.dark-theme .selector-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+body.dark-theme .manager-body::-webkit-scrollbar-track,
+body.dark-theme .ranking-editor-modal::-webkit-scrollbar-track,
+body.dark-theme .selector-list::-webkit-scrollbar-track {
+    background: #222;
+}
+
+body.dark-theme .manager-body::-webkit-scrollbar-thumb,
+body.dark-theme .ranking-editor-modal::-webkit-scrollbar-thumb,
+body.dark-theme .selector-list::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+body.dark-theme .manager-body::-webkit-scrollbar-thumb:hover,
+body.dark-theme .ranking-editor-modal::-webkit-scrollbar-thumb:hover,
+body.dark-theme .selector-list::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}

@@ -304,7 +304,8 @@
     "deleteError": "アニメの削除に失敗しました。",
     "confirmDelete": "本当に削除しますか？",
     "validationError": "タイトルは必須です。",
-    "serverError": "サーバーエラーが発生しました。"
+    "serverError": "サーバーエラーが発生しました。",
+    "notLoggedIn": "ログインしていません。"
   },
   "faq": {
     "backButton": "戻る",
@@ -419,5 +420,43 @@
     "desc_feature_notification": "新機能のお知らせを受け取る設定のユーザーに通知を送信します",
     "placeholder_feature_detail": "新機能の詳細を入力してください",
     "button_send_feature": "新機能通知を送信"
+  },
+  "ranking": {
+    "title": "マイランキング",
+    "editorTitle": "ランキング編集",
+    "createTitle": "新規ランキング作成",
+    "titleLabel": "タイトル",
+    "titlePlaceholder": "例: おすすめRPGベスト10",
+    "descriptionLabel": "説明",
+    "descriptionPlaceholder": "ランキングの説明を入力...",
+    "categoryLabel": "カテゴリ",
+    "categoryGame": "ゲーム",
+    "categoryReading": "読書",
+    "categoryAnime": "アニメ",
+    "itemsLabel": "ランキング項目",
+    "addItemButton": "アイテムを追加",
+    "rankSuffix": "位",
+    "commentPlaceholder": "一言コメント...",
+    "saveButton": "保存",
+    "cancelButton": "キャンセル",
+    "deleteButton": "削除",
+    "editButton": "編集",
+    "selectItemTitle": "アイテムを選択",
+    "manualInputTitle": "手動入力",
+    "manualInputTitlePlaceholder": "タイトル",
+    "manualInputImagePlaceholder": "画像URL (任意)",
+    "manualInputAddButton": "この内容で追加",
+    "confirmDelete": "本当にこのランキングを削除しますか？",
+    "alertDeleted": "ランキングを削除しました",
+    "alertDeleteFailed": "削除に失敗しました",
+    "alertCreateError": "作成エラー: ",
+    "alertUpdateError": "更新エラー: ",
+    "alertItemsUpdateError": "アイテム更新エラー: ",
+    "alertSaveError": "保存中にエラーが発生しました",
+    "alertUploadFailed": "アップロード失敗: ",
+    "alertUploadError": "アップロード中にエラーが発生しました",
+    "alertTitleRequired": "タイトルを入力してください",
+    "noItems": "アイテムなし",
+    "noRankings": "ランキングがまだありません。"
   }
 }

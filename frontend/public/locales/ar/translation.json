@@ -334,5 +334,48 @@
       "q2": "لدي مشكلة لم يتم حلها. / أريد إرسال ملاحظات أو طلبات.",
       "a2": "نعتذر عن الإزعاج. يرجى الاتصال بمكتب الدعم لدينا على {{email}} مع وصف مفصل للحالة. نرحب أيضاً بآرائك وطلباتك لتحسين الخدمة."
     }
+  },
+  "anime": {
+    "notLoggedIn": "لم تقم بتسجيل الدخول."
+  },
+  "settings_backup_rankings_title": "التصنيفات",
+  "settings_backup_rankings_desc": "نسخ احتياطي لبيانات التصنيفات التي أنشأتها.",
+  "ranking": {
+    "title": "تصنيفاتي",
+    "editorTitle": "تعديل التصنيف",
+    "createTitle": "إنشاء تصنيف جديد",
+    "titleLabel": "العنوان",
+    "titlePlaceholder": "مثال: أفضل 10 ألعاب RPG",
+    "descriptionLabel": "الوصف",
+    "descriptionPlaceholder": "أدخل وصف التصنيف...",
+    "categoryLabel": "الفئة",
+    "categoryGame": "لعبة",
+    "categoryReading": "قراءة",
+    "categoryAnime": "أنيمي",
+    "itemsLabel": "عناصر التصنيف",
+    "addItemButton": "إضافة عنصر",
+    "rankSuffix": "",
+    "commentPlaceholder": "تعليق...",
+    "saveButton": "حفظ",
+    "cancelButton": "إلغاء",
+    "deleteButton": "حذف",
+    "editButton": "تعديل",
+    "selectItemTitle": "اختر عنصراً",
+    "manualInputTitle": "إدخال يدوي",
+    "manualInputTitlePlaceholder": "العنوان",
+    "manualInputImagePlaceholder": "رابط الصورة (اختياري)",
+    "manualInputAddButton": "إضافة عنصر مخصص",
+    "confirmDelete": "هل أنت متأكد أنك تريد حذف هذا التصنيف؟",
+    "alertDeleted": "تم حذف التصنيف",
+    "alertDeleteFailed": "فشل حذف التصنيف",
+    "alertCreateError": "خطأ في الإنشاء: ",
+    "alertUpdateError": "خطأ في التحديث: ",
+    "alertItemsUpdateError": "خطأ في تحديث العناصر: ",
+    "alertSaveError": "حدث خطأ أثناء الحفظ",
+    "alertUploadFailed": "فشل التحميل: ",
+    "alertUploadError": "حدث خطأ أثناء التحميل",
+    "alertTitleRequired": "يرجى إدخال عنوان",
+    "noItems": "لا توجد عناصر",
+    "noRankings": "لا توجد تصنيفات بعد."
   }
 }

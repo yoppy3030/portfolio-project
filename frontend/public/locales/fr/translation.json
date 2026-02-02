@@ -334,5 +334,48 @@
       "q2": "J'ai un problème qui n'est pas résolu. / Je veux envoyer des commentaires ou des demandes.",
       "a2": "Nous nous excusons pour le désagrément. Veuillez contacter notre bureau de support à {{email}} avec une description détaillée de la situation. Nous accueillons également vos opinions et demandes pour l'amélioration du service."
     }
+  },
+  "anime": {
+    "notLoggedIn": "Vous n'êtes pas connecté."
+  },
+  "settings_backup_rankings_title": "Classements",
+  "settings_backup_rankings_desc": "Sauvegarder vos données de classements.",
+  "ranking": {
+    "title": "Mes Classements",
+    "editorTitle": "Modifier le Classement",
+    "createTitle": "Créer un Nouveau Classement",
+    "titleLabel": "Titre",
+    "titlePlaceholder": "ex : Top 10 RPG",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Entrez la description du classement...",
+    "categoryLabel": "Catégorie",
+    "categoryGame": "Jeu",
+    "categoryReading": "Lecture",
+    "categoryAnime": "Anime",
+    "itemsLabel": "Éléments du Classement",
+    "addItemButton": "Ajouter un Élément",
+    "rankSuffix": "e",
+    "commentPlaceholder": "Commentaire...",
+    "saveButton": "Enregistrer",
+    "cancelButton": "Annuler",
+    "deleteButton": "Supprimer",
+    "editButton": "Modifier",
+    "selectItemTitle": "Sélectionner un Élément",
+    "manualInputTitle": "Saisie Manuelle",
+    "manualInputTitlePlaceholder": "Titre",
+    "manualInputImagePlaceholder": "URL de l'image (Facultatif)",
+    "manualInputAddButton": "Ajouter Élément Personnalisé",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce classement ?",
+    "alertDeleted": "Classement supprimé",
+    "alertDeleteFailed": "Échec de la suppression du classement",
+    "alertCreateError": "Erreur de création : ",
+    "alertUpdateError": "Erreur de mise à jour : ",
+    "alertItemsUpdateError": "Erreur de mise à jour des éléments : ",
+    "alertSaveError": "Une erreur est survenue lors de l'enregistrement",
+    "alertUploadFailed": "Échec du téléchargement : ",
+    "alertUploadError": "Une erreur est survenue lors du téléchargement",
+    "alertTitleRequired": "Veuillez entrer un titre",
+    "noItems": "Aucun élément",
+    "noRankings": "Pas encore de classements."
   }
 }

@@ -89,6 +89,30 @@ function AdminPanel() {
                 setIsAdmin(false);
                 setIsLoading(false);
             });
+
+        // 現在のメンテナンス状態を取得
+        fetch('http://localhost:5000/api/maintenance-status')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    setIsMaintenanceMode(data.isMaintenanceMode);
+                    if (data.maintenanceMessage) {
+                        setMaintenanceMessage(data.maintenanceMessage);
+                    }
+                    if (data.scheduledEnd) {
+                        // input[type="datetime-local"] 用にフォーマット変換 (YYYY-MM-DDThh:mm)
+                        // ※簡易的にISO文字列の先頭16文字を使う（UTC扱いになる点に注意が必要だが、今回は簡易対応）
+                        try {
+                            const date = new Date(data.scheduledEnd);
+                            // ローカルタイムでフォーマットするには工夫が必要だが、ここでは空にしない程度にする
+                            // setScheduledEnd(date.toISOString().slice(0, 16)); 
+                        } catch (e) {
+                            console.error('Date parsing error', e);
+                        }
+                    }
+                }
+            })
+            .catch(err => console.error('AdminPanel: Maintenance status fetch error:', err));
     }, []);
 
     /**

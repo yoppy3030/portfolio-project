@@ -264,5 +264,48 @@
       "q2": "ฉันมีปัญหาที่ยังไม่ได้รับการแก้ไข / ฉันต้องการส่งข้อเสนอแนะหรือคำขอ",
       "a2": "เราขออภัยในความไม่สะดวก กรุณาติดต่อฝ่ายสนับสนุนของเราที่ {{email}} พร้อมคำอธิบายโดยละเอียดของสถานการณ์ เรายังยินดีต้อนรับความคิดเห็นและคำขอของคุณเพื่อปรับปรุงบริการ"
     }
+  },
+  "anime": {
+    "notLoggedIn": "You are not logged in."
+  },
+  "settings_backup_rankings_title": "Rankings",
+  "settings_backup_rankings_desc": "Backup your created rankings data.",
+  "ranking": {
+    "title": "My Rankings",
+    "editorTitle": "Edit Ranking",
+    "createTitle": "Create New Ranking",
+    "titleLabel": "Title",
+    "titlePlaceholder": "e.g., Top 10 RPGs",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Enter ranking description...",
+    "categoryLabel": "Category",
+    "categoryGame": "Game",
+    "categoryReading": "Reading",
+    "categoryAnime": "Anime",
+    "itemsLabel": "Ranking Items",
+    "addItemButton": "Add Item",
+    "rankSuffix": "",
+    "commentPlaceholder": "Comment...",
+    "saveButton": "Save",
+    "cancelButton": "Cancel",
+    "deleteButton": "Delete",
+    "editButton": "Edit",
+    "selectItemTitle": "Select Item",
+    "manualInputTitle": "Manual Input",
+    "manualInputTitlePlaceholder": "Title",
+    "manualInputImagePlaceholder": "Image URL (Optional)",
+    "manualInputAddButton": "Add Custom Item",
+    "confirmDelete": "Are you sure you want to delete this ranking?",
+    "alertDeleted": "Ranking deleted",
+    "alertDeleteFailed": "Failed to delete ranking",
+    "alertCreateError": "Creation error: ",
+    "alertUpdateError": "Update error: ",
+    "alertItemsUpdateError": "Items update error: ",
+    "alertSaveError": "An error occurred while saving",
+    "alertUploadFailed": "Upload failed: ",
+    "alertUploadError": "An error occurred during upload",
+    "alertTitleRequired": "Please enter a title",
+    "noItems": "No items",
+    "noRankings": "No rankings yet."
   }
 }

@@ -334,5 +334,48 @@
       "q2": "Tengo un problema que no se resuelve. / Quiero enviar comentarios o solicitudes.",
       "a2": "Nos disculpamos por las molestias. Por favor contacta a nuestro escritorio de soporte en {{email}} con una descripción detallada de la situación. También damos la bienvenida a tus opiniones y solicitudes para la mejora del servicio."
     }
+  },
+  "anime": {
+    "notLoggedIn": "No has iniciado sesión."
+  },
+  "settings_backup_rankings_title": "Rankings",
+  "settings_backup_rankings_desc": "Copia de seguridad de tus rankings creados.",
+  "ranking": {
+    "title": "Mis Rankings",
+    "editorTitle": "Editar Ranking",
+    "createTitle": "Crear Nuevo Ranking",
+    "titleLabel": "Título",
+    "titlePlaceholder": "ej., Top 10 RPGs",
+    "descriptionLabel": "Descripción",
+    "descriptionPlaceholder": "Ingrese la descripción del ranking...",
+    "categoryLabel": "Categoría",
+    "categoryGame": "Juego",
+    "categoryReading": "Lectura",
+    "categoryAnime": "Anime",
+    "itemsLabel": "Elementos del Ranking",
+    "addItemButton": "Añadir Elemento",
+    "rankSuffix": "º",
+    "commentPlaceholder": "Comentario...",
+    "saveButton": "Guardar",
+    "cancelButton": "Cancelar",
+    "deleteButton": "Eliminar",
+    "editButton": "Editar",
+    "selectItemTitle": "Seleccionar Elemento",
+    "manualInputTitle": "Entrada Manual",
+    "manualInputTitlePlaceholder": "Título",
+    "manualInputImagePlaceholder": "URL de imagen (Opcional)",
+    "manualInputAddButton": "Añadir Elemento Personalizado",
+    "confirmDelete": "¿Estás seguro de que quieres eliminar este ranking?",
+    "alertDeleted": "Ranking eliminado",
+    "alertDeleteFailed": "Fallo al eliminar el ranking",
+    "alertCreateError": "Error de creación: ",
+    "alertUpdateError": "Error de actualización: ",
+    "alertItemsUpdateError": "Error de actualización de elementos: ",
+    "alertSaveError": "Ocurrió un error al guardar",
+    "alertUploadFailed": "Fallo en la carga: ",
+    "alertUploadError": "Ocurrió un error durante la carga",
+    "alertTitleRequired": "Por favor, ingrese un título",
+    "noItems": "Sin elementos",
+    "noRankings": "Aún no hay rankings."
   }
 }

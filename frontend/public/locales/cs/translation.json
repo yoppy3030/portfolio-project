@@ -205,7 +205,7 @@
       "q1": "Co mohu dělat s touto službou?",
       "a1": "Tato služba je nástroj, který vám umožňuje vytvářet vlastní originální portfolio pomocí intuitivních operací. Můžete atraktivně shrnout své dovednosti, práce a kariéru a použít to pro hledání práce a sebeuvádění.",
       "q2": "Jak začít?",
-      "a2": "Nejprve vytvořte účet ze <a href='/register'>stránky registrace<\/a>. Po registraci můžete okamžitě začít vytvářet své portfolio."
+      "a2": "Nejprve vytvořte účet ze <a href='/register'>stránky registrace</a>. Po registraci můžete okamžitě začít vytvářet své portfolio."
     },
     "account": {
       "title": "O Vašem Účtu",
@@ -214,11 +214,11 @@
       "q2": "Nemohu se přihlásit.",
       "a2": "Vaše e-mailová adresa nebo heslo může být nesprávné. Zkontrolujte prosím velikost písmen a zkuste to znovu. Pokud se stále nemůžete přihlásit, zkuste resetovat heslo.",
       "q3": "Zapomněl jsem své heslo.",
-      "a3": "Resetujte prosím své heslo ze <a href='/password-reset'>stránky resetování hesla<\/a> zadáním registrované e-mailové adresy.",
+      "a3": "Resetujte prosím své heslo ze <a href='/password-reset'>stránky resetování hesla</a> zadáním registrované e-mailové adresy.",
       "q4": "Chci změnit informace o účtu (jméno, ikona atd.).",
       "a4": "Po přihlášení vyberte prosím 'Nastavení' z menu účtu v pravém horním rohu obrazovky. Můžete změnit své uživatelské jméno, biografii, obrázek ikony atd. na obrazovce nastavení profilu.",
       "q5": "Chci smazat svůj účet.",
-      "a5": "Můžete smazat svůj účet z karty nastavení účtu na stránce 'Nastavení'. <strong>Poznámka: Po smazání účtu budou všechna data, včetně vytvořeného portfolia, trvale smazána a nelze je obnovit.<\/strong>"
+      "a5": "Můžete smazat svůj účet z karty nastavení účtu na stránce 'Nastavení'. <strong>Poznámka: Po smazání účtu budou všechna data, včetně vytvořeného portfolia, trvale smazána a nelze je obnovit.</strong>"
     },
     "portfolio": {
       "title": "Vytváření a Úpravy Portfolií",
@@ -264,5 +264,48 @@
       "q2": "Mám problém, který není vyřešen. / Chci poslat zpětnou vazbu nebo požadavky.",
       "a2": "Omlouváme se za nepříjemnosti. Kontaktujte prosím naši podporu na {{email}} s podrobným popisem situace. Vítáme také vaše názory a požadavky na zlepšení služby."
     }
+  },
+  "anime": {
+    "notLoggedIn": "You are not logged in."
+  },
+  "settings_backup_rankings_title": "Rankings",
+  "settings_backup_rankings_desc": "Backup your created rankings data.",
+  "ranking": {
+    "title": "My Rankings",
+    "editorTitle": "Edit Ranking",
+    "createTitle": "Create New Ranking",
+    "titleLabel": "Title",
+    "titlePlaceholder": "e.g., Top 10 RPGs",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Enter ranking description...",
+    "categoryLabel": "Category",
+    "categoryGame": "Game",
+    "categoryReading": "Reading",
+    "categoryAnime": "Anime",
+    "itemsLabel": "Ranking Items",
+    "addItemButton": "Add Item",
+    "rankSuffix": "",
+    "commentPlaceholder": "Comment...",
+    "saveButton": "Save",
+    "cancelButton": "Cancel",
+    "deleteButton": "Delete",
+    "editButton": "Edit",
+    "selectItemTitle": "Select Item",
+    "manualInputTitle": "Manual Input",
+    "manualInputTitlePlaceholder": "Title",
+    "manualInputImagePlaceholder": "Image URL (Optional)",
+    "manualInputAddButton": "Add Custom Item",
+    "confirmDelete": "Are you sure you want to delete this ranking?",
+    "alertDeleted": "Ranking deleted",
+    "alertDeleteFailed": "Failed to delete ranking",
+    "alertCreateError": "Creation error: ",
+    "alertUpdateError": "Update error: ",
+    "alertItemsUpdateError": "Items update error: ",
+    "alertSaveError": "An error occurred while saving",
+    "alertUploadFailed": "Upload failed: ",
+    "alertUploadError": "An error occurred during upload",
+    "alertTitleRequired": "Please enter a title",
+    "noItems": "No items",
+    "noRankings": "No rankings yet."
   }
 }

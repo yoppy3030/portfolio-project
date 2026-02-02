@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { useTranslation } from 'react-i18next';
 import '../style/RankingManager.css';
 
 // ---------------------------
@@ -8,6 +9,7 @@ import '../style/RankingManager.css';
 const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token');
 
 const RankingEditor = ({ ranking, onClose, onSave, allGames, allBooks, allAnime }) => {
+    const { t } = useTranslation();
     const [title, setTitle] = useState(ranking ? ranking.title : '');
     const [description, setDescription] = useState(ranking ? ranking.description : '');
     const [category, setCategory] = useState(ranking ? ranking.category : 'game'); // 'game', 'reading', or 'anime'
@@ -80,11 +82,11 @@ const RankingEditor = ({ ranking, onClose, onSave, allGames, allBooks, allAnime 
             if (data.success) {
                 setCustomImageUrl(data.filePath);
             } else {
-                alert('アップロード失敗: ' + data.error);
+                alert(t('ranking.alertUploadFailed', 'アップロード失敗: ') + data.error);
             }
         } catch (err) {
             console.error('Upload Error:', err);
-            alert('アップロード中にエラーが発生しました');
+            alert(t('ranking.alertUploadError', 'アップロード中にエラーが発生しました'));
         }
     };
 
@@ -110,7 +112,7 @@ const RankingEditor = ({ ranking, onClose, onSave, allGames, allBooks, allAnime 
 
     const handleSave = () => {
         if (!title) {
-            alert('タイトルを入力してください');
+            alert(t('ranking.alertTitleRequired', 'タイトルを入力してください'));
             return;
         }
         // items need to be sanitized for API
@@ -170,32 +172,32 @@ const RankingEditor = ({ ranking, onClose, onSave, allGames, allBooks, allAnime 
                 >
                     ×
                 </button>
-                <h3 style={{ marginTop: '10px', textAlign: 'center' }}>{ranking ? 'ランキング編集' : '新規ランキング作成'}</h3>
+                <h3 style={{ marginTop: '10px', textAlign: 'center' }}>{ranking ? t('ranking.editorTitle', 'ランキング編集') : t('ranking.createTitle', '新規ランキング作成')}</h3>
 
                 <div className="form-group">
-                    <label>タイトル:</label>
-                    <input value={title} onChange={e => setTitle(e.target.value)} placeholder="例: おすすめRPGベスト10" />
+                    <label>{t('ranking.titleLabel', 'タイトル')}:</label>
+                    <input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('ranking.titlePlaceholder', '例: おすすめRPGベスト10')} />
                 </div>
 
                 <div className="form-group">
-                    <label>説明:</label>
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="ランキングの説明を入力..." />
+                    <label>{t('ranking.descriptionLabel', '説明')}:</label>
+                    <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t('ranking.descriptionPlaceholder', 'ランキングの説明を入力...')} />
                 </div>
 
                 {!ranking && (
                     <div className="form-group">
-                        <label>カテゴリ:</label>
+                        <label>{t('ranking.categoryLabel', 'カテゴリ')}:</label>
                         <select value={category} onChange={e => { setCategory(e.target.value); setItems([]); }}>
-                            <option value="game">ゲーム</option>
-                            <option value="reading">読書</option>
-                            <option value="anime">アニメ</option>
+                            <option value="game">{t('ranking.categoryGame', 'ゲーム')}</option>
+                            <option value="reading">{t('ranking.categoryReading', '読書')}</option>
+                            <option value="anime">{t('ranking.categoryAnime', 'アニメ')}</option>
                         </select>
                     </div>
                 )}
 
                 <div className="items-section">
-                    <h4>ランキング項目</h4>
-                    <button onClick={() => setShowItemSelector(true)}>+ アイテムを追加</button>
+                    <h4>{t('ranking.itemsLabel', 'ランキング項目')}</h4>
+                    <button onClick={() => setShowItemSelector(true)}>+ {t('ranking.addItemButton', 'アイテムを追加')}</button>
 
                     <DragDropContext onDragEnd={onDragEnd}>
                         <Droppable droppableId="ranking-items">
@@ -210,7 +212,7 @@ const RankingEditor = ({ ranking, onClose, onSave, allGames, allBooks, allAnime 
                                                     {...provided.dragHandleProps}
                                                     className="ranking-item-row"
                                                 >
-                                                    <span className="rank-num">{index + 1}位</span>
+                                                    <span className="rank-num">{index + 1}{t('ranking.rankSuffix', '位')}</span>
                                                     {getItemImage(item) && (
                                                         <img
                                                             src={(() => {
@@ -226,7 +228,7 @@ const RankingEditor = ({ ranking, onClose, onSave, allGames, allBooks, allAnime 
                                                         <span className="item-title">{getItemTitle(item)}</span>
                                                         <textarea
                                                             className="item-comment-input"
-                                                            placeholder="一言コメント..."
+                                                            placeholder={t('ranking.commentPlaceholder', '一言コメント...')}
                                                             value={item.comment || ''}
                                                             onChange={e => handleCommentChange(index, e.target.value)}
                                                             rows={2}
@@ -246,26 +248,26 @@ const RankingEditor = ({ ranking, onClose, onSave, allGames, allBooks, allAnime 
                 </div>
 
                 <div className="editor-actions">
-                    <button onClick={handleSave} className="save-btn">保存</button>
-                    <button onClick={onClose} className="cancel-btn">キャンセル</button>
+                    <button onClick={handleSave} className="save-btn">{t('ranking.saveButton', '保存')}</button>
+                    <button onClick={onClose} className="cancel-btn">{t('ranking.cancelButton', 'キャンセル')}</button>
                 </div>
 
                 {showItemSelector && (
                     <div className="item-selector-overlay" onClick={() => setShowItemSelector(false)}>
                         <div className="item-selector-modal" onClick={e => e.stopPropagation()}>
-                            <h4>アイテムを選択</h4>
+                            <h4>{t('ranking.selectItemTitle', 'アイテムを選択')}</h4>
 
                             <div className="custom-item-input" style={{ marginBottom: '15px', padding: '10px', background: '#f5f5f5', borderRadius: '4px' }}>
-                                <h5 style={{ margin: '0 0 10px 0' }}>手動入力</h5>
+                                <h5 style={{ margin: '0 0 10px 0' }}>{t('ranking.manualInputTitle', '手動入力')}</h5>
                                 <div style={{ display: 'flex', gap: '10px', marginBottom: '5px' }}>
                                     <input
-                                        placeholder="タイトル"
+                                        placeholder={t('ranking.manualInputTitlePlaceholder', 'タイトル')}
                                         value={customTitle}
                                         onChange={e => setCustomTitle(e.target.value)}
                                         style={{ flex: 1, padding: '5px' }}
                                     />
                                     <input
-                                        placeholder="画像URL (任意)"
+                                        placeholder={t('ranking.manualInputImagePlaceholder', '画像URL (任意)')}
                                         value={customImageUrl}
                                         onChange={e => setCustomImageUrl(e.target.value)}
                                         style={{ flex: 1, padding: '5px' }}
@@ -291,7 +293,7 @@ const RankingEditor = ({ ranking, onClose, onSave, allGames, allBooks, allAnime 
                                         cursor: customTitle ? 'pointer' : 'not-allowed'
                                     }}
                                 >
-                                    この内容で追加
+                                    {t('ranking.manualInputAddButton', 'この内容で追加')}
                                 </button>
                             </div>
 
@@ -324,6 +326,7 @@ const RankingEditor = ({ ranking, onClose, onSave, allGames, allBooks, allAnime 
 // メインコンポーネント: ランキングマネージャー
 // ---------------------------
 const RankingManager = ({ onClose }) => {
+    const { t } = useTranslation();
     const [rankings, setRankings] = useState([]);
     // const [loading, setLoading] = useState(false);
     const [editorOpen, setEditorOpen] = useState(false);
@@ -415,17 +418,17 @@ const RankingManager = ({ onClose }) => {
     };
 
     const handleDelete = async (rankingId) => {
-        if (!window.confirm('本当にこのランキングを削除しますか？')) return;
+        if (!window.confirm(t('ranking.confirmDelete', '本当にこのランキングを削除しますか？'))) return;
         try {
             await fetch(`http://localhost:5000/api/rankings/${rankingId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${getToken()}` }
             });
             fetchRankings();
-            alert('ランキングを削除しました');
+            alert(t('ranking.alertDeleted', 'ランキングを削除しました'));
         } catch (err) {
             console.error(err);
-            alert('削除に失敗しました');
+            alert(t('ranking.alertDeleteFailed', '削除に失敗しました'));
         }
     };
 
@@ -448,7 +451,7 @@ const RankingManager = ({ onClose }) => {
                 if (data.success) {
                     rankingId = data.rankingId;
                 } else {
-                    alert('作成エラー: ' + data.error);
+                    alert(t('ranking.alertCreateError', '作成エラー: ') + data.error);
                     return;
                 }
             } else {
@@ -464,7 +467,7 @@ const RankingManager = ({ onClose }) => {
                 });
                 const data = await res.json();
                 if (!data.success) {
-                    alert('更新エラー: ' + data.error);
+                    alert(t('ranking.alertUpdateError', '更新エラー: ') + data.error);
                     return;
                 }
             }
@@ -481,12 +484,12 @@ const RankingManager = ({ onClose }) => {
                 setEditorOpen(false);
                 fetchRankings();
             } else {
-                alert('アイテム更新エラー: ' + dataItems.error);
+                alert(t('ranking.alertItemsUpdateError', 'アイテム更新エラー: ') + dataItems.error);
             }
 
         } catch (error) {
             console.error(error);
-            alert('保存中にエラーが発生しました');
+            alert(t('ranking.alertSaveError', '保存中にエラーが発生しました'));
         }
     };
 
@@ -495,12 +498,12 @@ const RankingManager = ({ onClose }) => {
             <div className="ranking-manager-backdrop" onClick={onClose}>
                 <div className="ranking-manager-content" onClick={e => e.stopPropagation()}>
                     <div className="manager-header">
-                        <h2>マイランキング</h2>
+                        <h2>{t('ranking.title', 'マイランキング')}</h2>
                         <button className="close-btn" onClick={onClose}>×</button>
                     </div>
 
                     <div className="manager-body">
-                        <button className="create-btn" onClick={handleCreate}>+ 新規ランキング作成</button>
+                        <button className="create-btn" onClick={handleCreate}>+ {t('ranking.createTitle', '新規ランキング作成')}</button>
 
                         <div className="rankings-list">
                             {rankings.map(ranking => (
@@ -508,8 +511,8 @@ const RankingManager = ({ onClose }) => {
                                     <div className="ranking-info">
                                         <h4>{ranking.title}</h4>
                                         <span className="badge">
-                                            {ranking.category === 'game' ? 'ゲーム' :
-                                                ranking.category === 'reading' ? '読書' : 'アニメ'}
+                                            {ranking.category === 'game' ? t('ranking.categoryGame', 'ゲーム') :
+                                                ranking.category === 'reading' ? t('ranking.categoryReading', '読書') : t('ranking.categoryAnime', 'アニメ')}
                                         </span>
                                         <p>{ranking.description}</p>
 
@@ -541,7 +544,7 @@ const RankingManager = ({ onClose }) => {
                                                     </div>
                                                 </div>
                                             ))}
-                                            {ranking.items && ranking.items.length === 0 && <span className="no-items">アイテムなし</span>}
+                                            {ranking.items && ranking.items.length === 0 && <span className="no-items">{t('ranking.noItems', 'アイテムなし')}</span>}
                                         </div>
                                     </div>
                                     <div className="ranking-actions">
@@ -558,13 +561,13 @@ const RankingManager = ({ onClose }) => {
                                                 display: 'inline-block'
                                             }}
                                         >
-                                            削除
+                                            {t('ranking.deleteButton', '削除')}
                                         </button>
-                                        <button onClick={() => handleEdit(ranking.id)} className="edit-btn">編集</button>
+                                        <button onClick={() => handleEdit(ranking.id)} className="edit-btn">{t('ranking.editButton', '編集')}</button>
                                     </div>
                                 </div>
                             ))}
-                            {rankings.length === 0 && <p className="no-data">ランキングがまだありません。</p>}
+                            {rankings.length === 0 && <p className="no-data">{t('ranking.noRankings', 'ランキングがまだありません。')}</p>}
                         </div>
                     </div>
                 </div>
@@ -583,5 +586,4 @@ const RankingManager = ({ onClose }) => {
         </>
     );
 };
-
 export default RankingManager;
