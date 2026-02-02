@@ -417,13 +417,13 @@ function AnimeHobbyModal({ onClose, isOwner }) {
                                                             {anime.synopsis && (
                                                                 <div className="anime-synopsis">
                                                                     <strong>{t('anime.labelSynopsis')}:</strong>
-                                                                    <p>{anime.synopsis}</p>
+                                                                    <p style={{ whiteSpace: 'pre-wrap' }}>{anime.synopsis}</p>
                                                                 </div>
                                                             )}
                                                             {anime.review && (
                                                                 <div className="anime-review">
                                                                     <strong>{t('anime.labelReview')}:</strong>
-                                                                    <p>{anime.review}</p>
+                                                                    <p style={{ whiteSpace: 'pre-wrap' }}>{anime.review}</p>
                                                                 </div>
                                                             )}
                                                         </div>

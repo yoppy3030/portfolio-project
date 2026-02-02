@@ -67,7 +67,7 @@ function AnimeHobbyDisplay() {
                                         {t('anime.labelRating')}: {'★'.repeat(anime.rating)}{'☆'.repeat(10 - anime.rating)}
                                     </p>
                                 )}
-                                {anime.review && <p className="book-card-comment">{anime.review}</p>}
+                                {anime.review && <p className="book-card-comment" style={{ whiteSpace: 'pre-wrap' }}>{anime.review}</p>}
                             </div>
                         </div >
                     ))}
