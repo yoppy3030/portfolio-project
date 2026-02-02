@@ -745,6 +745,11 @@ function TextEditBlock({ project, onContentUpdate, onDelete, onEdit, isEditMode 
   const [isEditing, setIsEditing] = useState(false); // このブロックが現在編集中かどうか
   const [currentContent, setCurrentContent] = useState(project.content || ''); // 入力中のテキスト
 
+  // 親コンポーネントのデータが更新されたら、ローカルのstateも更新する
+  useEffect(() => {
+    setCurrentContent(project.content || '');
+  }, [project.content]);
+
   // ダブルクリック時の処理：編集モードならテキスト編集を開始
   const handleDoubleClick = () => {
     if (isEditMode) {
@@ -793,6 +798,7 @@ function TextEditBlock({ project, onContentUpdate, onDelete, onEdit, isEditMode 
     alignItems: 'center',
     justifyContent: 'flex-start',
     color: project.text_color, // Inherit text color
+    whiteSpace: 'pre-wrap', // 改行を反映
   };
 
   const textStyles = {

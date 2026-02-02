@@ -107,6 +107,7 @@ function ContentBlock({ block, isEditMode, onUpdate, onDelete, onEdit }) {
     const textStyles = {
       color: block.text_color,
       fontSize: block.font_size,
+      whiteSpace: 'pre-wrap', // 改行を反映
     };
 
     switch (block.type) {
