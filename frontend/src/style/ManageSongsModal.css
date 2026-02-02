@@ -78,7 +78,8 @@
 }
 
 .song-list {
-  max-height: 250px;
+  max-height: 65vh;
+  min-height: 150px;
   overflow-y: auto;
   margin-bottom: 24px;
   border: 1px solid #e5e7eb;
@@ -92,17 +93,23 @@
   border: none;
   padding: 0;
   margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
 }
 
 .song-list.is-empty p {
   text-align: center;
   color: #6b7280;
-  padding: 40px 20px;
+  padding: 20px;
   font-style: italic;
   background-color: #f9fafb;
   border-radius: 8px;
   border: 1px dashed #d1d5db;
   margin: 0;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .song-item {
